@@ -1,2 +1,2 @@
-# RPS-F32-CNTL
-Raspberry Pi Pico を利用したFMシンセ「RPS-F32」のコントローラ部分
+# RPS-F32-DISP
+Raspberry Pi Pico を利用したFMシンセ「RPS-F32」のUI部分
