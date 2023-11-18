@@ -1,16 +1,22 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include <SPI.h>
 #include <debug.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
 // debug 関連
-//#define DEBUG_MODE 0 //0 or 1
-//Debug debug(DEBUG_MODE, Serial2, 8, 9, 115200);
+#define DEBUG_MODE 0 //0 or 1
+Debug debug(DEBUG_MODE, Serial2, 8, 9, 115200);
 
 // CTRL 関連
-#define CTRL_TX_PIN 0
-#define CTRL_RX_PIN 1
+#define CTRL_SCK 2
+#define CTRL_TX 3
+#define CTRL_RX 4
+#define CTRL_CS 5
+
+SPIClassRP2040& ctrl = SPI;
+SPISettings spisettings(1000000, MSBFIRST, SPI_MODE0);
 
 // SCREEN 関連
 #define SCREEN_WIDTH 128
@@ -54,10 +60,11 @@ void setup() {
     Wire.setSCL(SCL_PIN);
     Wire.begin();
 
-    //todo
-    Serial1.setTX(CTRL_TX_PIN);
-    Serial1.setRX(CTRL_RX_PIN);
-    Serial1.begin(31250);
+    ctrl.setRX(CTRL_RX);
+    ctrl.setCS(CTRL_CS);
+    ctrl.setSCK(CTRL_SCK);
+    ctrl.setTX(CTRL_TX);
+    ctrl.begin(true);
 
     if(!display.begin(SSD1306_SWITCHCAPVCC, I2C_ADDR)) {
         for(;;);
@@ -74,7 +81,7 @@ void setup() {
     display.print(F("Dev#3"));
     display.display();
 
-    //debug.init();
+    debug.init();
 
     for (int i = 0; i < BUTTON_COUNT; ++i) {
         pinMode(buttonPins[i], INPUT_PULLUP);
@@ -86,16 +93,15 @@ void setup() {
     multicore_launch_core1(loop1);
 }
 
-void loop() {
-    // todo
-}
+void loop() {} // 使用しない
 
 void loop1() {
-    while(1){
-        Serial1.print("T");
-        digitalWrite(LED_BUILTIN, HIGH);
-        delay(10);
-        digitalWrite(LED_BUILTIN, LOW);
-        delay(1000);
-    }
+    char msg[1024];
+    memset(msg, 0, sizeof(msg));
+    sprintf(msg, "test");
+    ctrl.beginTransaction(spisettings);
+    ctrl.transfer(msg, sizeof(msg));
+    ctrl.endTransaction();
+
+    delay(100);
 }
