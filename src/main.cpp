@@ -1,11 +1,20 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include <SPI.h>
 #include <debug.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
 #define DEBUG_MODE 0 //0 or 1
 Debug debug(DEBUG_MODE, Serial2, 8, 9, 115200);
+
+#define CTRL_SCK 2
+#define CTRL_TX 3
+#define CTRL_RX 4
+#define CTRL_CS 5
+
+SPIClassRP2040& ctrl = SPI;
+SPISettings spisettings(1000000, MSBFIRST, SPI_MODE0);
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -40,13 +49,19 @@ void buttonISR() {
     display.setCursor(20, 5);
     display.print(String(pressedButton));
 
-    display.display();    
+    display.display();
 }
 
 void setup() {
     Wire.setSDA(SDA_PIN);
     Wire.setSCL(SCL_PIN);
     Wire.begin();
+
+    ctrl.setRX(CTRL_RX);
+    ctrl.setCS(CTRL_CS);
+    ctrl.setSCK(CTRL_SCK);
+    ctrl.setTX(CTRL_TX);
+    ctrl.begin(true);
 
     if(!display.begin(SSD1306_SWITCHCAPVCC, I2C_ADDR)) {
         for(;;);
@@ -78,7 +93,23 @@ void setup() {
 }
 
 void loop() {
-    // todo
+    char msg[1024];
+    memset(msg, 0, sizeof(msg));
+    sprintf(msg, "note");
+    ctrl.beginTransaction(spisettings);
+    ctrl.transfer(msg, sizeof(msg));
+    ctrl.endTransaction();
+
+    if(String(msg) != "ok" && String(msg) != "none") {
+        display.clearDisplay();
+        display.setTextSize(2);
+        display.setTextColor(SSD1306_WHITE);
+        display.setCursor(20, 5);
+        display.print(String(msg));
+        display.display();
+    }
+
+    delay(30);
 }
 
 void midiLoop() {
