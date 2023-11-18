@@ -5,9 +5,11 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
+// debug 関連
 #define DEBUG_MODE 0 //0 or 1
 Debug debug(DEBUG_MODE, Serial2, 8, 9, 115200);
 
+// CTRL 関連
 #define CTRL_SCK 2
 #define CTRL_TX 3
 #define CTRL_RX 4
@@ -16,6 +18,7 @@ Debug debug(DEBUG_MODE, Serial2, 8, 9, 115200);
 SPIClassRP2040& ctrl = SPI;
 SPISettings spisettings(1000000, MSBFIRST, SPI_MODE0);
 
+// SCREEN 関連
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 
@@ -27,11 +30,13 @@ SPISettings spisettings(1000000, MSBFIRST, SPI_MODE0);
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+// BUTTON 関連
 #define BUTTON_COUNT 6
 #define BUTTON_PINS {10,11,12,13,14,15}
 int buttonPins[BUTTON_COUNT] = BUTTON_PINS;
 
-void midiLoop();
+// その他
+void loop1();
 
 void buttonISR() {
     int pressedButton = -1;
@@ -43,12 +48,10 @@ void buttonISR() {
     }
 
     display.clearDisplay();
-
     display.setTextSize(2);
     display.setTextColor(SSD1306_WHITE);
     display.setCursor(20, 5);
     display.print(String(pressedButton));
-
     display.display();
 }
 
@@ -68,7 +71,6 @@ void setup() {
     }
 
     display.clearDisplay();
-
     display.setTextSize(2);
     display.setTextColor(SSD1306_WHITE);
     display.setCursor(20, 5);
@@ -77,7 +79,6 @@ void setup() {
     display.print(F("FM-Synth"));
     display.setCursor(35, 45);
     display.print(F("Dev#3"));
-
     display.display();
 
     debug.init();
@@ -89,29 +90,20 @@ void setup() {
 
     pinMode(LED_BUILTIN, OUTPUT);
 
-    multicore_launch_core1(midiLoop);
+    multicore_launch_core1(loop1);
 }
 
 void loop() {
     char msg[1024];
     memset(msg, 0, sizeof(msg));
-    sprintf(msg, "note");
+    sprintf(msg, "test");
     ctrl.beginTransaction(spisettings);
     ctrl.transfer(msg, sizeof(msg));
     ctrl.endTransaction();
 
-    if(String(msg) != "ok" && String(msg) != "none") {
-        display.clearDisplay();
-        display.setTextSize(2);
-        display.setTextColor(SSD1306_WHITE);
-        display.setCursor(20, 5);
-        display.print(String(msg));
-        display.display();
-    }
-
-    delay(30);
+    delay(100);
 }
 
-void midiLoop() {
+void loop1() {
     // todo
 }
