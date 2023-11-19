@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <Wire.h>
-#include <SPI.h>
 #include <debug.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
@@ -10,13 +9,12 @@
 Debug debug(DEBUG_MODE, Serial2, 8, 9, 115200);
 
 // CTRL 関連
-#define CTRL_SCK 2
-#define CTRL_TX 3
-#define CTRL_RX 4
-#define CTRL_CS 5
+#define CTRL_SDA_PIN 2
+#define CTRL_SCL_PIN 3
+#define CTRL_SW_PIN 4
+#define CTRL_I2C_ADDR 0x0A
 
-SPIClassRP2040& ctrl = SPI;
-SPISettings spisettings(1000000, MSBFIRST, SPI_MODE0);
+TwoWire& ctrl = Wire1;
 
 // SCREEN 関連
 #define SCREEN_WIDTH 128
@@ -24,9 +22,11 @@ SPISettings spisettings(1000000, MSBFIRST, SPI_MODE0);
 
 #define OLED_RESET -1
 
-#define SDA_PIN 16
-#define SCL_PIN 17
-#define I2C_ADDR 0x3C
+#define OLED_SDA_PIN 16
+#define OLED_SCL_PIN 17
+#define OLED_I2C_ADDR 0x3C
+
+TwoWire& oled = Wire;
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
@@ -39,34 +39,55 @@ int buttonPins[BUTTON_COUNT] = BUTTON_PINS;
 void loop1();
 
 void buttonISR() {
-    int pressedButton = -1;
-    for (int i = 0; i < BUTTON_COUNT; ++i) {
-        if (digitalRead(buttonPins[i]) == LOW) {
-            pressedButton = i + 1;
-            break;
-        }
-    }
+    // int pressedButton = -1;
+    // for (int i = 0; i < BUTTON_COUNT; ++i) {
+    //     if (digitalRead(buttonPins[i]) == LOW) {
+    //         pressedButton = i + 1;
+    //         break;
+    //     }
+    // }
 
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(20, 5);
-    display.print(String(pressedButton));
-    display.display();
+    // display.clearDisplay();
+    // display.setTextSize(2);
+    // display.setTextColor(SSD1306_WHITE);
+    // display.setCursor(20, 5);
+    // display.print(String(pressedButton));
+    // display.display();
+
+    digitalWrite(CTRL_SW_PIN, HIGH);
+    digitalWrite(CTRL_SW_PIN, LOW);
+    delay(100);
+
+    ctrl.beginTransmission(CTRL_I2C_ADDR);
+    ctrl.write("T");
+    ctrl.endTransmission();
+    
+    ctrl.requestFrom(CTRL_I2C_ADDR, 1);
+    while (ctrl.available()) {
+        int a = ctrl.read();
+        display.clearDisplay();
+        display.setTextSize(2);
+        display.setTextColor(SSD1306_WHITE);
+        display.setCursor(20, 5);
+        display.print(String(a));
+        display.display();
+    }
 }
 
 void setup() {
-    Wire.setSDA(SDA_PIN);
-    Wire.setSCL(SCL_PIN);
-    Wire.begin();
+    pinMode(LED_BUILTIN, OUTPUT);
+    pinMode(CTRL_SW_PIN, OUTPUT);
+    digitalWrite(CTRL_SW_PIN, LOW);
 
-    ctrl.setRX(CTRL_RX);
-    ctrl.setCS(CTRL_CS);
-    ctrl.setSCK(CTRL_SCK);
-    ctrl.setTX(CTRL_TX);
-    ctrl.begin(true);
+    oled.setSDA(OLED_SDA_PIN);
+    oled.setSCL(OLED_SCL_PIN);
+    oled.begin();
 
-    if(!display.begin(SSD1306_SWITCHCAPVCC, I2C_ADDR)) {
+    ctrl.setSDA(CTRL_SDA_PIN);
+    ctrl.setSCL(CTRL_SCL_PIN);
+    ctrl.begin();
+
+    if(!display.begin(SSD1306_SWITCHCAPVCC, OLED_I2C_ADDR)) {
         for(;;);
     }
 
@@ -88,20 +109,11 @@ void setup() {
         attachInterrupt(digitalPinToInterrupt(buttonPins[i]), buttonISR, FALLING);
     }
 
-    pinMode(LED_BUILTIN, OUTPUT);
-
     multicore_launch_core1(loop1);
 }
 
 void loop() {} // 使用しない
 
 void loop1() {
-    char msg[1024];
-    memset(msg, 0, sizeof(msg));
-    sprintf(msg, "test");
-    ctrl.beginTransaction(spisettings);
-    ctrl.transfer(msg, sizeof(msg));
-    ctrl.endTransaction();
-
-    delay(100);
+    // todo
 }
