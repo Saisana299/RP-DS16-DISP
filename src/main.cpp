@@ -9,9 +9,9 @@
 Debug debug(DEBUG_MODE, Serial2, 8, 9, 115200);
 
 // CTRL 関連
-#define CTRL_SDA_PIN 2
-#define CTRL_SCL_PIN 3
-#define CTRL_SW_PIN 4
+#define CTRL_SDA_PIN 18
+#define CTRL_SCL_PIN 19
+#define CTRL_SW_PIN 20
 #define CTRL_I2C_ADDR 0x0A
 
 TwoWire& ctrl = Wire1;
@@ -28,50 +28,62 @@ TwoWire& ctrl = Wire1;
 
 TwoWire& oled = Wire;
 
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &oled, OLED_RESET);
 
 // BUTTON 関連
 #define BUTTON_COUNT 6
-#define BUTTON_PINS {10,11,12,13,14,15}
+#define BUTTON_PINS {11,12,13,14,15,21}
 int buttonPins[BUTTON_COUNT] = BUTTON_PINS;
 
 // その他
 void loop1();
+volatile bool buttonPressed = false;
 
 void buttonISR() {
-    // int pressedButton = -1;
-    // for (int i = 0; i < BUTTON_COUNT; ++i) {
-    //     if (digitalRead(buttonPins[i]) == LOW) {
-    //         pressedButton = i + 1;
-    //         break;
-    //     }
-    // }
+    static unsigned long lastDebounceTime = 0;
+    static const unsigned long debounceDelay = 50;
 
-    // display.clearDisplay();
-    // display.setTextSize(2);
-    // display.setTextColor(SSD1306_WHITE);
-    // display.setCursor(20, 5);
-    // display.print(String(pressedButton));
-    // display.display();
+    unsigned long currentMillis = millis();
 
-    digitalWrite(CTRL_SW_PIN, HIGH);
-    digitalWrite(CTRL_SW_PIN, LOW);
-    delay(100);
-
-    ctrl.beginTransmission(CTRL_I2C_ADDR);
-    ctrl.write("T");
-    ctrl.endTransmission();
-    
-    ctrl.requestFrom(CTRL_I2C_ADDR, 1);
-    while (ctrl.available()) {
-        int a = ctrl.read();
-        display.clearDisplay();
-        display.setTextSize(2);
-        display.setTextColor(SSD1306_WHITE);
-        display.setCursor(20, 5);
-        display.print(String(a));
-        display.display();
+    if (currentMillis - lastDebounceTime < debounceDelay) {
+        return;
     }
+
+    char pressedButton[7] = "N/A";
+    for (int i = 0; i < BUTTON_COUNT; ++i) {
+        if (digitalRead(buttonPins[i]) == LOW) {
+            switch (i) {
+                case 0:
+                    strcpy(pressedButton, "LEFT");
+                    break;
+                case 1:
+                    strcpy(pressedButton, "DOWN");
+                    break;
+                case 2:
+                    strcpy(pressedButton, "RIGHT");
+                    break;
+                case 3:
+                    strcpy(pressedButton, "CANCEL");
+                    break;
+                case 4:
+                    strcpy(pressedButton, "ENTER");
+                    break;
+                case 5:
+                    strcpy(pressedButton, "UP");
+                    break;
+            }
+        }
+    }
+
+    buttonPressed = true;
+    lastDebounceTime = currentMillis;
+
+    display.clearDisplay();
+    display.setTextSize(2);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(20, 5);
+    display.print(String(pressedButton));
+    display.display();
 }
 
 void setup() {
