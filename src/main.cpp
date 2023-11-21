@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include <LGFXRP2040.h>
 #include <debug.h>
 
 // debug 関連
