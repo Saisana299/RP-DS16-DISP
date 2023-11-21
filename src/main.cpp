@@ -1,11 +1,9 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <debug.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 
 // debug 関連
-#define DEBUG_MODE 0 //0 or 1
+#define DEBUG_MODE 1 //0 or 1
 Debug debug(DEBUG_MODE, Serial2, 8, 9, 115200);
 
 // CTRL 関連
@@ -16,30 +14,29 @@ Debug debug(DEBUG_MODE, Serial2, 8, 9, 115200);
 
 TwoWire& ctrl = Wire1;
 
-// SCREEN 関連
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 64
-
-#define OLED_RESET -1
-
-#define OLED_SDA_PIN 16
-#define OLED_SCL_PIN 17
-#define OLED_I2C_ADDR 0x3C
-
-TwoWire& oled = Wire;
-
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &oled, OLED_RESET);
-
 // BUTTON 関連
 #define BUTTON_COUNT 6
 #define BUTTON_PINS {11,12,13,14,15,21}
 int buttonPins[BUTTON_COUNT] = BUTTON_PINS;
 
+// DISP 関連
+LGFXRP2040 display;
+
 // その他
 void loop1();
 volatile bool buttonPressed = false;
+char pressedButton[7] = "N/A";
+
+void toggleCtrl(bool begin) {
+    digitalWrite(CTRL_SW_PIN, HIGH);
+    digitalWrite(CTRL_SW_PIN, LOW);
+    if(begin){
+        delay(100);
+    }
+}
 
 void buttonISR() {
+    // チャタリング対策どうする
     static unsigned long lastDebounceTime = 0;
     static const unsigned long debounceDelay = 50;
 
@@ -49,7 +46,6 @@ void buttonISR() {
         return;
     }
 
-    char pressedButton[7] = "N/A";
     for (int i = 0; i < BUTTON_COUNT; ++i) {
         if (digitalRead(buttonPins[i]) == LOW) {
             switch (i) {
@@ -77,13 +73,6 @@ void buttonISR() {
 
     buttonPressed = true;
     lastDebounceTime = currentMillis;
-
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(20, 5);
-    display.print(String(pressedButton));
-    display.display();
 }
 
 void setup() {
@@ -91,30 +80,14 @@ void setup() {
     pinMode(CTRL_SW_PIN, OUTPUT);
     digitalWrite(CTRL_SW_PIN, LOW);
 
-    oled.setSDA(OLED_SDA_PIN);
-    oled.setSCL(OLED_SCL_PIN);
-    oled.begin();
-
     ctrl.setSDA(CTRL_SDA_PIN);
     ctrl.setSCL(CTRL_SCL_PIN);
     ctrl.begin();
 
-    if(!display.begin(SSD1306_SWITCHCAPVCC, OLED_I2C_ADDR)) {
-        for(;;);
-    }
-
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(20, 5);
-    display.print(F("RPS-F32"));
-    display.setCursor(20, 25);
-    display.print(F("FM-Synth"));
-    display.setCursor(35, 45);
-    display.print(F("Dev#3"));
-    display.display();
-
     debug.init();
+
+    display.init();
+    display.fillScreen(TFT_BLACK);
 
     for (int i = 0; i < BUTTON_COUNT; ++i) {
         pinMode(buttonPins[i], INPUT_PULLUP);
@@ -127,5 +100,31 @@ void setup() {
 void loop() {} // 使用しない
 
 void loop1() {
-    // todo
+    while(1){
+        if (buttonPressed) {
+            if (strcmp(pressedButton, "UP") == 0) {
+                toggleCtrl(true);
+
+                ctrl.beginTransmission(CTRL_I2C_ADDR);
+                ctrl.write("T");
+                ctrl.endTransmission();
+
+                ctrl.requestFrom(CTRL_I2C_ADDR, 1);
+                while(ctrl.available()) {
+                    int a = ctrl.read();
+                    // display.clearDisplay();
+                    // display.setTextSize(2);
+                    // display.setTextColor(SSD1306_WHITE);
+                    // display.setCursor(20, 5);
+                    // display.print(String(a));
+                    // display.display();
+                }
+
+                toggleCtrl(false);
+            } else if(strcmp(pressedButton, "DOWN") == 0) {
+                // display.clearDisplay();
+            }
+            buttonPressed = false;
+        }
+    }
 }
