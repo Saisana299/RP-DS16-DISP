@@ -42,4 +42,39 @@ public:
 
         setPanel(&_panel_instance);
     }
+
+    /**
+     * @brief 画像をディスプレイに表示します。
+     * 
+     * @param data example: "0,1,1,0,1,1,0" "1:20,0:3,1:57,0,1,0,1:3"
+     * @param x 描画開始位置：列
+     * @param y 描画開始位置：行
+     * @param w 描画範囲：長さ
+     * @param h 描画範囲：高さ
+     */
+    void showImage(String data, int x = 0, int y = 0, int w = 128, int h = 64) {
+        const uint16_t maxSize = 8192; // SSD1306 128x64 用 最大画素数
+        uint8_t bitmap[maxSize];
+        uint16_t count = 0;
+
+        char *ptr = strtok(const_cast<char*>(data.c_str()), ",");
+        while (ptr != nullptr && count < maxSize) {
+            // コロンがあるかどうかを確認してRLEエンコーディングを検出
+            char *colonPtr = strchr(ptr, ':');
+            if (colonPtr != nullptr) {
+                uint8_t value = atoi(ptr);
+                uint16_t repeatCount = atoi(colonPtr + 1);
+                // RLEエンコーディングを展開
+                for (uint16_t i = 0; i < repeatCount && count < maxSize; ++i) {
+                    bitmap[count++] = (value == 1) ? 255 : value;
+                }
+            } else {
+                bitmap[count++] = (atoi(ptr) == 1) ? 255 : atoi(ptr); // 非RLEデータ
+            }
+            ptr = strtok(nullptr, ",");
+        }
+        // データを表示
+        pushImage(x, y, w, h, bitmap);
+        display();
+    }
 };
