@@ -136,6 +136,37 @@ void loop1() {
         if (buttonPressed) {
             switch (pressedButton) {
                 case BTN_UP:
+                    {
+                        toggleCtrl(true);
+                        ctrl.beginTransmission(CTRL_I2C_ADDR);
+                        uint8_t data[] = {INS_BEGIN, DISP_SET_PRESET, DATA_BEGIN, 0x02, 0x01, 0x02};
+                        ctrl.write(data, sizeof(data));
+                        ctrl.endTransmission();
+
+                        uint8_t buffer_size = 1;
+                        ctrl.requestFrom(CTRL_I2C_ADDR, buffer_size);
+                        uint8_t received = 0x00;
+                        if (ctrl.available()) {
+                            received = ctrl.read();
+                        }
+                        toggleCtrl(false);
+
+                        delay(100); //todo ロックか何かを実装する
+
+                        toggleCtrl(true);
+                        ctrl.beginTransmission(CTRL_I2C_ADDR);
+                        uint8_t data2[] = {INS_BEGIN, DISP_SET_PRESET, DATA_BEGIN, 0x02, 0x02, 0x02};
+                        ctrl.write(data2, sizeof(data2));
+                        ctrl.endTransmission();
+
+                        uint8_t buffer_size2 = 1;
+                        ctrl.requestFrom(CTRL_I2C_ADDR, buffer_size2);
+                        uint8_t received2 = 0x00;
+                        if (ctrl.available()) {
+                            received2 = ctrl.read();
+                        }
+                        toggleCtrl(false);
+                    }
                     break;
                 case BTN_DOWN:
                     break;
