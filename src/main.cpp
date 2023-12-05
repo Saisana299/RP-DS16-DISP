@@ -3,6 +3,7 @@
 #include <LGFXRP2040.h>
 #include <debug.h>
 #include <graphics.h>
+#include <instructionSet.h>
 
 // debug 関連
 #define DEBUG_MODE 1 //0 or 1
@@ -26,7 +27,14 @@ LGFXRP2040 display;
 // その他
 void loop1();
 volatile bool buttonPressed = false;
-int8_t pressedButton = 0x00; // 0x00:none, 0x01:UP, 0x02:DOWN, 0x03:LEFT, 0x04:RIGHT, 0x05:ENTER, 0x06:CANCEL
+#define BTN_NONE   0x00 // NONE
+#define BTN_UP     0x01 // UP
+#define BTN_DOWN   0x02 // DOWN
+#define BTN_LEFT   0x03 // LEFT
+#define BTN_RIGHT  0x04 // RIGHT
+#define BTN_ENTER  0x05 // ENTER
+#define BTN_CANCEL 0x06 // CANCEL
+int8_t pressedButton = BTN_NONE;
 
 /**
  * @brief CTRLとの通信を切り替えます
@@ -54,12 +62,12 @@ void buttonISR() {
 
     for (int i = 0; i < BUTTON_COUNT; ++i) {
         if (digitalRead(buttonPins[i]) == LOW) {
-            pressedButton = (i == 5) ? 0x01 :
-                            (i == 1) ? 0x02 :
-                            (i == 0) ? 0x03 :
-                            (i == 4) ? 0x05 :
-                            (i == 2) ? 0x04 :
-                            (i == 3) ? 0x06 : 0x00;
+            pressedButton = (i == 5) ? BTN_UP :
+                            (i == 1) ? BTN_DOWN :
+                            (i == 0) ? BTN_LEFT :
+                            (i == 4) ? BTN_ENTER :
+                            (i == 2) ? BTN_RIGHT :
+                            (i == 3) ? BTN_CANCEL : BTN_NONE;
             buttonPressed = true;
             lastDebounceTime = currentMillis;
             return;
@@ -92,25 +100,20 @@ void setup() {
     // CTRLとの接続を確認します
     toggleCtrl(true);
     ctrl.beginTransmission(CTRL_I2C_ADDR);
-    ctrl.write("connect");
+    uint8_t data[] = {INS_BEGIN, DISP_CONNECT};
+    ctrl.write(data, sizeof(data));
     ctrl.endTransmission();
 
-    uint8_t buffer_size = 10;
-    char receivedString[buffer_size];
+    uint8_t buffer_size = 1;
     ctrl.requestFrom(CTRL_I2C_ADDR, buffer_size);
-    uint8_t bi = 0;
-    while (ctrl.available()) {
-        char receivedChar = ctrl.read();
-        receivedString[bi] = receivedChar;
-        bi++;
-        if (bi >= buffer_size) {
-            break; 
-        }
+    uint8_t received = 0x00;
+    if (ctrl.available()) {
+        received = ctrl.read();
     }
     toggleCtrl(false);
 
     // 応答が返ってくればOK
-    if(strncmp(receivedString, "connect:ok", buffer_size) == 0){
+    if(received == RES_OK){
         display.showImage(Graphics::title);
     }else{
         display.drawString("Error:1101", 1, 1);
@@ -132,17 +135,17 @@ void loop1() {
     while(1){
         if (buttonPressed) {
             switch (pressedButton) {
-                case 0x01:
+                case BTN_UP:
                     break;
-                case 0x02:
+                case BTN_DOWN:
                     break;
-                case 0x03:
+                case BTN_LEFT:
                     break;
-                case 0x04:
+                case BTN_RIGHT:
                     break;
-                case 0x05:
+                case BTN_ENTER:
                     break;
-                case 0x06:
+                case BTN_CANCEL:
                     break;
             }
             buttonPressed = false;
