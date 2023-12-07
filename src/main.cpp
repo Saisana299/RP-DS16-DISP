@@ -49,6 +49,39 @@ void toggleCtrl(bool begin) {
     }
 }
 
+/**
+ * @brief CTRLにデータを送信し、応答を取得します。返却された配列は必ず解放処理をしてください。
+ * 
+ * @param data 送信するデータ
+ * @param size 送信するサイズ
+ * @param requestSize 要求するサイズ
+ * @return uint8_t* 応答データ
+ */
+uint8_t* ctrlTransmission(uint8_t* data, size_t size, size_t requestSize) {
+    toggleCtrl(true);
+    ctrl.beginTransmission(CTRL_I2C_ADDR);
+    ctrl.write(data, size);
+    ctrl.endTransmission();
+    ctrl.requestFrom(CTRL_I2C_ADDR, requestSize);
+
+    uint8_t* received = new uint8_t[requestSize];
+    if (received == nullptr) {
+        return nullptr;
+    }
+
+    int i = 0;
+    while (ctrl.available()) {
+        received[i] = ctrl.read();
+        i++;
+        if(i >= requestSize) {
+            break;
+        }
+    }
+    toggleCtrl(false);
+
+    return received;
+}
+
 void buttonISR() {
     // チャタリング対策
     static unsigned long lastDebounceTime = 0;
@@ -98,22 +131,11 @@ void setup() {
     }
 
     // CTRLとの接続を確認します
-    toggleCtrl(true);
-    ctrl.beginTransmission(CTRL_I2C_ADDR);
     uint8_t data[] = {INS_BEGIN, DISP_CONNECT};
-    ctrl.write(data, sizeof(data));
-    ctrl.endTransmission();
-
-    uint8_t buffer_size = 1;
-    ctrl.requestFrom(CTRL_I2C_ADDR, buffer_size);
-    uint8_t received = 0x00;
-    if (ctrl.available()) {
-        received = ctrl.read();
-    }
-    toggleCtrl(false);
+    uint8_t* received = ctrlTransmission(data, sizeof(data), 1);
 
     // 応答が返ってくればOK
-    if(received == RES_OK){
+    if(received[0] == RES_OK){
         display.showImage(Graphics::title);
     }else{
         display.drawString("Error:1101", 1, 1);
@@ -126,6 +148,9 @@ void setup() {
         }
     }
 
+    // メモリ解放
+    delete[] received;
+
     multicore_launch_core1(loop1);
 }
 
@@ -137,35 +162,15 @@ void loop1() {
             switch (pressedButton) {
                 case BTN_UP:
                     {
-                        toggleCtrl(true);
-                        ctrl.beginTransmission(CTRL_I2C_ADDR);
                         uint8_t data[] = {INS_BEGIN, DISP_SET_PRESET, DATA_BEGIN, 0x02, 0x01, 0x02};
-                        ctrl.write(data, sizeof(data));
-                        ctrl.endTransmission();
+                        uint8_t* received = ctrlTransmission(data, sizeof(data), 1);
+                        delete[] received;
 
-                        uint8_t buffer_size = 1;
-                        ctrl.requestFrom(CTRL_I2C_ADDR, buffer_size);
-                        uint8_t received = 0x00;
-                        if (ctrl.available()) {
-                            received = ctrl.read();
-                        }
-                        toggleCtrl(false);
+                        delay(100);
 
-                        delay(100); //todo ロックか何かを実装する
-
-                        toggleCtrl(true);
-                        ctrl.beginTransmission(CTRL_I2C_ADDR);
                         uint8_t data2[] = {INS_BEGIN, DISP_SET_PRESET, DATA_BEGIN, 0x02, 0x02, 0x02};
-                        ctrl.write(data2, sizeof(data2));
-                        ctrl.endTransmission();
-
-                        uint8_t buffer_size2 = 1;
-                        ctrl.requestFrom(CTRL_I2C_ADDR, buffer_size2);
-                        uint8_t received2 = 0x00;
-                        if (ctrl.available()) {
-                            received2 = ctrl.read();
-                        }
-                        toggleCtrl(false);
+                        uint8_t* received2 = ctrlTransmission(data2, sizeof(data2), 1);
+                        delete[] received2;
                     }
                     break;
                 case BTN_DOWN:
