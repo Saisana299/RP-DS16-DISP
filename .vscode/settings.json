@@ -9,6 +9,8 @@
         "unordered_map": "cpp",
         "vector": "cpp",
         "initializer_list": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "thread": "cpp",
+        "system_error": "cpp"
     }
 }

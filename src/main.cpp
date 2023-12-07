@@ -27,14 +27,24 @@ LGFXRP2040 display;
 // その他
 void loop1();
 volatile bool buttonPressed = false;
-#define BTN_NONE   0x00 // NONE
-#define BTN_UP     0x01 // UP
-#define BTN_DOWN   0x02 // DOWN
-#define BTN_LEFT   0x03 // LEFT
-#define BTN_RIGHT  0x04 // RIGHT
-#define BTN_ENTER  0x05 // ENTER
-#define BTN_CANCEL 0x06 // CANCEL
-int8_t pressedButton = BTN_NONE;
+#define BTN_NONE   0x00
+#define BTN_UP     0x01
+#define BTN_DOWN   0x02
+#define BTN_LEFT   0x03
+#define BTN_RIGHT  0x04
+#define BTN_ENTER  0x05
+#define BTN_CANCEL 0x06
+uint8_t pressedButton = BTN_NONE;
+
+#define DISPST_IDLE    0x00
+#define DISPST_TITLE   0x01
+#define DISPST_PRESETS 0x02
+uint8_t displayStatus = DISPST_IDLE;
+uint8_t selectedPreset = 0x00;
+// todo
+char presets[][18] = {
+    "001 Sine Wave", "002 Square Wave", "003 Sawtooth Wave", "004 Triangle Wave"
+};
 
 /**
  * @brief CTRLとの通信を切り替えます
@@ -54,20 +64,15 @@ void toggleCtrl(bool begin) {
  * 
  * @param data 送信するデータ
  * @param size 送信するサイズ
+ * @param received データを格納する配列
  * @param requestSize 要求するサイズ
- * @return uint8_t* 応答データ
  */
-uint8_t* ctrlTransmission(uint8_t* data, size_t size, size_t requestSize) {
+void ctrlTransmission(uint8_t* data, size_t size, uint8_t* received, size_t requestSize) {
     toggleCtrl(true);
     ctrl.beginTransmission(CTRL_I2C_ADDR);
     ctrl.write(data, size);
     ctrl.endTransmission();
     ctrl.requestFrom(CTRL_I2C_ADDR, requestSize);
-
-    uint8_t* received = new uint8_t[requestSize];
-    if (received == nullptr) {
-        return nullptr;
-    }
 
     int i = 0;
     while (ctrl.available()) {
@@ -78,8 +83,22 @@ uint8_t* ctrlTransmission(uint8_t* data, size_t size, size_t requestSize) {
         }
     }
     toggleCtrl(false);
+}
 
-    return received;
+// todo
+void setPreset(uint8_t id) {
+    uint8_t data[] = {INS_BEGIN, DISP_SET_PRESET, DATA_BEGIN, 0x02, 0x01, id};
+    uint8_t received[1];
+    ctrlTransmission(data, sizeof(data), received, 1);
+
+    delay(100);
+
+    uint8_t data2[] = {INS_BEGIN, DISP_SET_PRESET, DATA_BEGIN, 0x02, 0x02, id};
+    uint8_t received2[1];
+    ctrlTransmission(data2, sizeof(data2), received2, 1);
+
+    display.fillScreen(TFT_BLACK);
+    display.drawString(presets[id], 1, 1);
 }
 
 void buttonISR() {
@@ -132,24 +151,18 @@ void setup() {
 
     // CTRLとの接続を確認します
     uint8_t data[] = {INS_BEGIN, DISP_CONNECT};
-    uint8_t* received = ctrlTransmission(data, sizeof(data), 1);
+    uint8_t received[1];
+    ctrlTransmission(data, sizeof(data), received, 1);
 
     // 応答が返ってくればOK
     if(received[0] == RES_OK){
         display.showImage(Graphics::title);
+        displayStatus = DISPST_TITLE;
     }else{
         display.drawString("Error:1101", 1, 1);
         display.drawString("Please check the conn", 1, 11);
         display.drawString("ection.", 1, 21);
-
-        // 仮想的に終了
-        while(1){
-            delay(1000);
-        }
     }
-
-    // メモリ解放
-    delete[] received;
 
     multicore_launch_core1(loop1);
 }
@@ -161,26 +174,38 @@ void loop1() {
         if (buttonPressed) {
             switch (pressedButton) {
                 case BTN_UP:
-                    {
-                        uint8_t data[] = {INS_BEGIN, DISP_SET_PRESET, DATA_BEGIN, 0x02, 0x01, 0x02};
-                        uint8_t* received = ctrlTransmission(data, sizeof(data), 1);
-                        delete[] received;
-
-                        delay(100);
-
-                        uint8_t data2[] = {INS_BEGIN, DISP_SET_PRESET, DATA_BEGIN, 0x02, 0x02, 0x02};
-                        uint8_t* received2 = ctrlTransmission(data2, sizeof(data2), 1);
-                        delete[] received2;
-                    }
                     break;
+
                 case BTN_DOWN:
                     break;
+
                 case BTN_LEFT:
+                    if(displayStatus == DISPST_PRESETS){
+                        if(selectedPreset != 0x00){
+                            selectedPreset--;
+                            setPreset(selectedPreset);
+                        }
+                    }
                     break;
+
                 case BTN_RIGHT:
+                    if(displayStatus == DISPST_PRESETS){
+                        if(selectedPreset != 0x03){
+                            selectedPreset++;
+                            setPreset(selectedPreset);
+                        }
+                    }
                     break;
+
                 case BTN_ENTER:
+                    if(displayStatus == DISPST_TITLE) {
+                        display.fillScreen(TFT_BLACK);
+                        display.setFont(&fonts::Font2);
+                        display.drawString(presets[0], 1, 1);
+                        displayStatus = DISPST_PRESETS;
+                    }
                     break;
+
                 case BTN_CANCEL:
                     break;
             }
