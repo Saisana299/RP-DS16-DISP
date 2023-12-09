@@ -14,3 +14,4 @@
 
 #define DISP_CONNECT    0x3F // 接続開始
 #define DISP_SET_PRESET 0x40 // プリセットを設定
+#define DISP_SET_SYNTH  0x41 // シンセモード設定

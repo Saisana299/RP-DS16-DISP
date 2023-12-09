@@ -40,10 +40,17 @@ uint8_t pressedButton = BTN_NONE;
 #define DISPST_TITLE   0x01
 #define DISPST_PRESETS 0x02
 uint8_t displayStatus = DISPST_IDLE;
+uint8_t displayCursor = 0x00;
+
+#define SYNTH_SINGLE 0x00
+#define SYNTH_DUAL   0x01
+#define SYNTH_OCTAVE 0x02
+uint8_t synthMode = SYNTH_SINGLE;
 uint8_t selectedPreset = 0x00;
+
 // todo
-char presets[][18] = {
-    "001 Sine Wave", "002 Square Wave", "003 Sawtooth Wave", "004 Triangle Wave"
+String presets[] = {
+    "Basic Sine", "Basic Square", "Basic Saw", "Basic Triangle"
 };
 
 /**
@@ -86,19 +93,31 @@ void ctrlTransmission(uint8_t* data, size_t size, uint8_t* received, size_t requ
 }
 
 // todo
-void setPreset(uint8_t id) {
-    uint8_t data[] = {INS_BEGIN, DISP_SET_PRESET, DATA_BEGIN, 0x02, 0x01, id};
+void refreshUI() {
+    display.fillScreen(TFT_BLACK);
+    display.setTextColor(TFT_WHITE);
+    uint8_t x = display.textWidth(" ");
+    uint8_t y = display.height() / 2 - display.fontHeight() / 2;
+    char idstr[5]; sprintf(idstr, "%03d ", selectedPreset+1);
+    display.drawString(idstr + presets[selectedPreset], x, y);
+}
+
+// todo
+void setPreset(uint8_t synth, uint8_t id) {
+    uint8_t data[] = {INS_BEGIN, DISP_SET_PRESET, DATA_BEGIN, 0x02, synth, id};
     uint8_t received[1];
     ctrlTransmission(data, sizeof(data), received, 1);
 
-    delay(100);
+    refreshUI();
+}
 
-    uint8_t data2[] = {INS_BEGIN, DISP_SET_PRESET, DATA_BEGIN, 0x02, 0x02, id};
-    uint8_t received2[1];
-    ctrlTransmission(data2, sizeof(data2), received2, 1);
+// todo
+void setSynthMode(uint8_t mode) {
+    uint8_t data[] = {INS_BEGIN, DISP_SET_SYNTH, DATA_BEGIN, 0x01, mode};
+    uint8_t received[1];
+    ctrlTransmission(data, sizeof(data), received, 1);
 
-    display.fillScreen(TFT_BLACK);
-    display.drawString(presets[id], 1, 1);
+    refreshUI();
 }
 
 void buttonISR() {
@@ -130,6 +149,7 @@ void buttonISR() {
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     pinMode(CTRL_SW_PIN, OUTPUT);
+
     digitalWrite(CTRL_SW_PIN, LOW);
 
     ctrl.setSDA(CTRL_SDA_PIN);
@@ -174,16 +194,38 @@ void loop1() {
         if (buttonPressed) {
             switch (pressedButton) {
                 case BTN_UP:
+                {
+                    // todo
+                    // モードによって変化させる
+                    if(displayStatus == DISPST_PRESETS && displayCursor == 0x00){
+                        uint8_t x = display.textWidth(" ");
+                        uint8_t y = display.height() / 2 - display.fontHeight() / 2;
+                        char idstr[5]; sprintf(idstr, "%03d", selectedPreset+1);
+                        display.fillRect(0, y+1, display.textWidth(" 000"), display.fontHeight()-2, TFT_WHITE);
+                        display.setTextColor(TFT_BLACK);
+                        display.drawString(idstr, x, y);
+                    }
+                }
                     break;
 
                 case BTN_DOWN:
+                {
+                    if(displayStatus == DISPST_PRESETS && displayCursor == 0x00){
+                        uint8_t x = display.textWidth(" ");
+                        uint8_t y = display.height() / 2 - display.fontHeight() / 2;
+                        char idstr[5]; sprintf(idstr, "%03d", selectedPreset+1);
+                        display.fillRect(0, y+1, display.textWidth(" 000"), display.fontHeight()-2, TFT_WHITE);
+                        display.setTextColor(TFT_BLACK);
+                        display.drawString(idstr, x, y);
+                    }
+                }
                     break;
 
                 case BTN_LEFT:
                     if(displayStatus == DISPST_PRESETS){
                         if(selectedPreset != 0x00){
                             selectedPreset--;
-                            setPreset(selectedPreset);
+                            setPreset(0xff, selectedPreset);
                         }
                     }
                     break;
@@ -192,7 +234,7 @@ void loop1() {
                     if(displayStatus == DISPST_PRESETS){
                         if(selectedPreset != 0x03){
                             selectedPreset++;
-                            setPreset(selectedPreset);
+                            setPreset(0xff, selectedPreset);
                         }
                     }
                     break;
@@ -201,12 +243,17 @@ void loop1() {
                     if(displayStatus == DISPST_TITLE) {
                         display.fillScreen(TFT_BLACK);
                         display.setFont(&fonts::Font2);
-                        display.drawString(presets[0], 1, 1);
+                        uint8_t x = display.textWidth(" ");
+                        uint8_t y = display.height() / 2 - display.fontHeight() / 2;
+                        display.drawString("001 " + presets[0], x, y);
                         displayStatus = DISPST_PRESETS;
                     }
                     break;
 
                 case BTN_CANCEL:
+                    if(synthMode == SYNTH_OCTAVE) synthMode = SYNTH_SINGLE;
+                    else synthMode++;
+                    setSynthMode(synthMode);
                     break;
             }
             buttonPressed = false;
