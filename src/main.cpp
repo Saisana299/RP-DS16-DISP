@@ -45,6 +45,7 @@ uint8_t displayCursor = 0x00;
 #define SYNTH_SINGLE 0x00
 #define SYNTH_DUAL   0x01
 #define SYNTH_OCTAVE 0x02
+#define SYNTH_MULTI  0x03
 uint8_t synthMode = SYNTH_SINGLE;
 uint8_t selectedPreset = 0x00;
 
@@ -251,7 +252,7 @@ void loop1() {
                     break;
 
                 case BTN_CANCEL:
-                    if(synthMode == SYNTH_OCTAVE) synthMode = SYNTH_SINGLE;
+                    if(synthMode == SYNTH_MULTI) synthMode = SYNTH_SINGLE;
                     else synthMode++;
                     setSynthMode(synthMode);
                     break;
