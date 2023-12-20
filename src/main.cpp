@@ -24,8 +24,13 @@ int buttonPins[BUTTON_COUNT] = BUTTON_PINS;
 // DISP 関連
 LGFXRP2040 display;
 
-// その他
-void loop1();
+// SDカード関連
+#define SD_SCK_PIN 2
+#define SD_TX_PIN 3
+#define SD_RX_PIN 4
+#define SD_CS_PIN 5
+
+// ボタン関連
 volatile bool buttonPressed = false;
 #define BTN_NONE   0x00
 #define BTN_UP     0x01
@@ -36,18 +41,20 @@ volatile bool buttonPressed = false;
 #define BTN_CANCEL 0x06
 uint8_t pressedButton = BTN_NONE;
 
+// ディスプレイ関連
 #define DISPST_IDLE    0x00
 #define DISPST_TITLE   0x01
 #define DISPST_PRESETS 0x02
 uint8_t displayStatus = DISPST_IDLE;
 uint8_t displayCursor = 0x00;
 
-#define SYNTH_SINGLE 0x00
-#define SYNTH_DUAL   0x01
-#define SYNTH_OCTAVE 0x02
-#define SYNTH_MULTI  0x03
+// シンセ関連
 uint8_t synthMode = SYNTH_SINGLE;
+uint8_t synthPan = LR_PAN_C;
 uint8_t selectedPreset = 0x00;
+
+// その他
+void loop1();
 
 // todo
 String presets[] = {
