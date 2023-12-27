@@ -11,6 +11,7 @@
         "initializer_list": "cpp",
         "random": "cpp",
         "thread": "cpp",
-        "system_error": "cpp"
+        "system_error": "cpp",
+        "fstream": "cpp"
     }
 }

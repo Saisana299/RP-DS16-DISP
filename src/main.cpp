@@ -4,6 +4,8 @@
 #include <debug.h>
 #include <graphics.h>
 #include <instructionSet.h>
+#include <SPI.h>
+#include <SD.h>
 
 // debug 関連
 #define DEBUG_MODE 1 //0 or 1
@@ -164,6 +166,11 @@ void setup() {
     ctrl.setSCL(CTRL_SCL_PIN);
     ctrl.begin();
 
+    SPI.setRX(SD_RX_PIN);
+    SPI.setCS(SD_CS_PIN);
+    SPI.setSCK(SD_SCK_PIN);
+    SPI.setTX(SD_TX_PIN);
+
     debug.init();
 
     // ローディング処理
@@ -172,10 +179,20 @@ void setup() {
     display.drawString("Loading...", 1, 1);
     delay(1000);
 
+    // ボタン初期化
     for (int i = 0; i < BUTTON_COUNT; ++i) {
         pinMode(buttonPins[i], INPUT_PULLUP);
         attachInterrupt(digitalPinToInterrupt(buttonPins[i]), buttonISR, FALLING);
     }
+
+    // SDカード確認
+    if(!SD.begin(SD_CS_PIN)) {
+        display.drawString("Error:1201", 1, 1);
+        display.drawString("SD card error.", 1, 11);
+        return;
+    }
+    File myFile = SD.open("example.txt", FILE_WRITE);
+    myFile.close();
 
     // CTRLとの接続を確認します
     uint8_t data[] = {INS_BEGIN, DISP_CONNECT};
@@ -190,6 +207,7 @@ void setup() {
         display.drawString("Error:1101", 1, 1);
         display.drawString("Please check the conn", 1, 11);
         display.drawString("ection.", 1, 21);
+        return;
     }
 
     multicore_launch_core1(loop1);
