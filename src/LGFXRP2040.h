@@ -1,7 +1,7 @@
 #include <LovyanGFX.hpp>
 
 class LGFXRP2040 : public lgfx::LGFX_Device {
-    lgfx::Panel_SSD1306 _panel_instance;
+    lgfx::Panel_SH110x _panel_instance;
     lgfx::Bus_I2C       _bus_instance;
 public:
     LGFXRP2040(void) {
@@ -26,7 +26,7 @@ public:
 
             cfg.panel_width      =   128; // 実際に表示可能な幅
             cfg.panel_height     =    64; // 実際に表示可能な高さ
-            cfg.offset_x         =     0; // パネルのX方向オフセット量
+            cfg.offset_x         =     2; // パネルのX方向オフセット量
             cfg.offset_y         =     0; // パネルのY方向オフセット量
             cfg.offset_rotation  =     2; // 回転方向の値のオフセット 0~7 (4~7は上下反転)
             cfg.dummy_read_pixel =     8; // ピクセル読出し前のダミーリードのビット数

@@ -20,7 +20,7 @@ TwoWire& ctrl = Wire1;
 
 // BUTTON 関連
 #define BUTTON_COUNT 6
-#define BUTTON_PINS {11,12,13,14,15,21}
+#define BUTTON_PINS {10,11,12,13,14,15}
 int buttonPins[BUTTON_COUNT] = BUTTON_PINS;
 
 // DISP 関連
@@ -143,12 +143,12 @@ void buttonISR() {
 
     for (int i = 0; i < BUTTON_COUNT; ++i) {
         if (digitalRead(buttonPins[i]) == LOW) {
-            pressedButton = (i == 5) ? BTN_UP :
-                            (i == 1) ? BTN_DOWN :
-                            (i == 0) ? BTN_LEFT :
+            pressedButton = (i == 0) ? BTN_UP :
+                            (i == 2) ? BTN_DOWN :
+                            (i == 1) ? BTN_LEFT :
                             (i == 4) ? BTN_ENTER :
-                            (i == 2) ? BTN_RIGHT :
-                            (i == 3) ? BTN_CANCEL : BTN_NONE;
+                            (i == 3) ? BTN_RIGHT :
+                            (i == 5) ? BTN_CANCEL : BTN_NONE;
             buttonPressed = true;
             lastDebounceTime = currentMillis;
             return;
