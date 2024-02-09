@@ -62,6 +62,9 @@ void loop1();
 String presets[] = {
     "Basic Sine", "Basic Square", "Basic Saw", "Basic Triangle"
 };
+String modes[] = {
+    "SINGLE MODE", "DUAL MODE", "OCTAVE MODE", "MULTI MODE"
+};
 
 /**
  * @brief CTRLとの通信を切り替えます
@@ -106,10 +109,41 @@ void ctrlTransmission(uint8_t* data, size_t size, uint8_t* received, size_t requ
 void refreshUI() {
     display.fillScreen(TFT_BLACK);
     display.setTextColor(TFT_WHITE);
-    uint8_t x = display.textWidth(" ");
-    uint8_t y = display.height() / 2 - display.fontHeight() / 2;
-    char idstr[5]; sprintf(idstr, "%03d ", selectedPreset+1);
-    display.drawString(idstr + presets[selectedPreset], x, y);
+
+    if(displayStatus){
+        // プリセット
+        uint8_t preset_x = display.textWidth(" ");
+        uint8_t preset_y = display.height() / 2 - display.fontHeight() / 2;
+        char idstr[5]; sprintf(idstr, "%03d ", selectedPreset+1);
+        display.drawString(idstr + presets[selectedPreset], preset_x, preset_y);
+        
+        // MIDIチャンネル
+        if(synthMode != 0x03){
+            display.drawString("MIDI=1", 2, 2);
+        }else{
+            display.drawString("MIDI=1&2", 2, 2);
+        }
+
+        // シンセモード
+        uint8_t synth_x = display.textWidth(modes[synthMode]);
+        display.drawString(modes[synthMode], 128 - 2 - synth_x, 2);
+
+        // カーソル位置
+        if(displayCursor == 0x01) {
+            uint8_t x = display.textWidth(" ");
+            uint8_t y = display.height() / 2 - display.fontHeight() / 2;
+            char idstr[5]; sprintf(idstr, "%03d", selectedPreset+1);
+            display.fillRect(0, y-1, display.textWidth(" 000"), display.fontHeight()+1, TFT_WHITE);
+            display.setTextColor(TFT_BLACK);
+            display.drawString(idstr, x, y);
+        }
+        else if(displayCursor == 0x02) {
+            uint8_t synth_x = display.textWidth(modes[synthMode]);
+            display.fillRect(128 - 4 - synth_x, 1, synth_x+3, display.fontHeight()+1, TFT_WHITE);
+            display.setTextColor(TFT_BLACK);
+            display.drawString(modes[synthMode], 128 - 2 - synth_x, 2);
+        }
+    }    
 }
 
 // todo
@@ -133,13 +167,15 @@ void setSynthMode(uint8_t mode) {
 void buttonISR() {
     // チャタリング対策
     static unsigned long lastDebounceTime = 0;
-    static const unsigned long debounceDelay = 50;
+    static const unsigned long debounceDelay = 10;
 
     unsigned long currentMillis = millis();
 
     if (currentMillis - lastDebounceTime < debounceDelay) {
         return;
     }
+
+    delay(10);
 
     for (int i = 0; i < BUTTON_COUNT; ++i) {
         if (digitalRead(buttonPins[i]) == LOW) {
@@ -191,7 +227,7 @@ void setup() {
         display.drawString("SD card error.", 1, 11);
         return;
     }
-    File myFile = SD.open("example.txt", FILE_WRITE);
+    File myFile = SD.open("settings.json", FILE_WRITE);
     myFile.close();
 
     // CTRLとの接続を確認します
@@ -201,6 +237,9 @@ void setup() {
 
     // 応答が返ってくればOK
     if(received[0] == RES_OK){
+        digitalWrite(LED_BUILTIN, HIGH);
+        delay(10);
+        digitalWrite(LED_BUILTIN, LOW);
         display.showImage(Graphics::title);
         displayStatus = DISPST_TITLE;
     }else{
@@ -223,63 +262,67 @@ void loop1() {
                 {
                     // todo
                     // モードによって変化させる
-                    if(displayStatus == DISPST_PRESETS && displayCursor == 0x00){
-                        uint8_t x = display.textWidth(" ");
-                        uint8_t y = display.height() / 2 - display.fontHeight() / 2;
-                        char idstr[5]; sprintf(idstr, "%03d", selectedPreset+1);
-                        display.fillRect(0, y+1, display.textWidth(" 000"), display.fontHeight()-2, TFT_WHITE);
-                        display.setTextColor(TFT_BLACK);
-                        display.drawString(idstr, x, y);
+                    if(displayStatus == DISPST_PRESETS && (displayCursor == 0x00 or displayCursor == 0x02)){
+                        displayCursor = 0x01;
+                        refreshUI();
+                    }
+                    else if(displayStatus == DISPST_PRESETS && displayCursor == 0x01){
+                        displayCursor = 0x02;
+                        refreshUI();
                     }
                 }
                     break;
 
                 case BTN_DOWN:
                 {
-                    if(displayStatus == DISPST_PRESETS && displayCursor == 0x00){
-                        uint8_t x = display.textWidth(" ");
-                        uint8_t y = display.height() / 2 - display.fontHeight() / 2;
-                        char idstr[5]; sprintf(idstr, "%03d", selectedPreset+1);
-                        display.fillRect(0, y+1, display.textWidth(" 000"), display.fontHeight()-2, TFT_WHITE);
-                        display.setTextColor(TFT_BLACK);
-                        display.drawString(idstr, x, y);
+                    if(displayStatus == DISPST_PRESETS && (displayCursor == 0x00 or displayCursor == 0x02)){
+                        displayCursor = 0x01;
+                        refreshUI();
+                    }
+                    else if(displayStatus == DISPST_PRESETS && displayCursor == 0x01){
+                        displayCursor = 0x02;
+                        refreshUI();
                     }
                 }
                     break;
 
                 case BTN_LEFT:
-                    if(displayStatus == DISPST_PRESETS){
-                        if(selectedPreset != 0x00){
-                            selectedPreset--;
-                            setPreset(0xff, selectedPreset);
-                        }
+                    if(displayStatus == DISPST_PRESETS && displayCursor == 0x01){
+                        if(selectedPreset != 0x00) selectedPreset--;
+                        else selectedPreset = 0x03;
+                        
+                        setPreset(0xff, selectedPreset);
+                    }else if(displayStatus == DISPST_PRESETS && displayCursor == 0x02){
+                        if(synthMode == SYNTH_SINGLE) synthMode = SYNTH_MULTI;
+                        else synthMode--;
+                        setSynthMode(synthMode);
                     }
                     break;
 
                 case BTN_RIGHT:
-                    if(displayStatus == DISPST_PRESETS){
-                        if(selectedPreset != 0x03){
-                            selectedPreset++;
-                            setPreset(0xff, selectedPreset);
-                        }
+                    if(displayStatus == DISPST_PRESETS && displayCursor == 0x01){
+                        if(selectedPreset != 0x03) selectedPreset++;
+                        else selectedPreset = 0x00;
+                        setPreset(0xff, selectedPreset);
+                    }else if(displayStatus == DISPST_PRESETS && displayCursor == 0x02){
+                        if(synthMode == SYNTH_MULTI) synthMode = SYNTH_SINGLE;
+                        else synthMode++;
+                        setSynthMode(synthMode);
                     }
                     break;
 
                 case BTN_ENTER:
                     if(displayStatus == DISPST_TITLE) {
-                        display.fillScreen(TFT_BLACK);
-                        display.setFont(&fonts::Font2);
-                        uint8_t x = display.textWidth(" ");
-                        uint8_t y = display.height() / 2 - display.fontHeight() / 2;
-                        display.drawString("001 " + presets[0], x, y);
+                        refreshUI();
                         displayStatus = DISPST_PRESETS;
                     }
                     break;
 
                 case BTN_CANCEL:
-                    if(synthMode == SYNTH_MULTI) synthMode = SYNTH_SINGLE;
-                    else synthMode++;
-                    setSynthMode(synthMode);
+                    if(displayStatus == DISPST_PRESETS){
+                        displayCursor = 0x00;
+                        refreshUI();
+                    }
                     break;
             }
             buttonPressed = false;
