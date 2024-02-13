@@ -196,6 +196,14 @@ void setSynthMode(uint8_t mode) {
     refreshUI();
 }
 
+void resetSynth(uint8_t synth) {
+    uint8_t data[] = {INS_BEGIN, DISP_RESET_SYNTH, DATA_BEGIN, 0x01, synth};
+    uint8_t received[1];
+    ctrlTransmission(data, sizeof(data), received, 1);
+
+    refreshUI();
+}
+
 void buttonISR() {
     // チャタリング対策
     static unsigned long lastDebounceTime = 0;
@@ -416,6 +424,11 @@ void loop1() {
                     if(displayStatus == DISPST_TITLE) {
                         refreshUI();
                         displayStatus = DISPST_PRESETS;
+                    }
+                    else if(displayStatus == DISPST_PRESETS) {
+                        if(displayCursor == 0x02) {
+                            resetSynth(0xff);
+                        }
                     }
                     break;
 
