@@ -54,6 +54,7 @@ uint8_t displayCursor = 0x00;
 uint8_t synthMode = SYNTH_SINGLE;
 uint8_t synthPan = LR_PAN_C;
 uint8_t selectedPreset = 0x00;
+uint8_t selectedPreset2 = 0x00;
 
 // その他
 void loop1();
@@ -63,7 +64,7 @@ String presets[] = {
     "Basic Sine", "Basic Square", "Basic Saw", "Basic Triangle"
 };
 String modes[] = {
-    "SINGLE MODE", "DUAL MODE", "OCTAVE MODE", "MULTI MODE"
+    "SINGLE MODE", "OCTAVE MODE", "DUAL MODE", "MULTI MODE"
 };
 
 /**
@@ -115,33 +116,66 @@ void refreshUI() {
         uint8_t preset_x = display.textWidth(" ");
         uint8_t preset_y = display.height() / 2 - display.fontHeight() / 2;
         char idstr[5]; sprintf(idstr, "%03d ", selectedPreset+1);
-        display.drawString(idstr + presets[selectedPreset], preset_x, preset_y);
+        char idstr2[5]; sprintf(idstr2, "%03d ", selectedPreset2+1);
+
+        if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) {
+            display.drawString(idstr + presets[selectedPreset], preset_x, preset_y - 7);
+            display.drawString(idstr2 + presets[selectedPreset2], preset_x, preset_y + 7);
+        }
+        else {
+            display.drawString(idstr + presets[selectedPreset], preset_x, preset_y);
+        }
         
         // MIDIチャンネル
-        if(synthMode != 0x03){
-            display.drawString("MIDI=1", 2, 2);
-        }else{
+        if(synthMode == SYNTH_MULTI){
             display.drawString("MIDI=1&2", 2, 2);
+        }else{
+            display.drawString("MIDI=1", 2, 2);
         }
 
         // シンセモード
         uint8_t synth_x = display.textWidth(modes[synthMode]);
         display.drawString(modes[synthMode], 128 - 2 - synth_x, 2);
 
+        // 横線
+        display.drawLine(0, 12, 127, 12, TFT_WHITE);
+        display.drawLine(0, 51, 127, 51, TFT_WHITE);
+
         // カーソル位置
         if(displayCursor == 0x01) {
             uint8_t x = display.textWidth(" ");
             uint8_t y = display.height() / 2 - display.fontHeight() / 2;
             char idstr[5]; sprintf(idstr, "%03d", selectedPreset+1);
-            display.fillRect(0, y-1, display.textWidth(" 000"), display.fontHeight()+1, TFT_WHITE);
-            display.setTextColor(TFT_BLACK);
-            display.drawString(idstr, x, y);
+
+            if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) {
+                display.fillRect(0, y-1-7, display.textWidth(" 000"), display.fontHeight()+1, TFT_WHITE);
+                display.setTextColor(TFT_BLACK);
+                display.drawString(idstr, x, y - 7);
+            }
+            else {
+                display.fillRect(0, y-1, display.textWidth(" 000"), display.fontHeight()+1, TFT_WHITE);
+                display.setTextColor(TFT_BLACK);
+                display.drawString(idstr, x, y);
+            }
         }
         else if(displayCursor == 0x02) {
             uint8_t synth_x = display.textWidth(modes[synthMode]);
             display.fillRect(128 - 4 - synth_x, 1, synth_x+3, display.fontHeight()+1, TFT_WHITE);
             display.setTextColor(TFT_BLACK);
             display.drawString(modes[synthMode], 128 - 2 - synth_x, 2);
+        }
+        else if(displayCursor == 0x03) {
+            //
+        }
+        else if(displayCursor == 0x04) {
+            if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) {
+                uint8_t x = display.textWidth(" ");
+                uint8_t y = display.height() / 2 - display.fontHeight() / 2;
+                char idstr2[5]; sprintf(idstr2, "%03d", selectedPreset2+1);
+                display.fillRect(0, y-1+7, display.textWidth(" 000"), display.fontHeight()+1, TFT_WHITE);
+                display.setTextColor(TFT_BLACK);
+                display.drawString(idstr2, x, y + 7);
+            }
         }
     }    
 }
@@ -259,12 +293,28 @@ void loop1() {
                 case BTN_UP:
                 {
                     if(displayStatus == DISPST_PRESETS) {
-                        if(displayCursor == 0x00 or displayCursor == 0x02){
+                        if(displayCursor == 0x00){
                             displayCursor = 0x01;
                             refreshUI();
                         }
                         else if(displayCursor == 0x01){
                             displayCursor = 0x02;
+                            refreshUI();
+                        }
+                        else if(displayCursor == 0x02){
+                            displayCursor = 0x03;
+                            refreshUI();
+                        }
+                        else if(displayCursor == 0x03){
+                            if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
+                                displayCursor = 0x04;
+                            }else{
+                                displayCursor = 0x01;
+                            }
+                            refreshUI();
+                        }
+                        else if(displayCursor == 0x04){
+                            displayCursor = 0x01;
                             refreshUI();
                         }
                     }
@@ -279,7 +329,19 @@ void loop1() {
                             refreshUI();
                         }
                         else if(displayCursor == 0x01){
+                            if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
+                                displayCursor = 0x04;
+                            }else{
+                                displayCursor = 0x03;
+                            }
+                            refreshUI();
+                        }
+                        else if(displayCursor == 0x03){
                             displayCursor = 0x02;
+                            refreshUI();
+                        }
+                        else if(displayCursor == 0x04){
+                            displayCursor = 0x03;
                             refreshUI();
                         }
                     }
@@ -291,12 +353,29 @@ void loop1() {
                         if(displayCursor == 0x01){
                             if(selectedPreset != 0x00) selectedPreset--;
                             else selectedPreset = 0x03;
-                            
-                            setPreset(0xff, selectedPreset);
+                            if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
+                                setPreset(0x01, selectedPreset);
+                            }else{
+                                setPreset(0xff, selectedPreset);
+                            }
+
                         }else if(displayCursor == 0x02){
                             if(synthMode == SYNTH_SINGLE) synthMode = SYNTH_MULTI;
                             else synthMode--;
                             setSynthMode(synthMode);
+                            if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
+                                setPreset(0x01, selectedPreset);
+                                setPreset(0x02, selectedPreset2);
+                            }else{
+                                setPreset(0xff, selectedPreset);
+                            }
+
+                        }else if(displayCursor == 0x03){
+                            //
+                        }else if(displayCursor == 0x04){
+                            if(selectedPreset2 != 0x00) selectedPreset2--;
+                            else selectedPreset2 = 0x03;
+                            setPreset(0x02, selectedPreset2);
                         }
                     }
                     break;
@@ -306,11 +385,29 @@ void loop1() {
                         if(displayCursor == 0x01){
                             if(selectedPreset != 0x03) selectedPreset++;
                             else selectedPreset = 0x00;
-                            setPreset(0xff, selectedPreset);
+                            if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
+                                setPreset(0x01, selectedPreset);
+                            }else{
+                                setPreset(0xff, selectedPreset);
+                            }
+
                         }else if(displayCursor == 0x02){
                             if(synthMode == SYNTH_MULTI) synthMode = SYNTH_SINGLE;
                             else synthMode++;
                             setSynthMode(synthMode);
+                            if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
+                                setPreset(0x01, selectedPreset);
+                                setPreset(0x02, selectedPreset2);
+                            }else{
+                                setPreset(0xff, selectedPreset);
+                            }
+
+                        }else if(displayCursor == 0x03){
+                            //
+                        }else if(displayCursor == 0x04){
+                            if(selectedPreset2 != 0x03) selectedPreset2++;
+                            else selectedPreset2 = 0x00;
+                            setPreset(0x02, selectedPreset2);
                         }
                     }
                     break;
