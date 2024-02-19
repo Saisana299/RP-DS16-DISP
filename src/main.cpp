@@ -56,12 +56,8 @@ uint8_t synthPan = LR_PAN_C;
 uint8_t selectedPreset = 0x00;
 uint8_t selectedPreset2 = 0x00;
 
-// その他
-void loop1();
-
-// todo
 String presets[] = {
-    "Basic Sine", "Basic Square", "Basic Saw", "Basic Triangle"
+    "Basic Sine", "Basic Triangle", "Basic Saw", "Basic Square"
 };
 String modes[] = {
     "SINGLE MODE", "OCTAVE MODE", "DUAL MODE", "MULTI MODE"
@@ -81,7 +77,7 @@ void toggleCtrl(bool begin) {
 }
 
 /**
- * @brief CTRLにデータを送信し、応答を取得します。返却された配列は必ず解放処理をしてください。
+ * @brief CTRLにデータを送信し、応答を取得します。
  * 
  * @param data 送信するデータ
  * @param size 送信するサイズ
@@ -106,7 +102,7 @@ void ctrlTransmission(uint8_t* data, size_t size, uint8_t* received, size_t requ
     toggleCtrl(false);
 }
 
-// todo
+/** @brief UIを更新 */
 void refreshUI() {
     display.fillScreen(TFT_BLACK);
     display.setTextColor(TFT_WHITE);
@@ -165,7 +161,7 @@ void refreshUI() {
             display.drawString(modes[synthMode], 128 - 2 - synth_x, 2);
         }
         else if(displayCursor == 0x03) {
-            //
+            //todo
         }
         else if(displayCursor == 0x04) {
             if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) {
@@ -180,6 +176,12 @@ void refreshUI() {
     }    
 }
 
+/**
+ * @brief シンセのプリセットを設定します
+ * 
+ * @param synth 設定対象のシンセ
+ * @param id プリセット番号
+ */
 void setPreset(uint8_t synth, uint8_t id) {
     uint8_t data[] = {INS_BEGIN, DISP_SET_PRESET, DATA_BEGIN, 0x02, synth, id};
     uint8_t received[1];
@@ -188,6 +190,11 @@ void setPreset(uint8_t synth, uint8_t id) {
     refreshUI();
 }
 
+/**
+ * @brief シンセのモードを設定します
+ * 
+ * @param mode シンセモード番号
+ */
 void setSynthMode(uint8_t mode) {
     uint8_t data[] = {INS_BEGIN, DISP_SET_SYNTH, DATA_BEGIN, 0x01, mode};
     uint8_t received[1];
@@ -196,6 +203,11 @@ void setSynthMode(uint8_t mode) {
     refreshUI();
 }
 
+/**
+ * @brief シンセのノートをリセットします (MIDI Panic)
+ * 
+ * @param synth 対象のシンセ
+ */
 void resetSynth(uint8_t synth) {
     uint8_t data[] = {INS_BEGIN, DISP_RESET_SYNTH, DATA_BEGIN, 0x01, synth};
     uint8_t received[1];
@@ -204,6 +216,7 @@ void resetSynth(uint8_t synth) {
     refreshUI();
 }
 
+/** @brief タクトスイッチに関する処理 */
 void buttonISR() {
     // チャタリング対策
     static unsigned long lastDebounceTime = 0;
@@ -288,158 +301,152 @@ void setup() {
         display.drawString("ection.", 1, 21);
         return;
     }
-
-    multicore_launch_core1(loop1);
 }
 
-void loop() {} // 使用しない
-
-void loop1() {
-    while(1){
-        if (buttonPressed) {
-            switch (pressedButton) {
-                case BTN_UP:
-                {
-                    if(displayStatus == DISPST_PRESETS) {
-                        if(displayCursor == 0x00){
-                            displayCursor = 0x01;
-                            refreshUI();
-                        }
-                        else if(displayCursor == 0x01){
-                            displayCursor = 0x02;
-                            refreshUI();
-                        }
-                        else if(displayCursor == 0x02){
-                            displayCursor = 0x03;
-                            refreshUI();
-                        }
-                        else if(displayCursor == 0x03){
-                            if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
-                                displayCursor = 0x04;
-                            }else{
-                                displayCursor = 0x01;
-                            }
-                            refreshUI();
-                        }
-                        else if(displayCursor == 0x04){
-                            displayCursor = 0x01;
-                            refreshUI();
-                        }
-                    }
-                }
-                    break;
-
-                case BTN_DOWN:
-                {
-                    if(displayStatus == DISPST_PRESETS) {
-                        if(displayCursor == 0x00 or displayCursor == 0x02){
-                            displayCursor = 0x01;
-                            refreshUI();
-                        }
-                        else if(displayCursor == 0x01){
-                            if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
-                                displayCursor = 0x04;
-                            }else{
-                                displayCursor = 0x03;
-                            }
-                            refreshUI();
-                        }
-                        else if(displayCursor == 0x03){
-                            displayCursor = 0x02;
-                            refreshUI();
-                        }
-                        else if(displayCursor == 0x04){
-                            displayCursor = 0x03;
-                            refreshUI();
-                        }
-                    }
-                }
-                    break;
-
-                case BTN_LEFT:
-                    if(displayStatus == DISPST_PRESETS) {
-                        if(displayCursor == 0x01){
-                            if(selectedPreset != 0x00) selectedPreset--;
-                            else selectedPreset = 0x03;
-                            if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
-                                setPreset(0x01, selectedPreset);
-                            }else{
-                                setPreset(0xff, selectedPreset);
-                            }
-
-                        }else if(displayCursor == 0x02){
-                            if(synthMode == SYNTH_SINGLE) synthMode = SYNTH_MULTI;
-                            else synthMode--;
-                            setSynthMode(synthMode);
-                            if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
-                                setPreset(0x01, selectedPreset);
-                                setPreset(0x02, selectedPreset2);
-                            }else{
-                                setPreset(0xff, selectedPreset);
-                            }
-
-                        }else if(displayCursor == 0x03){
-                            //
-                        }else if(displayCursor == 0x04){
-                            if(selectedPreset2 != 0x00) selectedPreset2--;
-                            else selectedPreset2 = 0x03;
-                            setPreset(0x02, selectedPreset2);
-                        }
-                    }
-                    break;
-
-                case BTN_RIGHT:
-                    if(displayStatus == DISPST_PRESETS) {
-                        if(displayCursor == 0x01){
-                            if(selectedPreset != 0x03) selectedPreset++;
-                            else selectedPreset = 0x00;
-                            if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
-                                setPreset(0x01, selectedPreset);
-                            }else{
-                                setPreset(0xff, selectedPreset);
-                            }
-
-                        }else if(displayCursor == 0x02){
-                            if(synthMode == SYNTH_MULTI) synthMode = SYNTH_SINGLE;
-                            else synthMode++;
-                            setSynthMode(synthMode);
-                            if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
-                                setPreset(0x01, selectedPreset);
-                                setPreset(0x02, selectedPreset2);
-                            }else{
-                                setPreset(0xff, selectedPreset);
-                            }
-
-                        }else if(displayCursor == 0x03){
-                            //
-                        }else if(displayCursor == 0x04){
-                            if(selectedPreset2 != 0x03) selectedPreset2++;
-                            else selectedPreset2 = 0x00;
-                            setPreset(0x02, selectedPreset2);
-                        }
-                    }
-                    break;
-
-                case BTN_ENTER:
-                    if(displayStatus == DISPST_TITLE) {
-                        refreshUI();
-                        displayStatus = DISPST_PRESETS;
-                    }
-                    else if(displayStatus == DISPST_PRESETS) {
-                        if(displayCursor == 0x02) {
-                            resetSynth(0xff);
-                        }
-                    }
-                    break;
-
-                case BTN_CANCEL:
-                    if(displayStatus == DISPST_PRESETS){
-                        displayCursor = 0x00;
+void loop() {
+    if (buttonPressed) {
+        switch (pressedButton) {
+            case BTN_UP:
+            {
+                if(displayStatus == DISPST_PRESETS) {
+                    if(displayCursor == 0x00){
+                        displayCursor = 0x01;
                         refreshUI();
                     }
-                    break;
+                    else if(displayCursor == 0x01){
+                        displayCursor = 0x02;
+                        refreshUI();
+                    }
+                    else if(displayCursor == 0x02){
+                        displayCursor = 0x03;
+                        refreshUI();
+                    }
+                    else if(displayCursor == 0x03){
+                        if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
+                            displayCursor = 0x04;
+                        }else{
+                            displayCursor = 0x01;
+                        }
+                        refreshUI();
+                    }
+                    else if(displayCursor == 0x04){
+                        displayCursor = 0x01;
+                        refreshUI();
+                    }
+                }
             }
-            buttonPressed = false;
+                break;
+
+            case BTN_DOWN:
+            {
+                if(displayStatus == DISPST_PRESETS) {
+                    if(displayCursor == 0x00 or displayCursor == 0x02){
+                        displayCursor = 0x01;
+                        refreshUI();
+                    }
+                    else if(displayCursor == 0x01){
+                        if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
+                            displayCursor = 0x04;
+                        }else{
+                            displayCursor = 0x03;
+                        }
+                        refreshUI();
+                    }
+                    else if(displayCursor == 0x03){
+                        displayCursor = 0x02;
+                        refreshUI();
+                    }
+                    else if(displayCursor == 0x04){
+                        displayCursor = 0x03;
+                        refreshUI();
+                    }
+                }
+            }
+                break;
+
+            case BTN_LEFT:
+                if(displayStatus == DISPST_PRESETS) {
+                    if(displayCursor == 0x01){
+                        if(selectedPreset != 0x00) selectedPreset--;
+                        else selectedPreset = 0x03;
+                        if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
+                            setPreset(0x01, selectedPreset);
+                        }else{
+                            setPreset(0xff, selectedPreset);
+                        }
+
+                    }else if(displayCursor == 0x02){
+                        if(synthMode == SYNTH_SINGLE) synthMode = SYNTH_MULTI;
+                        else synthMode--;
+                        setSynthMode(synthMode);
+                        if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
+                            setPreset(0x01, selectedPreset);
+                            setPreset(0x02, selectedPreset2);
+                        }else{
+                            setPreset(0xff, selectedPreset);
+                        }
+
+                    }else if(displayCursor == 0x03){
+                        //
+                    }else if(displayCursor == 0x04){
+                        if(selectedPreset2 != 0x00) selectedPreset2--;
+                        else selectedPreset2 = 0x03;
+                        setPreset(0x02, selectedPreset2);
+                    }
+                }
+                break;
+
+            case BTN_RIGHT:
+                if(displayStatus == DISPST_PRESETS) {
+                    if(displayCursor == 0x01){
+                        if(selectedPreset != 0x03) selectedPreset++;
+                        else selectedPreset = 0x00;
+                        if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
+                            setPreset(0x01, selectedPreset);
+                        }else{
+                            setPreset(0xff, selectedPreset);
+                        }
+
+                    }else if(displayCursor == 0x02){
+                        if(synthMode == SYNTH_MULTI) synthMode = SYNTH_SINGLE;
+                        else synthMode++;
+                        setSynthMode(synthMode);
+                        if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
+                            setPreset(0x01, selectedPreset);
+                            setPreset(0x02, selectedPreset2);
+                        }else{
+                            setPreset(0xff, selectedPreset);
+                        }
+
+                    }else if(displayCursor == 0x03){
+                        //
+                    }else if(displayCursor == 0x04){
+                        if(selectedPreset2 != 0x03) selectedPreset2++;
+                        else selectedPreset2 = 0x00;
+                        setPreset(0x02, selectedPreset2);
+                    }
+                }
+                break;
+
+            case BTN_ENTER:
+                if(displayStatus == DISPST_TITLE) {
+                    refreshUI();
+                    displayStatus = DISPST_PRESETS;
+                }
+                else if(displayStatus == DISPST_PRESETS) {
+                    if(displayCursor == 0x02) {
+                        resetSynth(0xff);
+                    }
+                }
+                break;
+
+            case BTN_CANCEL:
+                if(displayStatus == DISPST_PRESETS){
+                    displayCursor = 0x00;
+                    refreshUI();
+                }
+                break;
         }
+        buttonPressed = false;
     }
 }
