@@ -47,6 +47,7 @@ uint8_t pressedButton = BTN_NONE;
 #define DISPST_IDLE    0x00
 #define DISPST_TITLE   0x01
 #define DISPST_PRESETS 0x02
+#define DISPST_DETAIL  0x03
 uint8_t displayStatus = DISPST_IDLE;
 uint8_t displayCursor = 0x00;
 
@@ -55,6 +56,9 @@ uint8_t synthMode = SYNTH_SINGLE;
 uint8_t synthPan = LR_PAN_C;
 uint8_t selectedPreset = 0x00;
 uint8_t selectedPreset2 = 0x00;
+
+int16_t attack = 10;
+int16_t release = 60;
 
 String presets[] = {
     "Basic Sine", "Basic Triangle", "Basic Saw", "Basic Square"
@@ -107,7 +111,7 @@ void refreshUI() {
     display.fillScreen(TFT_BLACK);
     display.setTextColor(TFT_WHITE);
 
-    if(displayStatus){
+    if(displayStatus == DISPST_PRESETS){
         // プリセット
         uint8_t preset_x = display.textWidth(" ");
         uint8_t preset_y = display.height() / 2 - display.fontHeight() / 2;
@@ -173,7 +177,11 @@ void refreshUI() {
                 display.drawString(idstr2, x, y + 7);
             }
         }
-    }    
+    }
+
+    else if(displayStatus == DISPST_DETAIL) {
+        //アタックとかリリースとか
+    }
 }
 
 /**
@@ -183,7 +191,7 @@ void refreshUI() {
  * @param id プリセット番号
  */
 void setPreset(uint8_t synth, uint8_t id) {
-    uint8_t data[] = {INS_BEGIN, DISP_SET_PRESET, DATA_BEGIN, 0x02, synth, id};
+    uint8_t data[] = {INS_BEGIN, DISP_SET_SHAPE, DATA_BEGIN, 0x02, synth, id};
     uint8_t received[1];
     ctrlTransmission(data, sizeof(data), received, 1);
 
@@ -210,6 +218,26 @@ void setSynthMode(uint8_t mode) {
  */
 void resetSynth(uint8_t synth) {
     uint8_t data[] = {INS_BEGIN, DISP_RESET_SYNTH, DATA_BEGIN, 0x01, synth};
+    uint8_t received[1];
+    ctrlTransmission(data, sizeof(data), received, 1);
+
+    refreshUI();
+}
+
+// アタックを設定
+void setAttack(uint8_t synth, int16_t attack) {
+    //todo: attackを分割送信
+    uint8_t data[] = {INS_BEGIN, DISP_SET_ATTACK, DATA_BEGIN, 0x02, synth, 0xff};
+    uint8_t received[1];
+    ctrlTransmission(data, sizeof(data), received, 1);
+
+    refreshUI();
+}
+
+// リリースを設定
+void setRelease(uint8_t synth, int16_t release) {
+    //todo: releaseを分割送信
+    uint8_t data[] = {INS_BEGIN, DISP_SET_RELEASE, DATA_BEGIN, 0x02, synth, 60};
     uint8_t received[1];
     ctrlTransmission(data, sizeof(data), received, 1);
 
@@ -430,13 +458,23 @@ void loop() {
 
             case BTN_ENTER:
                 if(displayStatus == DISPST_TITLE) {
-                    refreshUI();
                     displayStatus = DISPST_PRESETS;
+                    refreshUI();
                 }
                 else if(displayStatus == DISPST_PRESETS) {
                     if(displayCursor == 0x02) {
                         resetSynth(0xff);
                     }
+                    else if(displayCursor == 0x01) {
+                        displayStatus = DISPST_DETAIL;
+                        refreshUI();
+                    }
+                }
+                else if(displayStatus == DISPST_DETAIL) {
+                    attack = attack + 10;
+                    setAttack(0xff, attack);
+                    release = release + 10;
+                    setRelease(0xff, release);
                 }
                 break;
 

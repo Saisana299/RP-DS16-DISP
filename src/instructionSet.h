@@ -11,10 +11,12 @@
 //// データサイズは255が最大だが区切りを利用するとさらに多くのデータを送れます。
 //// 例：{..., 0x80, 0xff, ..., 0x84, 0xff, ...}
 #define DISP_CONNECT     0x3F // 接続開始
-#define DISP_SET_PRESET  0x40 // プリセットを設定
+#define DISP_SET_SHAPE   0x40 // 基本波形を設定
 #define DISP_SET_SYNTH   0x41 // シンセモード設定
 #define DISP_SET_PAN     0x42 // パンを設定
 #define DISP_RESET_SYNTH 0x43 // シンセをリセット
+#define DISP_SET_ATTACK  0x44 // アタックを設定
+#define DISP_SET_RELEASE 0x45 // リリースを設定
 
 //// 共通シンセ演奏状態コード
 #define SYNTH_SINGLE 0x00

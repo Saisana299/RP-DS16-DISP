@@ -12,6 +12,7 @@
         "random": "cpp",
         "thread": "cpp",
         "system_error": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "compare": "cpp"
     }
 }
