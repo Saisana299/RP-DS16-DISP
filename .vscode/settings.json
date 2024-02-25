@@ -13,6 +13,10 @@
         "thread": "cpp",
         "system_error": "cpp",
         "fstream": "cpp",
-        "compare": "cpp"
+        "compare": "cpp",
+        "type_traits": "cpp",
+        "memory": "cpp",
+        "semaphore": "cpp",
+        "stop_token": "cpp"
     }
 }

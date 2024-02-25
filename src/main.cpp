@@ -58,6 +58,8 @@ uint8_t selectedPreset = 0x00;
 uint8_t selectedPreset2 = 0x00;
 
 int16_t attack = 10;
+int16_t decay = 0;
+int16_t sustain = 1000; // max=1000
 int16_t release = 60;
 
 String presets[] = {
@@ -179,8 +181,46 @@ void refreshUI() {
         }
     }
 
+    //アタックとかリリースとか
     else if(displayStatus == DISPST_DETAIL) {
-        //アタックとかリリースとか
+        // タイトル
+        display.drawString("Preset Editor", 2, 2);
+
+        // 横線
+        display.drawLine(0, 12, 127, 12, TFT_WHITE);
+
+        // ADSR
+        char a_chr[6]; sprintf(a_chr, "%d", attack);
+        char d_chr[6]; sprintf(d_chr, "%d", decay);
+        char s_chr[6]; sprintf(s_chr, "%d", sustain);
+        char r_chr[6]; sprintf(r_chr, "%d", release);
+        display.drawString("Attack : " + String(a_chr), 2, 16);
+        display.drawString("Decay  : " + String(d_chr), 2, 26);
+        display.drawString("Sustain: " + String(s_chr), 2, 36);
+        display.drawString("Release: " + String(r_chr), 2, 46);
+
+        // 塗り
+        if(displayCursor == 0x01) {
+            display.fillRect(1, 15, display.textWidth("Attack"), 9, TFT_WHITE);
+            display.setTextColor(TFT_BLACK);
+            display.drawString("Attack", 2, 16);
+        }
+        else if(displayCursor == 0x02) {
+            display.fillRect(1, 25, display.textWidth("Decay")+1, 9, TFT_WHITE);
+            display.setTextColor(TFT_BLACK);
+            display.drawString("Decay", 2, 26);
+        }
+        else if(displayCursor == 0x03) {
+            display.fillRect(1, 35, display.textWidth("Sustain")+1, 9, TFT_WHITE);
+            display.setTextColor(TFT_BLACK);
+            display.drawString("Sustain", 2, 36);
+        }
+        else if(displayCursor == 0x04) {
+            display.fillRect(1, 45, display.textWidth("Release")+1, 9, TFT_WHITE);
+            display.setTextColor(TFT_BLACK);
+            display.drawString("Release", 2, 46);
+        }
+        
     }
 }
 
@@ -226,8 +266,22 @@ void resetSynth(uint8_t synth) {
 
 // アタックを設定
 void setAttack(uint8_t synth, int16_t attack) {
-    //todo: attackを分割送信
-    uint8_t data[] = {INS_BEGIN, DISP_SET_ATTACK, DATA_BEGIN, 0x02, synth, 0xff};
+    // attack = 0-32sec + 0-999ms (max32sec)
+    uint8_t attack_sec;
+    uint8_t attack_ms[4];
+    
+    attack_sec = attack / 1000;
+
+    // msを分割
+    for(uint8_t i = 0; i <= ((attack - (attack_sec*1000)) / 255); i++) {
+        if(i == ((attack - (attack_sec*1000)) / 255)) attack_ms[i] = (attack - (attack_sec*1000)) - (i*255);
+        else attack_ms[i] = 255;
+    }
+
+    uint8_t data[] = {
+        INS_BEGIN, DISP_SET_ATTACK, DATA_BEGIN,
+        0x06, synth, attack_sec, attack_ms[0], attack_ms[1], attack_ms[2], attack_ms[3]
+    };
     uint8_t received[1];
     ctrlTransmission(data, sizeof(data), received, 1);
 
@@ -236,8 +290,67 @@ void setAttack(uint8_t synth, int16_t attack) {
 
 // リリースを設定
 void setRelease(uint8_t synth, int16_t release) {
-    //todo: releaseを分割送信
-    uint8_t data[] = {INS_BEGIN, DISP_SET_RELEASE, DATA_BEGIN, 0x02, synth, 60};
+    // release = 0-32sec + 0-999ms (max32sec)
+    uint8_t release_sec;
+    uint8_t release_ms[4];
+    
+    release_sec = release / 1000;
+
+    // msを分割
+    for(uint8_t i = 0; i <= ((release - (release_sec*1000)) / 255); i++) {
+        if(i == ((release - (release_sec*1000)) / 255)) release_ms[i] = (release - (release_sec*1000)) - (i*255);
+        else release_ms[i] = 255;
+    }
+
+    uint8_t data[] = {
+        INS_BEGIN, DISP_SET_RELEASE, DATA_BEGIN, 
+        0x06, synth, release_sec, release_ms[0], release_ms[1], release_ms[2], release_ms[3]
+    };
+    uint8_t received[1];
+    ctrlTransmission(data, sizeof(data), received, 1);
+
+    refreshUI();
+}
+
+// ディケイを設定
+void setDecay(uint8_t synth, int16_t decay) {
+    // decay = 0-32sec + 0-999ms (max32sec)
+    uint8_t decay_sec;
+    uint8_t decay_ms[4] = {0,0,0,0};
+
+    decay_sec = decay / 1000;
+
+    // msを分割
+    for(uint8_t i = 0; i <= ((decay - (decay_sec*1000)) / 255); i++) {
+        if(i == ((decay - (decay_sec*1000)) / 255)) decay_ms[i] = (decay - (decay_sec*1000)) - (i*255);
+        else decay_ms[i] = 255;
+    }
+
+    uint8_t data[] = {
+        INS_BEGIN, DISP_SET_DECAY, DATA_BEGIN,
+        0x06, synth, decay_sec, decay_ms[0], decay_ms[1], decay_ms[2], decay_ms[3]
+    };
+    uint8_t received[1];
+    ctrlTransmission(data, sizeof(data), received, 1);
+
+    refreshUI();
+}
+
+// サステインを設定
+void setSustain(uint8_t synth, int16_t sustain) {
+    // sustain = 0-1000
+    uint8_t sustains[4] = {0,0,0,0};
+
+    // 4分割
+    for(uint8_t i = 0; i <= (sustain / 255); i++) {
+        if(i == (sustain / 255)) sustains[i] = sustain - (i*255);
+        else sustains[i] = 255;
+    }
+
+    uint8_t data[] = {
+        INS_BEGIN, DISP_SET_SUSTAIN, DATA_BEGIN, 
+        0x05, synth, sustains[0], sustains[1], sustains[2], sustains[3]
+    };
     uint8_t received[1];
     ctrlTransmission(data, sizeof(data), received, 1);
 
@@ -362,6 +475,15 @@ void loop() {
                         refreshUI();
                     }
                 }
+                else if(displayStatus == DISPST_DETAIL) {
+                    if(displayCursor == 0x01) {
+                        displayCursor = 0x04;
+                    }
+                    else{
+                        displayCursor -= 0x01;
+                    }
+                    refreshUI();
+                }
             }
                 break;
 
@@ -388,6 +510,15 @@ void loop() {
                         displayCursor = 0x03;
                         refreshUI();
                     }
+                }
+                else if(displayStatus == DISPST_DETAIL) {
+                    if(displayCursor == 0x04) {
+                        displayCursor = 0x01;
+                    }
+                    else{
+                        displayCursor += 0x01;
+                    }
+                    refreshUI();
                 }
             }
                 break;
@@ -422,6 +553,32 @@ void loop() {
                         setPreset(0x02, selectedPreset2);
                     }
                 }
+                else if(displayStatus == DISPST_DETAIL) {
+                    if(displayCursor == 0x01) {
+                        if(attack - 10 < 0) break;
+                        attack -= 10;
+                        setAttack(0xff, attack);
+                        refreshUI();
+                    }
+                    else if(displayCursor == 0x02) {
+                        if(decay - 10 < 0) break;
+                        decay -= 10;
+                        setDecay(0xff, decay);
+                        refreshUI();
+                    }
+                    else if(displayCursor == 0x03) {
+                        if(sustain - 2 < 0) break;
+                        sustain -= 2;
+                        setSustain(0xff, sustain);
+                        refreshUI();
+                    }
+                    else if(displayCursor == 0x04) {
+                        if(release - 10 < 0) break;
+                        release -= 10;
+                        setRelease(0xff, release);
+                        refreshUI();
+                    }
+                }
                 break;
 
             case BTN_RIGHT:
@@ -454,6 +611,32 @@ void loop() {
                         setPreset(0x02, selectedPreset2);
                     }
                 }
+                else if(displayStatus == DISPST_DETAIL) {
+                    if(displayCursor == 0x01) {
+                        if(attack + 10 > 32000) break;
+                        attack += 10;
+                        setAttack(0xff, attack);
+                        refreshUI();
+                    }
+                    else if(displayCursor == 0x02) {
+                        if(decay + 10 > 32000) break;
+                        decay += 10;
+                        setDecay(0xff, decay);
+                        refreshUI();
+                    }
+                    else if(displayCursor == 0x03) {
+                        if(sustain + 2 > 1000) break;
+                        sustain += 2;
+                        setSustain(0xff, sustain);
+                        refreshUI();
+                    }
+                    else if(displayCursor == 0x04) {
+                        if(release + 10 > 32000) break;
+                        release += 10;
+                        setRelease(0xff, release);
+                        refreshUI();
+                    }
+                }
                 break;
 
             case BTN_ENTER:
@@ -466,21 +649,24 @@ void loop() {
                         resetSynth(0xff);
                     }
                     else if(displayCursor == 0x01) {
+                        displayCursor = 0x01;
                         displayStatus = DISPST_DETAIL;
                         refreshUI();
                     }
                 }
                 else if(displayStatus == DISPST_DETAIL) {
-                    attack = attack + 10;
-                    setAttack(0xff, attack);
-                    release = release + 10;
-                    setRelease(0xff, release);
+                    //
                 }
                 break;
 
             case BTN_CANCEL:
                 if(displayStatus == DISPST_PRESETS){
                     displayCursor = 0x00;
+                    refreshUI();
+                }
+                else if(displayStatus == DISPST_DETAIL) {
+                    displayCursor = 0x01;
+                    displayStatus = DISPST_PRESETS;
                     refreshUI();
                 }
                 break;
