@@ -57,10 +57,10 @@ uint8_t synthPan = LR_PAN_C;
 uint8_t selectedPreset = 0x00;
 uint8_t selectedPreset2 = 0x00;
 
-int16_t attack = 10;
-int16_t decay = 0;
+int16_t attack = 1;
+int16_t decay = 1000;
 int16_t sustain = 1000; // max=1000
-int16_t release = 60;
+int16_t release = 1;
 
 String presets[] = {
     "Basic Sine", "Basic Triangle", "Basic Saw", "Basic Square"
@@ -194,10 +194,10 @@ void refreshUI() {
         char d_chr[6]; sprintf(d_chr, "%d", decay);
         char s_chr[6]; sprintf(s_chr, "%d", sustain);
         char r_chr[6]; sprintf(r_chr, "%d", release);
-        display.drawString("Attack : " + String(a_chr), 2, 16);
-        display.drawString("Decay  : " + String(d_chr), 2, 26);
-        display.drawString("Sustain: " + String(s_chr), 2, 36);
-        display.drawString("Release: " + String(r_chr), 2, 46);
+        display.drawString("Attack : " + String(a_chr) + " ms", 2, 16);
+        display.drawString("Decay  : " + String(d_chr) + " ms", 2, 26);
+        display.drawString("Sustain: " + String(s_chr) + " ms", 2, 36);
+        display.drawString("Release: " + String(r_chr) + " ms", 2, 46);
 
         // 塗り
         if(displayCursor == 0x01) {
@@ -555,26 +555,26 @@ void loop() {
                 }
                 else if(displayStatus == DISPST_DETAIL) {
                     if(displayCursor == 0x01) {
-                        if(attack - 10 < 0) break;
-                        attack -= 10;
+                        if(attack - 50 < 0) break;
+                        attack -= 50;
                         setAttack(0xff, attack);
                         refreshUI();
                     }
                     else if(displayCursor == 0x02) {
-                        if(decay - 10 < 0) break;
-                        decay -= 10;
+                        if(decay - 50 < 0) break;
+                        decay -= 50;
                         setDecay(0xff, decay);
                         refreshUI();
                     }
                     else if(displayCursor == 0x03) {
-                        if(sustain - 2 < 0) break;
-                        sustain -= 2;
+                        if(sustain - 100 < 0) break;
+                        sustain -= 100;
                         setSustain(0xff, sustain);
                         refreshUI();
                     }
                     else if(displayCursor == 0x04) {
-                        if(release - 10 < 0) break;
-                        release -= 10;
+                        if(release - 50 < 0) break;
+                        release -= 50;
                         setRelease(0xff, release);
                         refreshUI();
                     }
@@ -613,26 +613,26 @@ void loop() {
                 }
                 else if(displayStatus == DISPST_DETAIL) {
                     if(displayCursor == 0x01) {
-                        if(attack + 10 > 32000) break;
-                        attack += 10;
+                        if(attack + 50 > 32000) break;
+                        attack += 50;
                         setAttack(0xff, attack);
                         refreshUI();
                     }
                     else if(displayCursor == 0x02) {
-                        if(decay + 10 > 32000) break;
-                        decay += 10;
+                        if(decay + 50 > 32000) break;
+                        decay += 50;
                         setDecay(0xff, decay);
                         refreshUI();
                     }
                     else if(displayCursor == 0x03) {
-                        if(sustain + 2 > 1000) break;
-                        sustain += 2;
+                        if(sustain + 100 > 1000) break;
+                        sustain += 100;
                         setSustain(0xff, sustain);
                         refreshUI();
                     }
                     else if(displayCursor == 0x04) {
-                        if(release + 10 > 32000) break;
-                        release += 10;
+                        if(release + 50 > 32000) break;
+                        release += 50;
                         setRelease(0xff, release);
                         refreshUI();
                     }
@@ -651,6 +651,10 @@ void loop() {
                     else if(displayCursor == 0x01) {
                         displayCursor = 0x01;
                         displayStatus = DISPST_DETAIL;
+                        refreshUI();
+                    }
+                    else if(displayCursor == 0x00) {
+                        displayCursor = 0x01;
                         refreshUI();
                     }
                 }
