@@ -196,7 +196,7 @@ void refreshUI() {
         char r_chr[6]; sprintf(r_chr, "%d", release);
         display.drawString("Attack : " + String(a_chr) + " ms", 2, 16);
         display.drawString("Decay  : " + String(d_chr) + " ms", 2, 26);
-        display.drawString("Sustain: " + String(s_chr) + " ms", 2, 36);
+        display.drawString("Sustain: " + String(s_chr), 2, 36);
         display.drawString("Release: " + String(r_chr) + " ms", 2, 46);
 
         // 塗り
