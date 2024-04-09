@@ -78,7 +78,7 @@ void toggleCtrl(bool begin) {
     digitalWrite(CTRL_SW_PIN, HIGH);
     digitalWrite(CTRL_SW_PIN, LOW);
     if(begin){
-        delay(100);
+        delay(10);
     }
 }
 
@@ -268,7 +268,7 @@ void resetSynth(uint8_t synth) {
 void setAttack(uint8_t synth, int16_t attack) {
     // attack = 0-32sec + 0-999ms (max32sec)
     uint8_t attack_sec;
-    uint8_t attack_ms[4];
+    uint8_t attack_ms[4] = {0,0,0,0};
     
     attack_sec = attack / 1000;
 
@@ -292,7 +292,7 @@ void setAttack(uint8_t synth, int16_t attack) {
 void setRelease(uint8_t synth, int16_t release) {
     // release = 0-32sec + 0-999ms (max32sec)
     uint8_t release_sec;
-    uint8_t release_ms[4];
+    uint8_t release_ms[4] = {0,0,0,0};
     
     release_sec = release / 1000;
 
@@ -395,6 +395,7 @@ void setup() {
     ctrl.setSDA(CTRL_SDA_PIN);
     ctrl.setSCL(CTRL_SCL_PIN);
     ctrl.begin();
+    ctrl.setClock(1000000);
 
     SPI.setRX(SD_RX_PIN);
     SPI.setCS(SD_CS_PIN);
@@ -444,237 +445,229 @@ void setup() {
     }
 }
 
-void loop() {
-    if (buttonPressed) {
-        switch (pressedButton) {
-            case BTN_UP:
-            {
-                if(displayStatus == DISPST_PRESETS) {
-                    if(displayCursor == 0x00){
-                        displayCursor = 0x01;
-                        refreshUI();
-                    }
-                    else if(displayCursor == 0x01){
-                        displayCursor = 0x02;
-                        refreshUI();
-                    }
-                    else if(displayCursor == 0x02){
-                        displayCursor = 0x03;
-                        refreshUI();
-                    }
-                    else if(displayCursor == 0x03){
-                        if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
-                            displayCursor = 0x04;
-                        }else{
-                            displayCursor = 0x01;
-                        }
-                        refreshUI();
-                    }
-                    else if(displayCursor == 0x04){
-                        displayCursor = 0x01;
-                        refreshUI();
-                    }
+// 上が押された場合の処理
+void handleButtonUp() {
+    if (displayStatus == DISPST_PRESETS) {
+        switch (displayCursor) {
+            case 0x00:
+            case 0x01:
+            case 0x02:
+                displayCursor++;
+                break;
+            case 0x03:
+                displayCursor = (synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) ? 0x04 : 0x01;
+                break;
+            case 0x04:
+                displayCursor = 0x01;
+                break;
+        }
+        refreshUI();
+    } else if (displayStatus == DISPST_DETAIL) {
+        displayCursor = (displayCursor == 0x01) ? 0x04 : (displayCursor - 0x01);
+        refreshUI();
+    }
+}
+
+// 下が押された場合の処理
+void handleButtonDown() {
+    if (displayStatus == DISPST_PRESETS) {
+        switch (displayCursor) {
+            case 0x00:
+            case 0x02:
+                displayCursor = 0x01;
+                break;
+            case 0x01:
+                displayCursor = (synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) ? 0x04 : 0x03;
+                break;
+            case 0x03:
+                displayCursor = 0x02;
+                break;
+            case 0x04:
+                displayCursor = 0x03;
+                break;
+        }
+        refreshUI();
+    } else if (displayStatus == DISPST_DETAIL) {
+        displayCursor = (displayCursor == 0x04) ? 0x01 : (displayCursor + 0x01);
+        refreshUI();
+    }
+}
+
+// 左が押された場合の処理
+void handleButtonLeft() {
+    if (displayStatus == DISPST_PRESETS) {
+        switch (displayCursor) {
+            case 0x01:
+                selectedPreset = (selectedPreset != 0x00) ? (selectedPreset - 1) : 0x03;
+                setPreset((synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) ? 0x01 : 0xff, selectedPreset);
+                break;
+            case 0x02:
+                synthMode = (synthMode == SYNTH_SINGLE) ? SYNTH_MULTI : (synthMode - 1);
+                setSynthMode(synthMode);
+                setPreset((synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) ? 0x01 : 0xff, selectedPreset);
+                if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) {
+                    setPreset(0x02, selectedPreset2);
                 }
-                else if(displayStatus == DISPST_DETAIL) {
-                    if(displayCursor == 0x01) {
-                        displayCursor = 0x04;
-                    }
-                    else{
-                        displayCursor -= 0x01;
-                    }
+                break;
+            case 0x04:
+                selectedPreset2 = (selectedPreset2 != 0x00) ? (selectedPreset2 - 1) : 0x03;
+                setPreset(0x02, selectedPreset2);
+                break;
+        }
+    } else if (displayStatus == DISPST_DETAIL) {
+        switch (displayCursor) {
+            case 0x01:
+                if (attack - 50 >= 0) {
+                    attack -= 50;
+                    setAttack(0xff, attack);
                     refreshUI();
                 }
-            }
                 break;
-
-            case BTN_DOWN:
-            {
-                if(displayStatus == DISPST_PRESETS) {
-                    if(displayCursor == 0x00 or displayCursor == 0x02){
-                        displayCursor = 0x01;
-                        refreshUI();
-                    }
-                    else if(displayCursor == 0x01){
-                        if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
-                            displayCursor = 0x04;
-                        }else{
-                            displayCursor = 0x03;
-                        }
-                        refreshUI();
-                    }
-                    else if(displayCursor == 0x03){
-                        displayCursor = 0x02;
-                        refreshUI();
-                    }
-                    else if(displayCursor == 0x04){
-                        displayCursor = 0x03;
-                        refreshUI();
-                    }
-                }
-                else if(displayStatus == DISPST_DETAIL) {
-                    if(displayCursor == 0x04) {
-                        displayCursor = 0x01;
-                    }
-                    else{
-                        displayCursor += 0x01;
-                    }
+            case 0x02:
+                if (decay - 50 >= 0) {
+                    decay -= 50;
+                    setDecay(0xff, decay);
                     refreshUI();
                 }
-            }
                 break;
-
-            case BTN_LEFT:
-                if(displayStatus == DISPST_PRESETS) {
-                    if(displayCursor == 0x01){
-                        if(selectedPreset != 0x00) selectedPreset--;
-                        else selectedPreset = 0x03;
-                        if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
-                            setPreset(0x01, selectedPreset);
-                        }else{
-                            setPreset(0xff, selectedPreset);
-                        }
-
-                    }else if(displayCursor == 0x02){
-                        if(synthMode == SYNTH_SINGLE) synthMode = SYNTH_MULTI;
-                        else synthMode--;
-                        setSynthMode(synthMode);
-                        if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
-                            setPreset(0x01, selectedPreset);
-                            setPreset(0x02, selectedPreset2);
-                        }else{
-                            setPreset(0xff, selectedPreset);
-                        }
-
-                    }else if(displayCursor == 0x03){
-                        //
-                    }else if(displayCursor == 0x04){
-                        if(selectedPreset2 != 0x00) selectedPreset2--;
-                        else selectedPreset2 = 0x03;
-                        setPreset(0x02, selectedPreset2);
-                    }
-                }
-                else if(displayStatus == DISPST_DETAIL) {
-                    if(displayCursor == 0x01) {
-                        if(attack - 50 < 0) break;
-                        attack -= 50;
-                        setAttack(0xff, attack);
-                        refreshUI();
-                    }
-                    else if(displayCursor == 0x02) {
-                        if(decay - 50 < 0) break;
-                        decay -= 50;
-                        setDecay(0xff, decay);
-                        refreshUI();
-                    }
-                    else if(displayCursor == 0x03) {
-                        if(sustain - 100 < 0) break;
-                        sustain -= 100;
-                        setSustain(0xff, sustain);
-                        refreshUI();
-                    }
-                    else if(displayCursor == 0x04) {
-                        if(release - 50 < 0) break;
-                        release -= 50;
-                        setRelease(0xff, release);
-                        refreshUI();
-                    }
-                }
-                break;
-
-            case BTN_RIGHT:
-                if(displayStatus == DISPST_PRESETS) {
-                    if(displayCursor == 0x01){
-                        if(selectedPreset != 0x03) selectedPreset++;
-                        else selectedPreset = 0x00;
-                        if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
-                            setPreset(0x01, selectedPreset);
-                        }else{
-                            setPreset(0xff, selectedPreset);
-                        }
-
-                    }else if(displayCursor == 0x02){
-                        if(synthMode == SYNTH_MULTI) synthMode = SYNTH_SINGLE;
-                        else synthMode++;
-                        setSynthMode(synthMode);
-                        if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL){
-                            setPreset(0x01, selectedPreset);
-                            setPreset(0x02, selectedPreset2);
-                        }else{
-                            setPreset(0xff, selectedPreset);
-                        }
-
-                    }else if(displayCursor == 0x03){
-                        //
-                    }else if(displayCursor == 0x04){
-                        if(selectedPreset2 != 0x03) selectedPreset2++;
-                        else selectedPreset2 = 0x00;
-                        setPreset(0x02, selectedPreset2);
-                    }
-                }
-                else if(displayStatus == DISPST_DETAIL) {
-                    if(displayCursor == 0x01) {
-                        if(attack + 50 > 32000) break;
-                        attack += 50;
-                        setAttack(0xff, attack);
-                        refreshUI();
-                    }
-                    else if(displayCursor == 0x02) {
-                        if(decay + 50 > 32000) break;
-                        decay += 50;
-                        setDecay(0xff, decay);
-                        refreshUI();
-                    }
-                    else if(displayCursor == 0x03) {
-                        if(sustain + 100 > 1000) break;
-                        sustain += 100;
-                        setSustain(0xff, sustain);
-                        refreshUI();
-                    }
-                    else if(displayCursor == 0x04) {
-                        if(release + 50 > 32000) break;
-                        release += 50;
-                        setRelease(0xff, release);
-                        refreshUI();
-                    }
-                }
-                break;
-
-            case BTN_ENTER:
-                if(displayStatus == DISPST_TITLE) {
-                    displayStatus = DISPST_PRESETS;
+            case 0x03:
+                if (sustain - 100 >= 0) {
+                    sustain -= 100;
+                    setSustain(0xff, sustain);
                     refreshUI();
                 }
-                else if(displayStatus == DISPST_PRESETS) {
-                    if(displayCursor == 0x02) {
-                        resetSynth(0xff);
-                    }
-                    else if(displayCursor == 0x01) {
-                        displayCursor = 0x01;
-                        displayStatus = DISPST_DETAIL;
-                        refreshUI();
-                    }
-                    else if(displayCursor == 0x00) {
-                        displayCursor = 0x01;
-                        refreshUI();
-                    }
-                }
-                else if(displayStatus == DISPST_DETAIL) {
-                    //
-                }
                 break;
-
-            case BTN_CANCEL:
-                if(displayStatus == DISPST_PRESETS){
-                    displayCursor = 0x00;
-                    refreshUI();
-                }
-                else if(displayStatus == DISPST_DETAIL) {
-                    displayCursor = 0x01;
-                    displayStatus = DISPST_PRESETS;
+            case 0x04:
+                if (release - 50 >= 0) {
+                    release -= 50;
+                    setRelease(0xff, release);
                     refreshUI();
                 }
                 break;
         }
+    }
+}
+
+// 右が押された場合の処理
+void handleButtonRight() {
+    if (displayStatus == DISPST_PRESETS) {
+        switch (displayCursor) {
+            case 0x01:
+                selectedPreset = (selectedPreset != 0x03) ? (selectedPreset + 1) : 0x00;
+                setPreset((synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) ? 0x01 : 0xff, selectedPreset);
+                break;
+            case 0x02:
+                synthMode = (synthMode == SYNTH_MULTI) ? SYNTH_SINGLE : (synthMode + 1);
+                setSynthMode(synthMode);
+                setPreset((synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) ? 0x01 : 0xff, selectedPreset);
+                if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) {
+                    setPreset(0x02, selectedPreset2);
+                }
+                break;
+            case 0x04:
+                selectedPreset2 = (selectedPreset2 != 0x03) ? (selectedPreset2 + 1) : 0x00;
+                setPreset(0x02, selectedPreset2);
+                break;
+        }
+    } else if (displayStatus == DISPST_DETAIL) {
+        switch (displayCursor) {
+            case 0x01:
+                if (attack + 50 <= 32000) {
+                    attack += 50;
+                    setAttack(0xff, attack);
+                    refreshUI();
+                }
+                break;
+            case 0x02:
+                if (decay + 50 <= 32000) {
+                    decay += 50;
+                    setDecay(0xff, decay);
+                    refreshUI();
+                }
+                break;
+            case 0x03:
+                if (sustain + 100 <= 1000) {
+                    sustain += 100;
+                    setSustain(0xff, sustain);
+                    refreshUI();
+                }
+                break;
+            case 0x04:
+                if (release + 50 <= 32000) {
+                    release += 50;
+                    setRelease(0xff, release);
+                    refreshUI();
+                }
+                break;
+        }
+    }
+}
+
+// エンターが押された場合の処理
+void handleButtonEnter() {
+    if (displayStatus == DISPST_TITLE) {
+        displayStatus = DISPST_PRESETS;
+        refreshUI();
+    } else if (displayStatus == DISPST_PRESETS) {
+        switch (displayCursor) {
+            case 0x02:
+                resetSynth(0xff);
+                break;
+            case 0x01:
+                displayCursor = 0x01;
+                displayStatus = DISPST_DETAIL;
+                refreshUI();
+                break;
+            case 0x00:
+                displayCursor = 0x01;
+                refreshUI();
+                break;
+        }
+    }
+}
+
+// キャンセルが押された場合の処理
+void handleButtonCancel() {
+    if (displayStatus == DISPST_PRESETS) {
+        displayCursor = 0x00;
+        refreshUI();
+    } else if (displayStatus == DISPST_DETAIL) {
+        displayCursor = 0x01;
+        displayStatus = DISPST_PRESETS;
+        refreshUI();
+    }
+}
+
+void loop() {
+    // ボタンが押されているかどうかを確認
+    if (buttonPressed) {
+        // ボタンに応じた処理を実行
+        switch (pressedButton) {
+            case BTN_UP:
+                handleButtonUp();
+                break;
+
+            case BTN_DOWN:
+                handleButtonDown();
+                break;
+
+            case BTN_LEFT:
+                handleButtonLeft();
+                break;
+
+            case BTN_RIGHT:
+                handleButtonRight();
+                break;
+
+            case BTN_ENTER:
+                handleButtonEnter();
+                break;
+
+            case BTN_CANCEL:
+                handleButtonCancel();
+                break;
+        }
+        // ボタン処理が完了したので、フラグをリセット
         buttonPressed = false;
     }
 }
