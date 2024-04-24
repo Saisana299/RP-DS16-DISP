@@ -41,6 +41,13 @@ volatile bool buttonPressed = false;
 #define BTN_RIGHT  0x04
 #define BTN_ENTER  0x05
 #define BTN_CANCEL 0x06
+
+#define BTN_LONG_UP     0x11
+#define BTN_LONG_DOWN   0x12
+#define BTN_LONG_LEFT   0x13
+#define BTN_LONG_RIGHT  0x14
+#define BTN_LONG_ENTER  0x15
+#define BTN_LONG_CANCEL 0x16
 uint8_t pressedButton = BTN_NONE;
 
 // ディスプレイ関連
@@ -190,32 +197,36 @@ void refreshUI() {
         display.drawLine(0, 12, 127, 12, TFT_WHITE);
 
         // ADSR
+        char a_sym = ':'; if (displayCursor == 0x05) a_sym = '>';
+        char d_sym = ':'; if (displayCursor == 0x06) d_sym = '>';
+        char s_sym = ':'; if (displayCursor == 0x07) s_sym = '>';
+        char r_sym = ':'; if (displayCursor == 0x08) r_sym = '>';
         char a_chr[6]; sprintf(a_chr, "%d", attack);
         char d_chr[6]; sprintf(d_chr, "%d", decay);
         char s_chr[6]; sprintf(s_chr, "%d", sustain);
         char r_chr[6]; sprintf(r_chr, "%d", release);
-        display.drawString("Attack : " + String(a_chr) + " ms", 2, 16);
-        display.drawString("Decay  : " + String(d_chr) + " ms", 2, 26);
-        display.drawString("Sustain: " + String(s_chr), 2, 36);
-        display.drawString("Release: " + String(r_chr) + " ms", 2, 46);
+        display.drawString("Attack " + String(a_sym) + " " + String(a_chr) + " ms", 2, 16);
+        display.drawString("Decay  " + String(d_sym) + " " + String(d_chr) + " ms", 2, 26);
+        display.drawString("Sustain" + String(s_sym) + " " + String(s_chr), 2, 36);
+        display.drawString("Release" + String(r_sym) + " " + String(r_chr) + " ms", 2, 46);
 
         // 塗り
-        if(displayCursor == 0x01) {
+        if(displayCursor == 0x01 || displayCursor == 0x05) {
             display.fillRect(1, 15, display.textWidth("Attack"), 9, TFT_WHITE);
             display.setTextColor(TFT_BLACK);
             display.drawString("Attack", 2, 16);
         }
-        else if(displayCursor == 0x02) {
+        else if(displayCursor == 0x02 || displayCursor == 0x06) {
             display.fillRect(1, 25, display.textWidth("Decay")+1, 9, TFT_WHITE);
             display.setTextColor(TFT_BLACK);
             display.drawString("Decay", 2, 26);
         }
-        else if(displayCursor == 0x03) {
+        else if(displayCursor == 0x03 || displayCursor == 0x07) {
             display.fillRect(1, 35, display.textWidth("Sustain")+1, 9, TFT_WHITE);
             display.setTextColor(TFT_BLACK);
             display.drawString("Sustain", 2, 36);
         }
-        else if(displayCursor == 0x04) {
+        else if(displayCursor == 0x04 || displayCursor == 0x08) {
             display.fillRect(1, 45, display.textWidth("Release")+1, 9, TFT_WHITE);
             display.setTextColor(TFT_BLACK);
             display.drawString("Release", 2, 46);
@@ -357,35 +368,6 @@ void setSustain(uint8_t synth, int16_t sustain) {
     refreshUI();
 }
 
-/** @brief タクトスイッチに関する処理 */
-void buttonISR() {
-    // チャタリング対策
-    static unsigned long lastDebounceTime = 0;
-    static const unsigned long debounceDelay = 10;
-
-    unsigned long currentMillis = millis();
-
-    if (currentMillis - lastDebounceTime < debounceDelay) {
-        return;
-    }
-
-    delay(10);
-
-    for (int i = 0; i < BUTTON_COUNT; ++i) {
-        if (digitalRead(buttonPins[i]) == LOW) {
-            pressedButton = (i == 0) ? BTN_UP :
-                            (i == 2) ? BTN_DOWN :
-                            (i == 1) ? BTN_LEFT :
-                            (i == 4) ? BTN_ENTER :
-                            (i == 3) ? BTN_RIGHT :
-                            (i == 5) ? BTN_CANCEL : BTN_NONE;
-            buttonPressed = true;
-            lastDebounceTime = currentMillis;
-            return;
-        }
-    }
-}
-
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     pinMode(CTRL_SW_PIN, OUTPUT);
@@ -413,7 +395,6 @@ void setup() {
     // ボタン初期化
     for (int i = 0; i < BUTTON_COUNT; ++i) {
         pinMode(buttonPins[i], INPUT_PULLUP);
-        attachInterrupt(digitalPinToInterrupt(buttonPins[i]), buttonISR, FALLING);
     }
 
     // SDカード確認
@@ -446,7 +427,8 @@ void setup() {
 }
 
 // 上が押された場合の処理
-void handleButtonUp() {
+void handleButtonUp(bool longPush = false) {
+    if (longPush) return;
     if (displayStatus == DISPST_PRESETS) {
         switch (displayCursor) {
             case 0x00:
@@ -463,13 +445,40 @@ void handleButtonUp() {
         }
         refreshUI();
     } else if (displayStatus == DISPST_DETAIL) {
-        displayCursor = (displayCursor == 0x01) ? 0x04 : (displayCursor - 0x01);
+        switch (displayCursor) {
+            // 100倍
+            case 0x05:
+                if (attack + 100 <= 32000) {
+                    attack += 100; setAttack(0xff, attack); 
+                }
+                break;
+            case 0x06:
+                if (decay + 100 <= 32000) {
+                    decay += 100; setDecay(0xff, decay);
+                }
+                break;
+            case 0x07:
+                if (sustain + 100 <= 1000) {
+                    sustain += 100; setSustain(0xff, sustain); 
+                }
+                break;
+            case 0x08:
+                if (release + 100 <= 32000) {
+                    release += 100; setRelease(0xff, release);  
+                }
+                break;
+            // 通常
+            default:
+                displayCursor = (displayCursor == 0x01) ? 0x04 : (displayCursor - 0x01);
+                break;
+        }
         refreshUI();
     }
 }
 
 // 下が押された場合の処理
-void handleButtonDown() {
+void handleButtonDown(bool longPush = false) {
+    if (longPush) return;
     if (displayStatus == DISPST_PRESETS) {
         switch (displayCursor) {
             case 0x00:
@@ -488,13 +497,39 @@ void handleButtonDown() {
         }
         refreshUI();
     } else if (displayStatus == DISPST_DETAIL) {
-        displayCursor = (displayCursor == 0x04) ? 0x01 : (displayCursor + 0x01);
+        switch (displayCursor) {
+            // 100倍
+            case 0x05:
+                if (attack - 100 >= 0) {
+                    attack -= 100; setAttack(0xff, attack);
+                }
+                break;
+            case 0x06:
+                if (decay - 100 >= 0) {
+                    decay -= 100; setDecay(0xff, decay);
+                }
+                break;
+            case 0x07:
+                if (sustain - 100 >= 0) {
+                    sustain -= 100; setSustain(0xff, sustain);
+                }
+                break;
+            case 0x08:
+                if (release - 100 >= 0) {
+                    release -= 100; setRelease(0xff, release);
+                }
+                break;
+            // 通常
+            default:
+                displayCursor = (displayCursor == 0x04) ? 0x01 : (displayCursor + 0x01);
+                break;
+        }
         refreshUI();
     }
 }
 
 // 左が押された場合の処理
-void handleButtonLeft() {
+void handleButtonLeft(bool longPush = false) {
     if (displayStatus == DISPST_PRESETS) {
         switch (displayCursor) {
             case 0x01:
@@ -502,6 +537,7 @@ void handleButtonLeft() {
                 setPreset((synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) ? 0x01 : 0xff, selectedPreset);
                 break;
             case 0x02:
+                if (longPush) return;
                 synthMode = (synthMode == SYNTH_SINGLE) ? SYNTH_MULTI : (synthMode - 1);
                 setSynthMode(synthMode);
                 setPreset((synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) ? 0x01 : 0xff, selectedPreset);
@@ -516,40 +552,56 @@ void handleButtonLeft() {
         }
     } else if (displayStatus == DISPST_DETAIL) {
         switch (displayCursor) {
+            // 通常
             case 0x01:
-                if (attack - 50 >= 0) {
-                    attack -= 50;
-                    setAttack(0xff, attack);
-                    refreshUI();
+                if (attack - 1 >= 0) {
+                    attack -= 1; setAttack(0xff, attack);
                 }
                 break;
             case 0x02:
-                if (decay - 50 >= 0) {
-                    decay -= 50;
-                    setDecay(0xff, decay);
-                    refreshUI();
+                if (decay - 1 >= 0) {
+                    decay -= 1; setDecay(0xff, decay);
                 }
                 break;
             case 0x03:
-                if (sustain - 100 >= 0) {
-                    sustain -= 100;
-                    setSustain(0xff, sustain);
-                    refreshUI();
+                if (sustain - 1 >= 0) {
+                    sustain -= 1; setSustain(0xff, sustain);
                 }
                 break;
             case 0x04:
-                if (release - 50 >= 0) {
-                    release -= 50;
-                    setRelease(0xff, release);
-                    refreshUI();
+                if (release - 1 >= 0) {
+                    release -= 1; setRelease(0xff, release);
+                }
+                break;
+
+            // 10倍
+            case 0x05:
+                if (attack - 10 >= 0) {
+                    attack -= 10; setAttack(0xff, attack);
+                }
+                break;
+            case 0x06:
+                if (decay - 10 >= 0) {
+                    decay -= 10; setDecay(0xff, decay);
+                }
+                break;
+            case 0x07:
+                if (sustain - 10 >= 0) {
+                    sustain -= 10; setSustain(0xff, sustain);
+                }
+                break;
+            case 0x08:
+                if (release - 10 >= 0) {
+                    release -= 10; setRelease(0xff, release);
                 }
                 break;
         }
+        refreshUI();
     }
 }
 
 // 右が押された場合の処理
-void handleButtonRight() {
+void handleButtonRight(bool longPush = false) {
     if (displayStatus == DISPST_PRESETS) {
         switch (displayCursor) {
             case 0x01:
@@ -557,6 +609,7 @@ void handleButtonRight() {
                 setPreset((synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) ? 0x01 : 0xff, selectedPreset);
                 break;
             case 0x02:
+                if (longPush) return;
                 synthMode = (synthMode == SYNTH_MULTI) ? SYNTH_SINGLE : (synthMode + 1);
                 setSynthMode(synthMode);
                 setPreset((synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) ? 0x01 : 0xff, selectedPreset);
@@ -571,40 +624,57 @@ void handleButtonRight() {
         }
     } else if (displayStatus == DISPST_DETAIL) {
         switch (displayCursor) {
+            // 通常
             case 0x01:
-                if (attack + 50 <= 32000) {
-                    attack += 50;
-                    setAttack(0xff, attack);
-                    refreshUI();
+                if (attack + 1 <= 32000) {
+                    attack += 1; setAttack(0xff, attack); 
                 }
                 break;
             case 0x02:
-                if (decay + 50 <= 32000) {
-                    decay += 50;
-                    setDecay(0xff, decay);
-                    refreshUI();
+                if (decay + 1 <= 32000) {
+                    decay += 1; setDecay(0xff, decay);
                 }
                 break;
             case 0x03:
-                if (sustain + 100 <= 1000) {
-                    sustain += 100;
-                    setSustain(0xff, sustain);
-                    refreshUI();
+                if (sustain + 1 <= 1000) {
+                    sustain += 1; setSustain(0xff, sustain); 
                 }
                 break;
             case 0x04:
-                if (release + 50 <= 32000) {
-                    release += 50;
-                    setRelease(0xff, release);
-                    refreshUI();
+                if (release + 1 <= 32000) {
+                    release += 1; setRelease(0xff, release);  
+                }
+                break;
+
+            // 10倍
+            case 0x05:
+                if (attack + 10 <= 32000) {
+                    attack += 10; setAttack(0xff, attack); 
+                }
+                break;
+            case 0x06:
+                if (decay + 10 <= 32000) {
+                    decay += 10; setDecay(0xff, decay);
+                }
+                break;
+            case 0x07:
+                if (sustain + 10 <= 1000) {
+                    sustain += 10; setSustain(0xff, sustain); 
+                }
+                break;
+            case 0x08:
+                if (release + 10 <= 32000) {
+                    release += 10; setRelease(0xff, release);  
                 }
                 break;
         }
+        refreshUI();
     }
 }
 
 // エンターが押された場合の処理
-void handleButtonEnter() {
+void handleButtonEnter(bool longPush = false) {
+    if (longPush) return;
     if (displayStatus == DISPST_TITLE) {
         displayStatus = DISPST_PRESETS;
         refreshUI();
@@ -624,10 +694,33 @@ void handleButtonEnter() {
                 break;
         }
     }
+    else if (displayStatus == DISPST_DETAIL) {
+        switch (displayCursor) {
+            case 0x01: displayCursor = 0x05;
+                break;
+            case 0x02: displayCursor = 0x06;
+                break;
+            case 0x03: displayCursor = 0x07;
+                break;
+            case 0x04: displayCursor = 0x08;
+                break;
+
+            case 0x05: displayCursor = 0x01;
+                break;
+            case 0x06: displayCursor = 0x02;
+                break;
+            case 0x07: displayCursor = 0x03;
+                break;
+            case 0x08: displayCursor = 0x04;
+                break;
+        }
+        refreshUI();
+    }
 }
 
 // キャンセルが押された場合の処理
-void handleButtonCancel() {
+void handleButtonCancel(bool longPush = false) {
+    if (longPush) return;
     if (displayStatus == DISPST_PRESETS) {
         displayCursor = 0x00;
         refreshUI();
@@ -643,31 +736,73 @@ void loop() {
     if (buttonPressed) {
         // ボタンに応じた処理を実行
         switch (pressedButton) {
-            case BTN_UP:
-                handleButtonUp();
-                break;
+            case BTN_UP: handleButtonUp(); break;
+            case BTN_DOWN: handleButtonDown(); break;
+            case BTN_LEFT: handleButtonLeft(); break;
+            case BTN_RIGHT: handleButtonRight(); break;
+            case BTN_ENTER: handleButtonEnter(); break;
+            case BTN_CANCEL: handleButtonCancel(); break;
 
-            case BTN_DOWN:
-                handleButtonDown();
-                break;
-
-            case BTN_LEFT:
-                handleButtonLeft();
-                break;
-
-            case BTN_RIGHT:
-                handleButtonRight();
-                break;
-
-            case BTN_ENTER:
-                handleButtonEnter();
-                break;
-
-            case BTN_CANCEL:
-                handleButtonCancel();
-                break;
+            case BTN_LONG_UP: handleButtonUp(true); break;
+            case BTN_LONG_DOWN: handleButtonDown(true); break;
+            case BTN_LONG_LEFT: handleButtonLeft(true); break;
+            case BTN_LONG_RIGHT: handleButtonRight(true); break;
+            case BTN_LONG_ENTER: handleButtonEnter(true); break;
+            case BTN_LONG_CANCEL: handleButtonCancel(true); break;     
         }
         // ボタン処理が完了したので、フラグをリセット
         buttonPressed = false;
+    }
+}
+
+// ボタンの判定とチャタリング対策
+#define PUSH_SHORT  200
+#define LONG_TOGGLE 55000
+#define PUSH_LONG   50000
+uint16_t pushCount[] = {0, 0, 0, 0, 0, 0};
+bool longPushed[] = {false, false, false, false, false, false};
+void loop1() {
+    while(1){
+        for (int i = 0; i < BUTTON_COUNT; ++i) {
+            // ボタンが押されているときの判定
+            if (digitalRead(buttonPins[i]) == LOW) {
+                if (pushCount[i] <= PUSH_SHORT) pushCount[i]++;
+                else {
+                    if (longPushed[i] && pushCount[i] >= PUSH_LONG) {
+                        pressedButton = 
+                            (i == 0) ? BTN_LONG_UP :
+                            (i == 2) ? BTN_LONG_DOWN :
+                            (i == 1) ? BTN_LONG_LEFT :
+                            (i == 4) ? BTN_LONG_ENTER :
+                            (i == 3) ? BTN_LONG_RIGHT :
+                            (i == 5) ? BTN_LONG_CANCEL : BTN_NONE;
+                        buttonPressed = true;
+                        pushCount[i] = 0;
+                    }
+                    else if(pushCount[i] >= LONG_TOGGLE) {
+                        longPushed[i] = true;
+                        pushCount[i] = 0;
+                    }
+                    else {
+                        pushCount[i]++;
+                    }
+                }
+            }
+            // ボタンを離しているときの判定
+            else {
+                if(pushCount[i] >= PUSH_SHORT) {
+                    pressedButton = 
+                        (i == 0) ? BTN_UP :
+                        (i == 2) ? BTN_DOWN :
+                        (i == 1) ? BTN_LEFT :
+                        (i == 4) ? BTN_ENTER :
+                        (i == 3) ? BTN_RIGHT :
+                        (i == 5) ? BTN_CANCEL : BTN_NONE;
+                    buttonPressed = true;
+                }
+                pushCount[i] = 0;
+                longPushed[i] = false;
+            }
+        }
     }
 }
