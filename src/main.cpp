@@ -55,6 +55,7 @@ uint8_t pressedButton = BTN_NONE;
 #define DISPST_TITLE   0x01
 #define DISPST_PRESETS 0x02
 #define DISPST_DETAIL  0x03
+#define DISPST_DEBUG   0x04
 uint8_t displayStatus = DISPST_IDLE;
 uint8_t displayCursor = 0x00;
 
@@ -113,6 +114,82 @@ void ctrlTransmission(uint8_t* data, size_t size, uint8_t* received, size_t requ
         }
     }
     toggleCtrl(false);
+}
+
+// debugモード時に通信を受け取るためのコード
+// todo
+void refreshUI();
+uint8_t midi_notes_1[] = {0, 0, 0, 0};
+uint8_t midi_notes_2[] = {0, 0, 0, 0};
+uint8_t midi_num_1[] = {0, 0, 0, 0};
+uint8_t midi_num_2[] = {0, 0, 0, 0};
+void receiveEvent(int bytes) {
+    // 2バイト以上のみ受け付ける
+    if(bytes < 2) return;
+
+    int i = 0;
+    uint8_t receivedData[bytes];
+    while (ctrl.available()) {
+        uint8_t received = ctrl.read();
+        receivedData[i] = received;
+        i++;
+        if (i >= bytes) {
+            break;
+        }
+    }
+
+    uint8_t instruction = 0x00; // コード種別
+    if(receivedData[0] == INS_BEGIN) {
+        instruction = receivedData[1];
+    }
+
+    switch (instruction)
+    {
+        // 例: {INS_BEGIN, SYNTH_NOTE_ON, 0x53, 0x01, 0x01}
+        case SYNTH_NOTE_ON:
+            if(bytes < 5) return;
+            {
+                uint8_t note = receivedData[2];
+                uint8_t synth = receivedData[3];
+                uint8_t num = receivedData[4];
+                if(synth == 0x01) {
+                    midi_notes_1[0] = note;
+                    midi_num_1[0] = num;
+                    display.fillRect(2, 26, 20, 20, TFT_BLACK);
+                    display.drawString(" " + String(num), 2, 26);
+                }
+                else if(synth == 0x02) {
+                    midi_notes_2[0] = note;
+                    midi_num_2[0] = num;
+                    display.fillRect(2, 46, 20, 20, TFT_BLACK);
+                    display.drawString(" " + String(num), 2, 46);
+                }
+            }
+            break;
+
+        // 例: {INS_BEGIN, SYNTH_NOTE_OFF, 0x53, 0x01, 0x01}
+        case SYNTH_NOTE_OFF:
+            if(bytes < 5) return;
+            {
+                uint8_t note = receivedData[2];
+                uint8_t synth = receivedData[3];
+                uint8_t num = receivedData[4];
+                if(synth == 0x01) {
+                    midi_notes_1[0] = 0;
+                    midi_num_1[0] = 0;
+                    display.fillRect(2, 26, 20, 20, TFT_BLACK);
+                    display.drawString(" 000", 2, 26);
+                }
+                else if(synth == 0x02) {
+                    midi_notes_2[0] = 0;
+                    midi_num_2[0] = 0;
+                    display.fillRect(2, 46, 20, 20, TFT_BLACK);
+                    display.drawString(" 000", 2, 46);
+                }
+                
+            }
+            break;
+    }
 }
 
 /** @brief UIを更新 */
@@ -232,6 +309,25 @@ void refreshUI() {
             display.drawString("Release", 2, 46);
         }
         
+    }
+
+    // デバッグモード
+    else if(displayStatus == DISPST_DEBUG) {
+        // タイトル
+        display.drawString("Debug Mode", 2, 2);
+
+        // 横線
+        display.drawLine(0, 12, 127, 12, TFT_WHITE);
+
+        // シンセモード
+        uint8_t synth_x = display.textWidth("MIDI=1");
+        display.drawString("MIDI=1", 128 - 2 - synth_x, 2);
+
+        // デバッグ表示部
+        display.drawString("Synth1", 2, 16);
+        display.drawString(" 000 000 000 000", 2, 26);
+        display.drawString("Synth2", 2, 36);
+        display.drawString(" 000 000 000 000", 2, 46);
     }
 }
 
@@ -672,6 +768,8 @@ void handleButtonRight(bool longPush = false) {
     }
 }
 
+uint8_t long_count_to_enter_debug_mode = 0;
+
 // エンターが押された場合の処理
 void handleButtonEnter(bool longPush = false) {
     if (longPush) return;
@@ -720,11 +818,36 @@ void handleButtonEnter(bool longPush = false) {
 
 // キャンセルが押された場合の処理
 void handleButtonCancel(bool longPush = false) {
-    if (longPush) return;
-    if (displayStatus == DISPST_PRESETS) {
+    if (displayStatus == DISPST_TITLE) {
+        if(longPush) {
+            if(long_count_to_enter_debug_mode > 10) {
+                uint8_t data[] = {INS_BEGIN, DISP_DEBUG_ON};
+                uint8_t received[1];
+                ctrlTransmission(data, sizeof(data), received, 1);
+
+                if(received[0] != RES_OK) return;
+
+                displayStatus = DISPST_DEBUG;
+                ctrl.end();
+                ctrl.setSDA(CTRL_SDA_PIN);
+                ctrl.setSCL(CTRL_SCL_PIN);
+                ctrl.begin(CTRL_I2C_ADDR);
+                ctrl.setClock(1000000);
+                ctrl.onReceive(receiveEvent);
+                refreshUI();
+                return;
+            } else {
+                long_count_to_enter_debug_mode++;
+            }
+        } else {
+            long_count_to_enter_debug_mode = 0;
+        }
+    } else if (displayStatus == DISPST_PRESETS) {
+        if (longPush) return;
         displayCursor = 0x00;
         refreshUI();
     } else if (displayStatus == DISPST_DETAIL) {
+        if (longPush) return;
         displayCursor = 0x01;
         displayStatus = DISPST_PRESETS;
         refreshUI();

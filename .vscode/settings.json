@@ -17,6 +17,7 @@
         "type_traits": "cpp",
         "memory": "cpp",
         "semaphore": "cpp",
-        "stop_token": "cpp"
+        "stop_token": "cpp",
+        "ratio": "cpp"
     }
 }
