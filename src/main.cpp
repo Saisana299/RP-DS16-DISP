@@ -117,12 +117,7 @@ void ctrlTransmission(uint8_t* data, size_t size, uint8_t* received, size_t requ
 }
 
 // debugモード時に通信を受け取るためのコード
-// todo
 void refreshUI();
-uint8_t midi_notes_1[] = {0, 0, 0, 0};
-uint8_t midi_notes_2[] = {0, 0, 0, 0};
-uint8_t midi_num_1[] = {0, 0, 0, 0};
-uint8_t midi_num_2[] = {0, 0, 0, 0};
 void receiveEvent(int bytes) {
     // 2バイト以上のみ受け付ける
     if(bytes < 2) return;
@@ -143,52 +138,20 @@ void receiveEvent(int bytes) {
         instruction = receivedData[1];
     }
 
-    switch (instruction)
-    {
-        // 例: {INS_BEGIN, SYNTH_NOTE_ON, 0x53, 0x01, 0x01}
-        case SYNTH_NOTE_ON:
-            if(bytes < 5) return;
-            {
-                uint8_t note = receivedData[2];
-                uint8_t synth = receivedData[3];
-                uint8_t num = receivedData[4];
-                if(synth == 0x01) {
-                    midi_notes_1[0] = note;
-                    midi_num_1[0] = num;
-                    display.fillRect(2, 26, 20, 20, TFT_BLACK);
-                    display.drawString(" " + String(num), 2, 26);
-                }
-                else if(synth == 0x02) {
-                    midi_notes_2[0] = note;
-                    midi_num_2[0] = num;
-                    display.fillRect(2, 46, 20, 20, TFT_BLACK);
-                    display.drawString(" " + String(num), 2, 46);
-                }
-            }
-            break;
-
-        // 例: {INS_BEGIN, SYNTH_NOTE_OFF, 0x53, 0x01, 0x01}
-        case SYNTH_NOTE_OFF:
-            if(bytes < 5) return;
-            {
-                uint8_t note = receivedData[2];
-                uint8_t synth = receivedData[3];
-                uint8_t num = receivedData[4];
-                if(synth == 0x01) {
-                    midi_notes_1[0] = 0;
-                    midi_num_1[0] = 0;
-                    display.fillRect(2, 26, 20, 20, TFT_BLACK);
-                    display.drawString(" 000", 2, 26);
-                }
-                else if(synth == 0x02) {
-                    midi_notes_2[0] = 0;
-                    midi_num_2[0] = 0;
-                    display.fillRect(2, 46, 20, 20, TFT_BLACK);
-                    display.drawString(" 000", 2, 46);
-                }
-                
-            }
-            break;
+    if(instruction == DISP_DEBUG_DATA) {
+        // 例: {INS_BEGIN, DISP_DEBUG_DATA, DETA_BEGIN, 0x03, 0x01, 0x11, 0xA2}
+        if(bytes < 5) return;
+        uint8_t byte = receivedData[4];
+        if(bytes > 6) {
+            uint8_t byte2 = receivedData[5];
+            uint8_t byte3 = receivedData[6];
+        }
+        else if(bytes > 5) {
+            uint8_t byte2 = receivedData[5];
+        }
+        else {
+            //
+        }
     }
 }
 
@@ -320,14 +283,8 @@ void refreshUI() {
         display.drawLine(0, 12, 127, 12, TFT_WHITE);
 
         // シンセモード
-        uint8_t synth_x = display.textWidth("MIDI=1");
-        display.drawString("MIDI=1", 128 - 2 - synth_x, 2);
-
-        // デバッグ表示部
-        display.drawString("Synth1", 2, 16);
-        display.drawString(" 000 000 000 000", 2, 26);
-        display.drawString("Synth2", 2, 36);
-        display.drawString(" 000 000 000 000", 2, 46);
+        uint8_t synth_x = display.textWidth("MIDI-1.0");
+        display.drawString("MIDI-1.0", 128 - 2 - synth_x, 2);
     }
 }
 

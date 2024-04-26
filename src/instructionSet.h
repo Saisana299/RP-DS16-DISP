@@ -20,10 +20,7 @@
 #define DISP_SET_DECAY   0x46 // ディケイを設定
 #define DISP_SET_SUSTAIN 0x47 // サステインを設定
 #define DISP_DEBUG_ON    0x48 // デバッグモードを有効化
-
-//// CTRL受信用の命令コード (0x00と0xffは除外) 190~
-#define SYNTH_NOTE_ON     0xBE // ノートオン
-#define SYNTH_NOTE_OFF    0xBF // ノートオフ
+#define DISP_DEBUG_DATA  0x49 // デバッグ用データ
 
 //// 共通シンセ演奏状態コード
 #define SYNTH_SINGLE 0x00
