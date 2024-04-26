@@ -139,19 +139,40 @@ void receiveEvent(int bytes) {
     }
 
     if(instruction == DISP_DEBUG_DATA) {
-        // 例: {INS_BEGIN, DISP_DEBUG_DATA, DETA_BEGIN, 0x03, 0x01, 0x11, 0xA2}
-        if(bytes < 5) return;
-        uint8_t byte = receivedData[4];
-        if(bytes > 6) {
-            uint8_t byte2 = receivedData[5];
-            uint8_t byte3 = receivedData[6];
+        // 例: {INS_BEGIN, DISP_DEBUG_DATA, DETA_BEGIN, 0x04, 0x01, 0x11, 0xA2, 0x01}
+        if(bytes < 6) return;
+        uint8_t statusByte = receivedData[4];
+        uint8_t dataByte[2] = {0xff, 0xff};
+        uint8_t synthByte = receivedData[5];
+
+        if(bytes > 7) {
+            dataByte[0] = receivedData[5];
+            dataByte[1] = receivedData[6];
+            synthByte = receivedData[7];
         }
-        else if(bytes > 5) {
-            uint8_t byte2 = receivedData[5];
+        else if(bytes > 6) {
+            dataByte[0] = receivedData[5];
+            synthByte = receivedData[6];
         }
-        else {
-            //
+
+        display.fillRect(2, 16, 10, 10);
+        if(synthByte == 0x00) {
+            display.drawString("Synth: None", 2, 16);
+        }else{
+            char sy_chr[4]; sprintf(sy_chr, "0x%02x", synthByte);
+            display.drawString("Synth: " + String(sy_chr));
         }
+
+        char sb_chr[4]; sprintf(sb_chr, "0x%02x", statusByte);
+        char db1_chr[4];
+        if(dataByte[0] == 0xff) db1_chr = "----";
+        else sprintf(db1_chr, "0x%02x", dataByte[0]);
+        char db2_chr[4];
+        if(dataByte[1] == 0xff) db2_chr = "----";
+        else sprintf(db2_chr, "0x%02x", dataByte[1]);
+        
+        display.fillRect(2, 26, 10, 10);
+        display.drawString(" " + String(sb_chr) + " " + String(db1_chr) + " " + String(sb2_chr), 2, 26);
     }
 }
 
