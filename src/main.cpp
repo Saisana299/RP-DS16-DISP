@@ -155,24 +155,28 @@ void receiveEvent(int bytes) {
             synthByte = receivedData[6];
         }
 
-        display.fillRect(2, 16, 10, 10);
+        display.fillRect(2, 16, 126, 9, TFT_BLACK);
         if(synthByte == 0x00) {
-            display.drawString("Synth: None", 2, 16);
+            display.drawString("Global", 2, 16);
         }else{
-            char sy_chr[4]; sprintf(sy_chr, "0x%02x", synthByte);
-            display.drawString("Synth: " + String(sy_chr));
+            char sy_chr[12]; sprintf(sy_chr, "Synth%x", synthByte);
+            display.drawString(sy_chr, 2, 16);
         }
 
-        char sb_chr[4]; sprintf(sb_chr, "0x%02x", statusByte);
-        char db1_chr[4];
-        if(dataByte[0] == 0xff) db1_chr = "----";
+        char sb_chr[5]; sprintf(sb_chr, "0x%02x", statusByte);
+        char db1_chr[5];
+        if(dataByte[0] == 0xff) sprintf(db1_chr, "%s", "----");
         else sprintf(db1_chr, "0x%02x", dataByte[0]);
-        char db2_chr[4];
-        if(dataByte[1] == 0xff) db2_chr = "----";
+        char db2_chr[5];
+        if (dataByte[1] == 0xff) sprintf(db2_chr, "%s", "----");
         else sprintf(db2_chr, "0x%02x", dataByte[1]);
         
-        display.fillRect(2, 26, 10, 10);
-        display.drawString(" " + String(sb_chr) + " " + String(db1_chr) + " " + String(sb2_chr), 2, 26);
+        display.fillRect(2, 26, 126, 9, TFT_BLACK);
+        char msg[10]; sprintf(msg, " %s %s %s", sb_chr, db1_chr, db2_chr);
+        display.drawString(msg, 2, 26);
+
+        display.fillRect(2, 36, 126, 9, TFT_BLACK);
+        display.drawString("(Ch1 NoteOn A 46)", 2, 36);
     }
 }
 
@@ -306,6 +310,11 @@ void refreshUI() {
         // シンセモード
         uint8_t synth_x = display.textWidth("MIDI-1.0");
         display.drawString("MIDI-1.0", 128 - 2 - synth_x, 2);
+
+        // データ表示部
+        display.drawString("----", 2, 16);
+        display.drawString(" ---- ---- ----", 2, 26);
+        display.drawString("(Waiting data input)", 2, 36);
     }
 }
 
