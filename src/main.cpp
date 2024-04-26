@@ -25,6 +25,7 @@ int buttonPins[BUTTON_COUNT] = BUTTON_PINS;
 
 // DISP 関連
 LGFXRP2040 display;
+static LGFX_Sprite sprite(&display);
 
 // SDカード関連
 #define SD_SCK_PIN 2
@@ -155,12 +156,25 @@ void receiveEvent(int bytes) {
             synthByte = receivedData[6];
         }
 
-        display.fillRect(2, 16, 126, 9, TFT_BLACK);
+        sprite.createSprite(128, 64);
+
+        // タイトル
+        sprite.drawString("Debug Mode", 2, 2);
+
+        // 横線
+        sprite.drawLine(0, 12, 127, 12, TFT_WHITE);
+
+        // シンセモード
+        uint8_t synth_x = sprite.textWidth("MIDI-1.0");
+        sprite.drawString("MIDI-1.0", 128 - 2 - synth_x, 2);
+
+        // データ表示部
+        sprite.fillRect(2, 16, 126, 9, TFT_BLACK);
         if(synthByte == 0x00) {
-            display.drawString("Global", 2, 16);
+            sprite.drawString("Global", 2, 16);
         }else{
             char sy_chr[12]; sprintf(sy_chr, "Synth%x", synthByte);
-            display.drawString(sy_chr, 2, 16);
+            sprite.drawString(sy_chr, 2, 16);
         }
 
         char sb_chr[5]; sprintf(sb_chr, "0x%02x", statusByte);
@@ -171,84 +185,89 @@ void receiveEvent(int bytes) {
         if (dataByte[1] == 0xff) sprintf(db2_chr, "%s", "----");
         else sprintf(db2_chr, "0x%02x", dataByte[1]);
         
-        display.fillRect(2, 26, 126, 9, TFT_BLACK);
+        sprite.fillRect(2, 26, 126, 9, TFT_BLACK);
         char msg[10]; sprintf(msg, " %s %s %s", sb_chr, db1_chr, db2_chr);
-        display.drawString(msg, 2, 26);
+        sprite.drawString(msg, 2, 26);
 
-        display.fillRect(2, 36, 126, 9, TFT_BLACK);
-        display.drawString("(Ch1 NoteOn A 46)", 2, 36);
+        sprite.fillRect(2, 36, 126, 9, TFT_BLACK);
+        sprite.drawString("(Ch1 NoteOn A 46)", 2, 36);
+
+        sprite.pushSprite(0, 0);
+        sprite.deleteSprite();
     }
 }
 
 /** @brief UIを更新 */
 void refreshUI() {
-    display.fillScreen(TFT_BLACK);
-    display.setTextColor(TFT_WHITE);
+    sprite.createSprite(128, 64);
+
+    sprite.fillScreen(TFT_BLACK);
+    sprite.setTextColor(TFT_WHITE);
 
     if(displayStatus == DISPST_PRESETS){
         // プリセット
-        uint8_t preset_x = display.textWidth(" ");
-        uint8_t preset_y = display.height() / 2 - display.fontHeight() / 2;
+        uint8_t preset_x = sprite.textWidth(" ");
+        uint8_t preset_y = sprite.height() / 2 - sprite.fontHeight() / 2;
         char idstr[5]; sprintf(idstr, "%03d ", selectedPreset+1);
         char idstr2[5]; sprintf(idstr2, "%03d ", selectedPreset2+1);
 
         if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) {
-            display.drawString(idstr + presets[selectedPreset], preset_x, preset_y - 7);
-            display.drawString(idstr2 + presets[selectedPreset2], preset_x, preset_y + 7);
+            sprite.drawString(idstr + presets[selectedPreset], preset_x, preset_y - 7);
+            sprite.drawString(idstr2 + presets[selectedPreset2], preset_x, preset_y + 7);
         }
         else {
-            display.drawString(idstr + presets[selectedPreset], preset_x, preset_y);
+            sprite.drawString(idstr + presets[selectedPreset], preset_x, preset_y);
         }
         
         // MIDIチャンネル
         if(synthMode == SYNTH_MULTI){
-            display.drawString("MIDI=1&2", 2, 2);
+            sprite.drawString("MIDI=1&2", 2, 2);
         }else{
-            display.drawString("MIDI=1", 2, 2);
+            sprite.drawString("MIDI=1", 2, 2);
         }
 
         // シンセモード
-        uint8_t synth_x = display.textWidth(modes[synthMode]);
-        display.drawString(modes[synthMode], 128 - 2 - synth_x, 2);
+        uint8_t synth_x = sprite.textWidth(modes[synthMode]);
+        sprite.drawString(modes[synthMode], 128 - 2 - synth_x, 2);
 
         // 横線
-        display.drawLine(0, 12, 127, 12, TFT_WHITE);
-        display.drawLine(0, 51, 127, 51, TFT_WHITE);
+        sprite.drawLine(0, 12, 127, 12, TFT_WHITE);
+        sprite.drawLine(0, 51, 127, 51, TFT_WHITE);
 
         // カーソル位置
         if(displayCursor == 0x01) {
-            uint8_t x = display.textWidth(" ");
-            uint8_t y = display.height() / 2 - display.fontHeight() / 2;
+            uint8_t x = sprite.textWidth(" ");
+            uint8_t y = sprite.height() / 2 - sprite.fontHeight() / 2;
             char idstr[5]; sprintf(idstr, "%03d", selectedPreset+1);
 
             if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) {
-                display.fillRect(0, y-1-7, display.textWidth(" 000"), display.fontHeight()+1, TFT_WHITE);
-                display.setTextColor(TFT_BLACK);
-                display.drawString(idstr, x, y - 7);
+                sprite.fillRect(0, y-1-7, sprite.textWidth(" 000"), sprite.fontHeight()+1, TFT_WHITE);
+                sprite.setTextColor(TFT_BLACK);
+                sprite.drawString(idstr, x, y - 7);
             }
             else {
-                display.fillRect(0, y-1, display.textWidth(" 000"), display.fontHeight()+1, TFT_WHITE);
-                display.setTextColor(TFT_BLACK);
-                display.drawString(idstr, x, y);
+                sprite.fillRect(0, y-1, sprite.textWidth(" 000"), sprite.fontHeight()+1, TFT_WHITE);
+                sprite.setTextColor(TFT_BLACK);
+                sprite.drawString(idstr, x, y);
             }
         }
         else if(displayCursor == 0x02) {
-            uint8_t synth_x = display.textWidth(modes[synthMode]);
-            display.fillRect(128 - 4 - synth_x, 1, synth_x+3, display.fontHeight()+1, TFT_WHITE);
-            display.setTextColor(TFT_BLACK);
-            display.drawString(modes[synthMode], 128 - 2 - synth_x, 2);
+            uint8_t synth_x = sprite.textWidth(modes[synthMode]);
+            sprite.fillRect(128 - 4 - synth_x, 1, synth_x+3, sprite.fontHeight()+1, TFT_WHITE);
+            sprite.setTextColor(TFT_BLACK);
+            sprite.drawString(modes[synthMode], 128 - 2 - synth_x, 2);
         }
         else if(displayCursor == 0x03) {
             //todo
         }
         else if(displayCursor == 0x04) {
             if(synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) {
-                uint8_t x = display.textWidth(" ");
-                uint8_t y = display.height() / 2 - display.fontHeight() / 2;
+                uint8_t x = sprite.textWidth(" ");
+                uint8_t y = sprite.height() / 2 - sprite.fontHeight() / 2;
                 char idstr2[5]; sprintf(idstr2, "%03d", selectedPreset2+1);
-                display.fillRect(0, y-1+7, display.textWidth(" 000"), display.fontHeight()+1, TFT_WHITE);
-                display.setTextColor(TFT_BLACK);
-                display.drawString(idstr2, x, y + 7);
+                sprite.fillRect(0, y-1+7, sprite.textWidth(" 000"), sprite.fontHeight()+1, TFT_WHITE);
+                sprite.setTextColor(TFT_BLACK);
+                sprite.drawString(idstr2, x, y + 7);
             }
         }
     }
@@ -256,10 +275,10 @@ void refreshUI() {
     //アタックとかリリースとか
     else if(displayStatus == DISPST_DETAIL) {
         // タイトル
-        display.drawString("Preset Editor", 2, 2);
+        sprite.drawString("Preset Editor", 2, 2);
 
         // 横線
-        display.drawLine(0, 12, 127, 12, TFT_WHITE);
+        sprite.drawLine(0, 12, 127, 12, TFT_WHITE);
 
         // ADSR
         char a_sym = ':'; if (displayCursor == 0x05) a_sym = '>';
@@ -270,31 +289,31 @@ void refreshUI() {
         char d_chr[6]; sprintf(d_chr, "%d", decay);
         char s_chr[6]; sprintf(s_chr, "%d", sustain);
         char r_chr[6]; sprintf(r_chr, "%d", release);
-        display.drawString("Attack " + String(a_sym) + " " + String(a_chr) + " ms", 2, 16);
-        display.drawString("Decay  " + String(d_sym) + " " + String(d_chr) + " ms", 2, 26);
-        display.drawString("Sustain" + String(s_sym) + " " + String(s_chr), 2, 36);
-        display.drawString("Release" + String(r_sym) + " " + String(r_chr) + " ms", 2, 46);
+        sprite.drawString("Attack " + String(a_sym) + " " + String(a_chr) + " ms", 2, 16);
+        sprite.drawString("Decay  " + String(d_sym) + " " + String(d_chr) + " ms", 2, 26);
+        sprite.drawString("Sustain" + String(s_sym) + " " + String(s_chr), 2, 36);
+        sprite.drawString("Release" + String(r_sym) + " " + String(r_chr) + " ms", 2, 46);
 
         // 塗り
         if(displayCursor == 0x01 || displayCursor == 0x05) {
-            display.fillRect(1, 15, display.textWidth("Attack"), 9, TFT_WHITE);
-            display.setTextColor(TFT_BLACK);
-            display.drawString("Attack", 2, 16);
+            sprite.fillRect(1, 15, sprite.textWidth("Attack"), 9, TFT_WHITE);
+            sprite.setTextColor(TFT_BLACK);
+            sprite.drawString("Attack", 2, 16);
         }
         else if(displayCursor == 0x02 || displayCursor == 0x06) {
-            display.fillRect(1, 25, display.textWidth("Decay")+1, 9, TFT_WHITE);
-            display.setTextColor(TFT_BLACK);
-            display.drawString("Decay", 2, 26);
+            sprite.fillRect(1, 25, sprite.textWidth("Decay")+1, 9, TFT_WHITE);
+            sprite.setTextColor(TFT_BLACK);
+            sprite.drawString("Decay", 2, 26);
         }
         else if(displayCursor == 0x03 || displayCursor == 0x07) {
-            display.fillRect(1, 35, display.textWidth("Sustain")+1, 9, TFT_WHITE);
-            display.setTextColor(TFT_BLACK);
-            display.drawString("Sustain", 2, 36);
+            sprite.fillRect(1, 35, sprite.textWidth("Sustain")+1, 9, TFT_WHITE);
+            sprite.setTextColor(TFT_BLACK);
+            sprite.drawString("Sustain", 2, 36);
         }
         else if(displayCursor == 0x04 || displayCursor == 0x08) {
-            display.fillRect(1, 45, display.textWidth("Release")+1, 9, TFT_WHITE);
-            display.setTextColor(TFT_BLACK);
-            display.drawString("Release", 2, 46);
+            sprite.fillRect(1, 45, sprite.textWidth("Release")+1, 9, TFT_WHITE);
+            sprite.setTextColor(TFT_BLACK);
+            sprite.drawString("Release", 2, 46);
         }
         
     }
@@ -302,20 +321,22 @@ void refreshUI() {
     // デバッグモード
     else if(displayStatus == DISPST_DEBUG) {
         // タイトル
-        display.drawString("Debug Mode", 2, 2);
+        sprite.drawString("Debug Mode", 2, 2);
 
         // 横線
-        display.drawLine(0, 12, 127, 12, TFT_WHITE);
+        sprite.drawLine(0, 12, 127, 12, TFT_WHITE);
 
         // シンセモード
-        uint8_t synth_x = display.textWidth("MIDI-1.0");
-        display.drawString("MIDI-1.0", 128 - 2 - synth_x, 2);
+        uint8_t synth_x = sprite.textWidth("MIDI-1.0");
+        sprite.drawString("MIDI-1.0", 128 - 2 - synth_x, 2);
 
         // データ表示部
-        display.drawString("----", 2, 16);
-        display.drawString(" ---- ---- ----", 2, 26);
-        display.drawString("(Waiting data input)", 2, 36);
+        sprite.drawString("----", 2, 16);
+        sprite.drawString(" ---- ---- ----", 2, 26);
+        sprite.drawString("(Waiting data input)", 2, 36);
     }
+    sprite.pushSprite(0, 0);
+    sprite.deleteSprite();
 }
 
 /**
