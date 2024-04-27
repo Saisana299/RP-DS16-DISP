@@ -190,7 +190,11 @@ void receiveEvent(int bytes) {
         sprite.drawString(msg, 2, 26);
 
         sprite.fillRect(2, 36, 126, 9, TFT_BLACK);
-        sprite.drawString("(Ch1 NoteOn A 46)", 2, 36);
+        char statusStr[12] = "";
+        sprintf(statusStr, "%x", statusByte);
+        if(statusByte == 0x90) strcpy(statusStr, "Ch1-Noteon");
+        else if(statusByte == 0x80) strcpy(statusStr, "Ch1-Noteoff");
+        sprite.drawString("("+ String(statusStr) +" "+ String(dataByte[0]) +" "+ String(dataByte[1]) +")", 2, 36);
 
         sprite.pushSprite(0, 0);
         sprite.deleteSprite();
