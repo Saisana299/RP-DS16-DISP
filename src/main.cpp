@@ -890,6 +890,7 @@ void loop() {
 #define PUSH_SHORT  200
 #define LONG_TOGGLE 55000
 #define PUSH_LONG   50000
+uint16_t intervalCount = 0;
 uint16_t pushCount[] = {0, 0, 0, 0, 0, 0};
 bool longPushed[] = {false, false, false, false, false, false};
 void loop1() {
@@ -921,7 +922,7 @@ void loop1() {
             }
             // ボタンを離しているときの判定
             else {
-                if(pushCount[i] >= PUSH_SHORT) {
+                if(pushCount[i] >= PUSH_SHORT && intervalCount >= PUSH_LONG) {
                     pressedButton = 
                         (i == 0) ? BTN_UP :
                         (i == 2) ? BTN_DOWN :
@@ -930,10 +931,12 @@ void loop1() {
                         (i == 3) ? BTN_RIGHT :
                         (i == 5) ? BTN_CANCEL : BTN_NONE;
                     buttonPressed = true;
+                    intervalCount = 0;
                 }
                 pushCount[i] = 0;
                 longPushed[i] = false;
             }
         }
+        if(intervalCount <= PUSH_LONG) intervalCount++;
     }
 }
