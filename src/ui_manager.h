@@ -97,6 +97,8 @@ public:
 
     void goTitle() {
         pDisplay->showImage(TITLE_IMG);
+        delay(1);
+        pDisplay->fillRect(69, 31, 2, 2, TFT_BLACK); //謎の点消し
         displayStatus = DISPST_TITLE;
     }
 
