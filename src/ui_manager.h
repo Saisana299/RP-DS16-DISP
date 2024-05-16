@@ -27,6 +27,7 @@
 #define DISPST_PRESETS 0x02
 #define DISPST_DETAIL  0x03
 #define DISPST_DEBUG   0x04
+#define DISPST_MENU    0x05
 
 #define PUSH_SHORT  200
 #define LONG_TOGGLE 55000
@@ -110,7 +111,7 @@ public:
         pSprite->setTextColor(TFT_WHITE);
 
         if(displayStatus == DISPST_PRESETS){
-            // プリセット
+            // プリセット ###################################################
             uint8_t preset_x = pSprite->textWidth(" ");
             uint8_t preset_y = pSprite->height() / 2 - pSprite->fontHeight() / 2;
             char idstr[5]; sprintf(idstr, "%03d ", selectedPreset+1);
@@ -138,6 +139,10 @@ public:
             // 横線
             pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
             pSprite->drawLine(0, 51, 127, 51, TFT_WHITE);
+
+            // メニュー
+            uint8_t menu_x = pSprite->textWidth("Menu->");
+            pSprite->drawString("Menu->", 128 - 2 - menu_x, 55);
 
             // カーソル位置
             if(displayCursor == 0x01) {
@@ -175,9 +180,15 @@ public:
                     pSprite->drawString(idstr2, x, y + 7);
                 }
             }
+            else if(displayCursor == 0x05) {
+                uint8_t menu_x = pSprite->textWidth("Menu->");
+                pSprite->fillRect(128 - 4 - menu_x, 54, menu_x+3, pSprite->fontHeight()+54, TFT_WHITE);
+                pSprite->setTextColor(TFT_BLACK);
+                pSprite->drawString("Menu->", 128 - 2 - menu_x, 55);
+            }
         }
 
-        //アタックとかリリースとか
+        //アタックとかリリースとか ###################################################
         else if(displayStatus == DISPST_DETAIL) {
             // タイトル
             pSprite->drawString("Preset Editor", 2, 2);
@@ -223,7 +234,7 @@ public:
             
         }
 
-        // デバッグモード
+        // デバッグモード ###################################################
         else if(displayStatus == DISPST_DEBUG) {
             // タイトル
             pSprite->drawString("Debug Mode", 2, 2);
@@ -240,13 +251,35 @@ public:
             pSprite->drawString(" ---- ---- ----", 2, 26);
             pSprite->drawString("(Waiting data input)", 2, 36);
         }
+
+        // メニュー ###################################################
+        else if(displayStatus == DISPST_MENU) {
+            // タイトル
+            pSprite->drawString("Menu", 2, 2);
+
+            // 横線
+            pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
+
+            pSprite->drawString("Global Settings", 2, 16);
+            pSprite->drawString("File Manager", 2, 26);
+            pSprite->drawString("MIDI Player", 2, 36);
+        }
+
+        // 画面更新
         pSprite->pushSprite(0, 0);
         pSprite->deleteSprite();
+
+        // デバッグ用
+        char cursor[5];
+        sprintf(cursor, "0x%02x", displayCursor);
+        pDisplay->drawString(cursor, 2, 55);
     }
 
     // 上が押された場合の処理
     void handleButtonUp(bool longPush = false) {
         if (longPush) return;
+
+        // プリセット ###################################################
         if (displayStatus == DISPST_PRESETS) {
             switch (displayCursor) {
                 case 0x00:
@@ -255,13 +288,18 @@ public:
                     displayCursor++;
                     break;
                 case 0x03:
-                    displayCursor = (synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) ? 0x04 : 0x01;
+                    displayCursor = 0x05;
                     break;
                 case 0x04:
                     displayCursor = 0x01;
                     break;
+                case 0x05:
+                    displayCursor = (synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) ? 0x04 : 0x01;
+                    break;
             }
             refreshUI();
+
+        // ADSRとか ###################################################
         } else if (displayStatus == DISPST_DETAIL) {
             switch (displayCursor) {
                 // 100倍
@@ -297,6 +335,8 @@ public:
     // 下が押された場合の処理
     void handleButtonDown(bool longPush = false) {
         if (longPush) return;
+
+        // プリセット ###################################################
         if (displayStatus == DISPST_PRESETS) {
             switch (displayCursor) {
                 case 0x00:
@@ -304,16 +344,21 @@ public:
                     displayCursor = 0x01;
                     break;
                 case 0x01:
-                    displayCursor = (synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) ? 0x04 : 0x03;
+                    displayCursor = (synthMode == SYNTH_MULTI || synthMode == SYNTH_DUAL) ? 0x04 : 0x05;
                     break;
                 case 0x03:
                     displayCursor = 0x02;
                     break;
                 case 0x04:
+                    displayCursor = 0x05;
+                    break;
+                case 0x05:
                     displayCursor = 0x03;
                     break;
             }
             refreshUI();
+
+        // ADSRとか ###################################################
         } else if (displayStatus == DISPST_DETAIL) {
             switch (displayCursor) {
                 // 100倍
@@ -348,6 +393,8 @@ public:
 
     // 左が押された場合の処理
     void handleButtonLeft(bool longPush = false) {
+
+        // プリセット ###################################################
         if (displayStatus == DISPST_PRESETS) {
             switch (displayCursor) {
                 case 0x01:
@@ -371,6 +418,8 @@ public:
                     refreshUI(); 
                     break;
             }
+
+        // ADSRとか ###################################################
         } else if (displayStatus == DISPST_DETAIL) {
             switch (displayCursor) {
                 // 通常
@@ -423,6 +472,8 @@ public:
 
     // 右が押された場合の処理
     void handleButtonRight(bool longPush = false) {
+
+        // プリセット ###################################################
         if (displayStatus == DISPST_PRESETS) {
             switch (displayCursor) {
                 case 0x01:
@@ -446,6 +497,8 @@ public:
                     refreshUI(); 
                     break;
             }
+
+        // ADSRとか ###################################################
         } else if (displayStatus == DISPST_DETAIL) {
             switch (displayCursor) {
                 // 通常
@@ -501,9 +554,13 @@ public:
     // エンターが押された場合の処理
     void handleButtonEnter(bool longPush = false) {
         if (longPush) return;
+
+        // タイトル ###################################################
         if (displayStatus == DISPST_TITLE) {
             displayStatus = DISPST_PRESETS;
             refreshUI();
+
+        // プリセット ###################################################
         } else if (displayStatus == DISPST_PRESETS) {
             switch (displayCursor) {
                 case 0x02:
@@ -519,8 +576,15 @@ public:
                     displayCursor = 0x01;
                     refreshUI();
                     break;
+                case 0x05:
+                    displayCursor = 0x01;
+                    displayStatus = DISPST_MENU;
+                    refreshUI();
+                    break;
             }
         }
+
+        // ADSRとか ###################################################
         else if (displayStatus == DISPST_DETAIL) {
             switch (displayCursor) {
                 case 0x01: displayCursor = 0x05;
@@ -547,6 +611,8 @@ public:
 
     // キャンセルが押された場合の処理
     void handleButtonCancel(bool longPush = false) {
+
+        // タイトル ###################################################
         if (displayStatus == DISPST_TITLE) {
             if(longPush) {
                 if(long_count_to_enter_debug_mode > 10) {
@@ -571,13 +637,24 @@ public:
             } else {
                 long_count_to_enter_debug_mode = 0;
             }
+
+        // プリセット ###################################################
         } else if (displayStatus == DISPST_PRESETS) {
             if (longPush) return;
             displayCursor = 0x00;
             refreshUI();
+
+        // ADSRとか ###################################################
         } else if (displayStatus == DISPST_DETAIL) {
             if (longPush) return;
             displayCursor = 0x01;
+            displayStatus = DISPST_PRESETS;
+            refreshUI();
+
+        // メニュー ###################################################
+        } else if (displayStatus == DISPST_MENU) {
+            if (longPush) return;
+            displayCursor = 0x00;
             displayStatus = DISPST_PRESETS;
             refreshUI();
         }

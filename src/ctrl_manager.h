@@ -68,6 +68,7 @@ public:
      * @param requestSize 要求するサイズ
      */
     void ctrlTransmission(uint8_t* data, size_t size, uint8_t* received, size_t requestSize) {
+        digitalWrite(LED_BUILTIN, HIGH);
         toggleCtrl(true);
         ctrl.beginTransmission(CTRL_I2C_ADDR);
         ctrl.write(data, size);
@@ -83,6 +84,7 @@ public:
             }
         }
         toggleCtrl(false);
+        digitalWrite(LED_BUILTIN, LOW);
     }
 
     static void receiveWrapper(int bytes) {

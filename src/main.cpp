@@ -32,7 +32,11 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     pinMode(CTRL_SW_PIN, OUTPUT);
 
-    digitalWrite(CTRL_SW_PIN, LOW);
+    // CTRLとの接続の調整
+    for (int i = 0; i < 5; i++) {
+        digitalWrite(CTRL_SW_PIN, HIGH);
+        digitalWrite(CTRL_SW_PIN, LOW);
+    }
 
     ctrl.init();
     file.init();

@@ -1,3 +1,5 @@
+#include <ArduinoJson.h>
+
 class FileManager {
 private:
     // SDカード関連
@@ -20,15 +22,50 @@ public:
         SPI.setTX(SD_TX_PIN);
     }
 
+    bool folderExists(const char* path) {
+        File root = SD.open("/");
+        File entry;
+        while (entry = root.openNextFile()) {
+            if (entry.isDirectory() && strcmp(entry.name(), path) == 0) {
+                entry.close();
+                root.close();
+                return true;
+            }
+            entry.close();
+        }
+        root.close();
+        return false;
+    }
+
     bool checkSD() {
         // SDカード確認
-        if(!SD.begin(SD_CS_PIN)) {
+        if (!SD.begin(SD_CS_PIN)) {
             pDisplay->drawString("Error:1201", 1, 1);
             pDisplay->drawString("SD card error.", 1, 11);
             return false;
         }
-        File myFile = SD.open("settings.json", FILE_WRITE);
-        myFile.close();
-        return true;
+        
+        try {
+            // ディレクトリ確認
+            if (!folderExists("rp-ds16")) {
+                SD.mkdir("rp-ds16");
+            }
+            // 設定ファイル確認
+            if (!SD.exists("/rp-ds16/settings.json")) {
+                File newFile = SD.open("/rp-ds16/settings.json", FILE_WRITE);
+                newFile.println("{}");
+                newFile.close();
+            }
+            File file = SD.open("/rp-ds16/settings.json", FILE_WRITE);
+            
+            file.close();
+            return true;
+
+        } catch (const char* error) {
+            pDisplay->drawString("Error:1202", 1, 1);
+            pDisplay->drawString("SD card error.", 1, 11);
+            pDisplay->drawString(error, 1, 21);
+            return false;
+        }
     }
 };
