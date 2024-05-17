@@ -1,3 +1,5 @@
+#include <wokwi.h>
+
 #ifndef CTRLMANAGER_H
 #define CTRLMANAGER_H
 
@@ -28,16 +30,17 @@ public:
     }
 
     bool checkConnection() {
+
+        #if WOKWI_MODE == 1
+            return true;
+        #endif
+
         uint8_t data[] = {INS_BEGIN, DISP_CONNECT};
         uint8_t received[1];
         ctrlTransmission(data, sizeof(data), received, 1);
 
         // 応答が返ってくればOK
-        if(received[0] == RES_OK){
-            digitalWrite(LED_BUILTIN, HIGH);
-            delay(10);
-            digitalWrite(LED_BUILTIN, LOW);
-        }else{
+        if(received[0] != RES_OK){
             pDisplay->drawString("Error:1101", 1, 1);
             pDisplay->drawString("Please check the conn", 1, 11);
             pDisplay->drawString("ection.", 1, 21);
@@ -68,6 +71,12 @@ public:
      * @param requestSize 要求するサイズ
      */
     void ctrlTransmission(uint8_t* data, size_t size, uint8_t* received, size_t requestSize) {
+
+        #if WOKWI_MODE == 1
+            *received = RES_OK;
+            return;
+        #endif
+        
         digitalWrite(LED_BUILTIN, HIGH);
         toggleCtrl(true);
         ctrl.beginTransmission(CTRL_I2C_ADDR);

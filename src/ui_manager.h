@@ -1,5 +1,6 @@
 #include <ctrl_manager.h>
 #include <synth_manager.h>
+#include <wokwi.h>
 
 #ifndef UIMANAGER_H
 #define UIMANAGER_H
@@ -29,9 +30,15 @@
 #define DISPST_DEBUG   0x04
 #define DISPST_MENU    0x05
 
-#define PUSH_SHORT  200
-#define LONG_TOGGLE 55000
-#define PUSH_LONG   50000
+#if WOKWI_MODE != 1
+    #define PUSH_SHORT  200
+    #define LONG_TOGGLE 55000
+    #define PUSH_LONG   50000
+#else
+    #define PUSH_SHORT  1
+    #define LONG_TOGGLE 5
+    #define PUSH_LONG   5
+#endif
 
 class UIManager {
 private:
@@ -97,9 +104,6 @@ public:
     }
 
     void goTitle() {
-        pDisplay->showImage(TITLE_IMG);
-        delay(1);
-        pDisplay->fillRect(69, 31, 2, 2, TFT_BLACK); //謎の点消し
         displayStatus = DISPST_TITLE;
     }
 
@@ -109,6 +113,11 @@ public:
 
         pSprite->fillScreen(TFT_BLACK);
         pSprite->setTextColor(TFT_WHITE);
+
+        // デバッグ用
+        char cursor[5];
+        sprintf(cursor, "0x%02x", displayCursor);
+        pSprite->drawString(cursor, 2, 55);
 
         if(displayStatus == DISPST_PRESETS){
             // プリセット ###################################################
@@ -141,8 +150,8 @@ public:
             pSprite->drawLine(0, 51, 127, 51, TFT_WHITE);
 
             // メニュー
-            uint8_t menu_x = pSprite->textWidth("Menu->");
-            pSprite->drawString("Menu->", 128 - 2 - menu_x, 55);
+            uint8_t menu_x = pSprite->textWidth("Menu>>");
+            pSprite->drawString("Menu>>", 128 - 2 - menu_x, 55);
 
             // カーソル位置
             if(displayCursor == 0x01) {
@@ -181,10 +190,10 @@ public:
                 }
             }
             else if(displayCursor == 0x05) {
-                uint8_t menu_x = pSprite->textWidth("Menu->");
-                pSprite->fillRect(128 - 4 - menu_x, 54, menu_x+3, pSprite->fontHeight()+54, TFT_WHITE);
+                uint8_t menu_x = pSprite->textWidth("Menu>>");
+                pSprite->fillRect(128 - 4 - menu_x, 54, menu_x+3, pSprite->fontHeight()+53, TFT_WHITE);
                 pSprite->setTextColor(TFT_BLACK);
-                pSprite->drawString("Menu->", 128 - 2 - menu_x, 55);
+                pSprite->drawString("Menu>>", 128 - 2 - menu_x, 55);
             }
         }
 
@@ -255,7 +264,7 @@ public:
         // メニュー ###################################################
         else if(displayStatus == DISPST_MENU) {
             // タイトル
-            pSprite->drawString("Menu", 2, 2);
+            pSprite->drawString("MAIN MENU", 2, 2);
 
             // 横線
             pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
@@ -268,11 +277,6 @@ public:
         // 画面更新
         pSprite->pushSprite(0, 0);
         pSprite->deleteSprite();
-
-        // デバッグ用
-        char cursor[5];
-        sprintf(cursor, "0x%02x", displayCursor);
-        pDisplay->drawString(cursor, 2, 55);
     }
 
     // 上が押された場合の処理
@@ -728,6 +732,13 @@ public:
             }
         }
         if(intervalCount <= PUSH_LONG) intervalCount++;
+    }
+
+    void imageHandler() {
+        if(Serial2.available() > 0) {
+            String data = Serial2.readStringUntil('\n'); // 改行までのデータを受信
+            pDisplay->showImage(pSprite, data);
+        }
     }
 };
 

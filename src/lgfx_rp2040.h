@@ -1,7 +1,12 @@
 #include <LovyanGFX.hpp>
+#include <wokwi.h>
 
 class LGFXRP2040 : public lgfx::LGFX_Device {
+#if WOKWI_MODE != 1
     lgfx::Panel_SH110x _panel_instance;
+#else
+    lgfx::Panel_SSD1306 _panel_instance;
+#endif
     lgfx::Bus_I2C       _bus_instance;
 public:
     LGFXRP2040(void) {
@@ -26,7 +31,13 @@ public:
 
             cfg.panel_width      =   128; // 実際に表示可能な幅
             cfg.panel_height     =    64; // 実際に表示可能な高さ
-            cfg.offset_x         =     2; // パネルのX方向オフセット量
+
+            #if WOKWI_MODE != 1
+                cfg.offset_x     =     2; // パネルのX方向オフセット量
+            #else
+                cfg.offset_x     =     0; // パネルのX方向オフセット量
+            #endif
+
             cfg.offset_y         =     0; // パネルのY方向オフセット量
             cfg.offset_rotation  =     2; // 回転方向の値のオフセット 0~7 (4~7は上下反転)
             cfg.dummy_read_pixel =     8; // ピクセル読出し前のダミーリードのビット数
@@ -52,7 +63,7 @@ public:
      * @param w 描画範囲：長さ
      * @param h 描画範囲：高さ
      */
-    void showImage(String data, int x = 0, int y = 0, int w = 128, int h = 64) {
+    void showImage(LGFX_Sprite* sprite, String data, int x = 0, int y = 0, int w = 128, int h = 64) {
         const uint16_t maxSize = 8192; // SSD1306 128x64 用 最大画素数
         uint8_t bitmap[maxSize];
         uint16_t count = 0;
@@ -73,8 +84,11 @@ public:
             }
             ptr = strtok(nullptr, ",");
         }
+
         // データを表示
-        pushImage(x, y, w, h, bitmap);
-        display();
+        sprite->createSprite(128, 64);
+        sprite->pushImage(x, y, w, h, bitmap);
+        sprite->pushSprite(0, 0);
+        sprite->deleteSprite();
     }
 };

@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <Wire.h>
-#include <debug.h>
 #include <graphics.h>
 #include <lgfx_rp2040.h>
 #include <instruction_set.h>
@@ -10,10 +9,7 @@
 #include <ctrl_manager.h>
 #include <ui_manager.h>
 #include <synth_manager.h>
-
-// debug 関連
-#define DEBUG_MODE 1 //0 or 1
-Debug debug(DEBUG_MODE, Serial2, 8, 9, 115200);
+#include <wokwi.h>
 
 // 共通変数
 LGFXRP2040 display;
@@ -40,7 +36,16 @@ void setup() {
 
     ctrl.init();
     file.init();
-    debug.init();
+
+    // DebugPin
+    Serial2.setTX(8);
+    Serial2.setRX(9);
+    Serial2.begin(1000000);
+
+    #if WOKWI_MODE == 1
+        Serial1.begin(115200);
+    #endif
+
     ui.init();
 
     // SDカード確認
@@ -48,13 +53,31 @@ void setup() {
 
     // CTRLとの接続を確認します
     if(!ctrl.checkConnection()) return;
-    else ui.goTitle();
+
+    display.showImage(&sprite, TITLE_IMG);
+    delay(1);
+    sprite.createSprite(2, 2);
+    sprite.fillRect(0, 0, 2, 2, TFT_BLACK); //謎の点消し
+    sprite.pushSprite(69, 31);
+    sprite.deleteSprite();
+    ui.goTitle();
 }
 
 void loop() {
-    while(1) ui.buttonHandler();
+    while(1) {
+
+        #if WOKWI_MODE == 1
+            delay(10);
+            ui.buttonListener();
+        #endif
+
+        ui.buttonHandler();
+        ui.imageHandler();
+    }
 }
 
+#if WOKWI_MODE != 1
 void loop1() {
     while(1) ui.buttonListener();
 }
+#endif
