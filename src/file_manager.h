@@ -1,5 +1,8 @@
 #include <ArduinoJson.h>
 
+#ifndef FILEMANAGER_H
+#define FILEMANAGER_H
+
 class FileManager {
 private:
     // SDカード関連
@@ -22,19 +25,39 @@ public:
         SPI.setTX(SD_TX_PIN);
     }
 
-    bool folderExists(const char* path) {
-        File root = SD.open("/");
-        File entry;
-        while (entry = root.openNextFile()) {
-            if (entry.isDirectory() && strcmp(entry.name(), path) == 0) {
-                entry.close();
-                root.close();
-                return true;
+    bool initJson(String dir, String file_name, String json = "{}") {
+        try {
+            // ディレクトリ生成
+            SD.mkdir(dir);
+
+            // ファイル初期化
+            if (!SD.exists(dir + "/" + file_name)) {
+                File newFile = SD.open(dir + "/" + file_name, FILE_WRITE);
+                newFile.println(json);
+                newFile.close();
             }
-            entry.close();
+        } catch (const char* error) {
+            pDisplay->drawString("Error:1202", 1, 1);
+            pDisplay->drawString("SD card error.", 1, 11);
+            pDisplay->drawString(error, 1, 21);
+            return false;
         }
-        root.close();
-        return false;
+        return true;
+    }
+
+    bool getJson(JsonDocument* doc, String path) {
+        try {
+            if(!SD.exists(path)) return false;
+            File file = SD.open(path, FILE_READ);
+            deserializeJson(*doc, file);
+            file.close();
+        } catch (const char* error) {
+            pDisplay->drawString("Error:1202", 1, 1);
+            pDisplay->drawString("SD card error.", 1, 11);
+            pDisplay->drawString(error, 1, 21);
+            return false;
+        }
+        return true;
     }
 
     bool checkSD() {
@@ -44,28 +67,18 @@ public:
             pDisplay->drawString("SD card error.", 1, 11);
             return false;
         }
-        
-        try {
-            // ディレクトリ確認
-            if (!folderExists("rp-ds16")) {
-                SD.mkdir("rp-ds16");
-            }
-            // 設定ファイル確認
-            if (!SD.exists("/rp-ds16/settings.json")) {
-                File newFile = SD.open("/rp-ds16/settings.json", FILE_WRITE);
-                newFile.println("{}");
-                newFile.close();
-            }
-            File file = SD.open("/rp-ds16/settings.json", FILE_WRITE);
-            
-            file.close();
-            return true;
 
-        } catch (const char* error) {
-            pDisplay->drawString("Error:1202", 1, 1);
-            pDisplay->drawString("SD card error.", 1, 11);
-            pDisplay->drawString(error, 1, 21);
-            return false;
-        }
+        bool result = initJson("/rp-ds16", "settings.json");
+        if(!result) return false;
+
+        result = initJson("/rp-ds16", "presets.json");
+        if(!result) return false;
+
+        SD.mkdir("/rp-ds16/midi");
+        SD.mkdir("/rp-ds16/rlev");
+        
+        return true;
     }
 };
+
+#endif // FILEMANAGER_H

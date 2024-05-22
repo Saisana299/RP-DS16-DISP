@@ -18,6 +18,7 @@
         "memory": "cpp",
         "semaphore": "cpp",
         "stop_token": "cpp",
-        "ratio": "cpp"
+        "ratio": "cpp",
+        "functional": "cpp"
     }
 }

@@ -19,10 +19,10 @@ static LGFX_Sprite sprite(&display);
 CtrlManager* CtrlManager::instance = nullptr;
 CtrlManager ctrl(&display, &sprite);
 SynthManager synth(&ctrl);
-UIManager ui(
-    &display, &sprite, &ctrl, &synth
-);
 FileManager file(&display);
+UIManager ui(
+    &display, &sprite, &ctrl, &synth, &file
+);
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
@@ -40,11 +40,7 @@ void setup() {
     // DebugPin
     Serial2.setTX(8);
     Serial2.setRX(9);
-    Serial2.begin(1000000);
-
-    #if WOKWI_MODE == 1
-        Serial1.begin(115200);
-    #endif
+    Serial2.begin(115200);
 
     ui.init();
 
@@ -72,7 +68,6 @@ void loop() {
         #endif
 
         ui.buttonHandler();
-        ui.imageHandler();
     }
 }
 

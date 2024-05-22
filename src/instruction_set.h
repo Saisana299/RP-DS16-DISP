@@ -4,6 +4,7 @@
 #define DATA_SEPARATE 0x81 // データ区切り
 #define RES_OK        0x82 // 処理正常終了
 #define RES_ERROR     0x83 // エラー発生時
+#define DATA_END      0x84 // データ終了
 
 //// CTRL送信用の命令コード (0x00と0xffは除外) 63~
 //// 例：{0x7F, 0x40, 0x80, 0x01(データサイズ 1~255), 0x04(データ)}
@@ -21,6 +22,9 @@
 #define DISP_SET_SUSTAIN 0x47 // サステインを設定
 #define DISP_DEBUG_ON    0x48 // デバッグモードを有効化
 #define DISP_DEBUG_DATA  0x49 // デバッグ用データ
+#define DISP_SET_CSHAPE  0x4A // カスタムシェイプを設定
+#define DISP_STOP_SYNTH  0x4B // シンセの制御を停止する
+#define DISP_START_SYNTH 0x4C // シンセの制御を開始する
 
 //// 共通シンセ演奏状態コード
 #define SYNTH_SINGLE 0x00

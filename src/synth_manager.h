@@ -6,6 +6,7 @@
 class SynthManager {
 private:
     CtrlManager* pCtrl;
+    uint8_t cshape_buff[4096];
 
 public:
     SynthManager(CtrlManager* addr1) {
@@ -129,6 +130,59 @@ public:
         };
         uint8_t received[1];
         pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
+    }
+
+    // カスタムシェイプを設定
+    void setCustomShape(uint8_t synth, int16_t* wave) {
+
+        uint8_t osc = 0x01;//todo
+        uint8_t received[1];
+
+        // シンセリセット
+        uint8_t reset_data[] = {INS_BEGIN, DISP_RESET_SYNTH, DATA_BEGIN, 0x01, 0xff};
+        pCtrl->ctrlTransmission(reset_data, sizeof(reset_data), received, 1);
+
+        // シンセ制御停止
+        uint8_t stop_data[] = {INS_BEGIN, DISP_STOP_SYNTH};
+        pCtrl->ctrlTransmission(stop_data, sizeof(stop_data), received, 1);
+
+        memset(cshape_buff, 0, 4096 * sizeof(uint8_t)); // バッファをクリア
+        uint16_t j = 0;
+        for (uint16_t i = 0; i < 4096; i += 2) {
+            cshape_buff[i] = static_cast<uint8_t>(wave[j] & 0xFF); // 下位バイト
+            cshape_buff[i+1] = static_cast<uint8_t>((wave[j] >> 8) & 0xFF); // 上位バイト
+            j++;
+        }
+
+        j = 0;
+
+        while(1) {
+            uint8_t data[30];
+            for (uint16_t i = 0; i < 30; i++) {
+                if(i == 0) data[i] = INS_BEGIN;
+                else if(i == 1) data[i] = DISP_SET_CSHAPE;
+                else if(i == 2) data[i] = DATA_BEGIN;
+                else if(i == 3) data[i] = 0x24;
+                else if(i == 4) data[i] = synth;
+                else if(i == 5) data[i] = osc;
+                else {
+                    if(j == 4096) {
+                        break;
+                    }
+                    else data[i] = cshape_buff[j];
+                    j++;
+                }
+            }
+
+            pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
+
+            if(j == 4096) break;
+            delay(10);
+        }
+
+        // シンセ制御再開
+        uint8_t start_data[] = {INS_BEGIN, DISP_START_SYNTH};
+        pCtrl->ctrlTransmission(start_data, sizeof(start_data), received, 1);
     }
 };
 
