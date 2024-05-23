@@ -19,6 +19,11 @@
         "semaphore": "cpp",
         "stop_token": "cpp",
         "ratio": "cpp",
-        "functional": "cpp"
+        "functional": "cpp",
+        "typeinfo": "cpp",
+        "chrono": "cpp",
+        "istream": "cpp",
+        "tuple": "cpp",
+        "utility": "cpp"
     }
 }

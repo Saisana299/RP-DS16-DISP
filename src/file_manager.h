@@ -60,6 +60,29 @@ public:
         return true;
     }
 
+    void getFiles(String path, File *files, uint8_t count, int offset = 0) {
+        File dir = SD.open(path);
+        File file = dir.openNextFile();
+        for (uint8_t i = 0; i < count + offset; i++) {
+            if(i - offset >= 0)    
+                files[i - offset] = file;
+            file = dir.openNextFile();
+        }
+        dir.close();
+    }
+
+    int getFileCount(String path) {
+        File dir = SD.open(path);
+        File file = dir.openNextFile();
+        int count = 0;
+        while (file) {
+            count++;
+            file = dir.openNextFile();
+        }
+        dir.close();
+        return count;
+    }
+
     bool checkSD() {
         // SDカード確認
         if (!SD.begin(SD_CS_PIN)) {
@@ -74,8 +97,9 @@ public:
         result = initJson("/rp-ds16", "presets.json");
         if(!result) return false;
 
-        SD.mkdir("/rp-ds16/midi");
-        SD.mkdir("/rp-ds16/rlev");
+        SD.mkdir("/rp-ds16/midi"); // .midi
+        SD.mkdir("/rp-ds16/rlem"); // .rlem
+        SD.mkdir("/rp-ds16/wavetable"); // .json
         
         return true;
     }
