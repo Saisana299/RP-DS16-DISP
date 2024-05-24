@@ -1,0 +1,7 @@
+{
+	"preset_name": "Test Preset",
+	"osc1": {
+		"type": "custom",
+		"wave": "test_table.json"
+	}
+}

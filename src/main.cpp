@@ -50,8 +50,9 @@ void setup() {
     // CTRLとの接続を確認します
     if(!ctrl.checkConnection()) return;
 
-    // プリセットをロードする
-    ui.loadAllPreset();
+    // 全てのユーザーファイルをロードする
+    ui.loadUserFiles("preset");
+    ui.loadUserFiles("wavetable");
 
     display.showImage(&sprite, TITLE_IMG);
     delay(1);
