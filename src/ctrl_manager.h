@@ -172,10 +172,12 @@ public:
             pSprite->drawString(msg, 2, 26);
 
             pSprite->fillRect(2, 36, 126, 9, TFT_BLACK);
-            char statusStr[12] = "";
+            char statusStr[13] = "";
             sprintf(statusStr, "%x", statusByte);
-            if(statusByte == 0x90) strcpy(statusStr, "Ch1-Noteon");
-            else if(statusByte == 0x80) strcpy(statusStr, "Ch1-Noteoff");
+            if(statusByte == 0x90) strcpy(statusStr, "CH1_NOTE_ON");
+            else if(statusByte == 0x80) strcpy(statusStr, "CH1_NOTE_OFF");
+            else if(statusByte == 0x91) strcpy(statusStr, "CH2_NOTE_ON");
+            else if(statusByte == 0x81) strcpy(statusStr, "CH2_NOTE_OFF");
             pSprite->drawString("("+ String(statusStr) +" "+ String(dataByte[0]) +" "+ String(dataByte[1]) +")", 2, 36);
 
             pSprite->pushSprite(0, 0);

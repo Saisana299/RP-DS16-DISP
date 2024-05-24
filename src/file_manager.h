@@ -45,6 +45,15 @@ public:
         return true;
     }
 
+    bool hasExtension(const String &filename, const String &extension) {
+        int extIndex = filename.lastIndexOf(extension);
+        if (extIndex == -1) {
+            return false;
+        }
+        // 拡張子がファイル名の末尾にあるかどうかを確認
+        return (extIndex + extension.length() == filename.length());
+    }
+
     bool getJson(JsonDocument* doc, String path) {
         try {
             if(!SD.exists(path)) return false;
@@ -94,10 +103,8 @@ public:
         bool result = initJson("/rp-ds16", "settings.json");
         if(!result) return false;
 
-        result = initJson("/rp-ds16", "presets.json");
-        if(!result) return false;
-
-        SD.mkdir("/rp-ds16/midi"); // .midi
+        SD.mkdir("/rp-ds16/preset"); // .json
+        SD.mkdir("/rp-ds16/midi"); // .mid
         SD.mkdir("/rp-ds16/rlem"); // .rlem
         SD.mkdir("/rp-ds16/wavetable"); // .json
         

@@ -50,6 +50,9 @@ void setup() {
     // CTRLとの接続を確認します
     if(!ctrl.checkConnection()) return;
 
+    // プリセットをロードする
+    ui.loadAllPreset();
+
     display.showImage(&sprite, TITLE_IMG);
     delay(1);
     sprite.createSprite(2, 2);
@@ -61,18 +64,15 @@ void setup() {
 
 void loop() {
     while(1) {
-
         #if WOKWI_MODE == 1
             delay(10);
-            ui.buttonListener();
         #endif
-
-        ui.buttonHandler();
+        ui.buttonListener();
     }
 }
 
-#if WOKWI_MODE != 1
-void loop1() {
-    while(1) ui.buttonListener();
-}
-#endif
+// #if WOKWI_MODE != 1
+// void loop1() {
+//     //todo
+// }
+// #endif
