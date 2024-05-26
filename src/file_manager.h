@@ -95,6 +95,7 @@ public:
     bool checkSD() {
         // SDカード確認
         if (!SD.begin(SD_CS_PIN)) {
+            pDisplay->fillScreen(TFT_BLACK);
             pDisplay->drawString("Error:1201", 1, 1);
             pDisplay->drawString("SD card error.", 1, 11);
             return false;

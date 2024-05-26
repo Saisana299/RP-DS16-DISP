@@ -128,8 +128,21 @@ public:
         // ローディング処理
         pDisplay->init();
         pDisplay->fillScreen(TFT_BLACK);
-        pDisplay->drawString("Loading...", 1, 1);
-        delay(1000);
+        
+        //powered by raspberry pi
+        pDisplay->showImage(pSprite, POWERED_IMG);
+        delay(3000);
+
+        pDisplay->fillScreen(TFT_BLACK);
+        pDisplay->drawString("init devices", 1, 1);
+        String message = "...";
+        uint8_t x = 1+6*12;
+        for (int i = 0; i < message.length(); i++) {
+            delay(500);
+            pDisplay->drawString(message.substring(i, i + 1), x, 1);
+            x += 6;
+        }
+        delay(500);
 
         // ボタン初期化
         for (int i = 0; i < BUTTON_COUNT; ++i) {
@@ -194,6 +207,7 @@ public:
             }
 
             pSprite->drawString(String(i + 8) + "/256", 2, 12);
+            pSprite->drawLine(0, 63, (float(i+8)/256.0f)*127, 63, TFT_WHITE);
             pSprite->pushSprite(0, 0);
             pSprite->deleteSprite();
         }

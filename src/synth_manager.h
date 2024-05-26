@@ -5,6 +5,8 @@
 
 class SynthManager {
 private:
+    LGFXRP2040* pDisplay;
+    LGFX_Sprite* pSprite;
     CtrlManager* pCtrl;
     uint8_t cshape_buff[4096];
 
@@ -32,6 +34,8 @@ private:
         j = 0;
 
         while(1) {
+            pSprite->createSprite(64, 10);
+
             uint8_t data[30];
             for (uint16_t i = 0; i < 30; i++) {
                 if(i == 0) data[i] = INS_BEGIN;
@@ -51,6 +55,10 @@ private:
 
             pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
 
+            pSprite->drawString(String((float(j)/4096.0f)*100) + "%", 2, 1);
+            pSprite->pushSprite(0, 54);
+            pSprite->deleteSprite();
+
             if(j == 4096) break;
             delay(10);
         }
@@ -61,8 +69,10 @@ private:
     }
 
 public:
-    SynthManager(CtrlManager* addr1) {
-        pCtrl = addr1;
+    SynthManager(LGFXRP2040* addr1, LGFX_Sprite* addr2, CtrlManager* addr3) {
+        pDisplay = addr1;
+        pSprite = addr2;
+        pCtrl = addr3;
     }
 
     /**

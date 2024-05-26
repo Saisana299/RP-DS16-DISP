@@ -18,7 +18,7 @@ static LGFX_Sprite sprite(&display);
 // 各種制御クラス
 CtrlManager* CtrlManager::instance = nullptr;
 CtrlManager ctrl(&display, &sprite);
-SynthManager synth(&ctrl);
+SynthManager synth(&display, &sprite, &ctrl);
 FileManager file(&display);
 UIManager ui(
     &display, &sprite, &ctrl, &synth, &file

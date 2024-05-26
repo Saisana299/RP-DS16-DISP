@@ -41,6 +41,7 @@ public:
 
         // 応答が返ってくればOK
         if(received[0] != RES_OK){
+            pDisplay->fillScreen(TFT_BLACK);
             pDisplay->drawString("Error:1101", 1, 1);
             pDisplay->drawString("Please check the conn", 1, 11);
             pDisplay->drawString("ection.", 1, 21);
