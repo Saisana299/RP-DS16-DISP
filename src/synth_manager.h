@@ -60,7 +60,6 @@ private:
             pSprite->deleteSprite();
 
             if(j == 4096) break;
-            delay(10);
         }
 
         // シンセ制御再開
@@ -193,6 +192,26 @@ public:
         uint8_t data[] = {
             INS_BEGIN, DISP_SET_SUSTAIN, DATA_BEGIN, 
             0x05, synth, sustains[0], sustains[1], sustains[2], sustains[3]
+        };
+        uint8_t received[1];
+        pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
+    }
+
+    // ボイス数を設定
+    void setVoice(uint8_t synth, uint8_t voice, uint8_t osc) {
+        uint8_t data[] = {
+            INS_BEGIN, DISP_SET_VOICE, DATA_BEGIN, 
+            0x03, synth, voice, osc
+        };
+        uint8_t received[1];
+        pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
+    }
+
+    // デチューンを設定
+    void setDetune(uint8_t synth, uint8_t detune, uint8_t osc) {
+        uint8_t data[] = {
+            INS_BEGIN, DISP_SET_DETUNE, DATA_BEGIN, 
+            0x03, synth, detune, osc
         };
         uint8_t received[1];
         pCtrl->ctrlTransmission(data, sizeof(data), received, 1);

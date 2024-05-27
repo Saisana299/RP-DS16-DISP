@@ -25,6 +25,8 @@
 #define DISP_SET_CSHAPE  0x4A // カスタムシェイプを設定
 #define DISP_STOP_SYNTH  0x4B // シンセの制御を停止する
 #define DISP_START_SYNTH 0x4C // シンセの制御を開始する
+#define DISP_SET_VOICE   0x4D // ボイスを設定
+#define DISP_SET_DETUNE  0x4E // デチューンを設定
 
 //// 共通シンセ演奏状態コード
 #define SYNTH_SINGLE 0x00
