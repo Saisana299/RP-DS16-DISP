@@ -50,7 +50,8 @@ private:
             if(osc1_type == "custom") {
                 String wave = doc["osc1"]["wave"];
                 pFile->getJson(&doc, "/rp-ds16/wavetable/" + wave);
-                copyArray(doc["wave_table"], *wave_table_buff);
+                JsonArray waveTableArray = doc["wave_table"].as<JsonArray>();
+                copyArray(waveTableArray, wave_table_buff, waveTableArray.size());
                 pSynth->setShape(synth, 0x01, id, wave_table_buff);
 
             } else if(osc1_type == "default") {
@@ -62,7 +63,8 @@ private:
             if(osc2_type == "custom") {
                 String wave = doc["osc2"]["wave"];
                 pFile->getJson(&doc, "/rp-ds16/wavetable/" + wave);
-                copyArray(doc["wave_table"], *wave_table_buff);
+                JsonArray waveTableArray = doc["wave_table"].as<JsonArray>();
+                copyArray(waveTableArray, wave_table_buff, waveTableArray.size());
                 pSynth->setShape(synth, 0x02, id, wave_table_buff);
 
             } else if(osc2_type == "default") {

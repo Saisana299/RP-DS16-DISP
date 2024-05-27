@@ -13,6 +13,7 @@
 #define DISPST_OSC_UNISON  0x09
 #define DISPST_OSC_WAVE    0x0A
 #define DISPST_FILTER      0x0B
+#define DISPST_MIDI_PLAYER 0x0C
 
 struct Files {
     bool type;

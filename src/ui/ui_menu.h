@@ -90,8 +90,12 @@ public:
                 *displayStatus = DISPST_FILEMAN;
                 break;
             case 0x03:
+                *displayCursor = 0x00;
+                *displayStatus = DISPST_MIDI_PLAYER;
                 break;
             case 0x04:
+                break;
+            case 0x05:
                 break;
         }
     }

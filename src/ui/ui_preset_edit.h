@@ -41,6 +41,7 @@ public:
         pSprite->drawString("Oscillator2", 2, 26);
         pSprite->drawString("ADSR Envelope", 2, 36);
         pSprite->drawString("Filter", 2, 46);
+        pSprite->drawString("Effector", 2, 56);
 
         // 塗り
         if(*displayCursor == 0x01) {
@@ -55,19 +56,22 @@ public:
         else if(*displayCursor == 0x04) {
             cursorText("Filter", 2, 46);
         }
+        else if(*displayCursor == 0x05) {
+            cursorText("Effector", 2, 56);
+        }
     }
 
     /** @brief 上ボタンが押された場合 */
     void handleButtonUp(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x01) *displayCursor = 0x04;
+        if(*displayCursor == 0x01) *displayCursor = 0x05;
         else (*displayCursor)--;
     }
 
     /** @brief 下ボタンが押された場合 */
     void handleButtonDown(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x04) *displayCursor = 0x01;
+        if(*displayCursor == 0x05) *displayCursor = 0x01;
         else (*displayCursor)++;
     }
 
@@ -98,6 +102,8 @@ public:
                 *displayStatus = DISPST_ADSR;
                 break;
             case 0x04:
+                break;
+            case 0x05:
                 break;
         }
     }

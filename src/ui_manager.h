@@ -15,6 +15,7 @@
 #include <ui_preset_edit.h>
 #include <ui_presets.h>
 #include <ui_title.h>
+#include <ui_midi_player.h>
 
 #ifndef UIMANAGER_H
 #define UIMANAGER_H
@@ -40,7 +41,7 @@
 #if WOKWI_MODE != 1
     #define PUSH_SHORT  200
     #define LONG_TOGGLE 120000
-    #define PUSH_LONG   80000
+    #define PUSH_LONG   65000
 #else
     #define PUSH_SHORT  1
     #define LONG_TOGGLE 5
@@ -117,7 +118,7 @@ private:
     SynthManager* pSynth;
     FileManager* pFile;
 
-    IUIHandler* ui_handler[12];
+    IUIHandler* ui_handler[13];
 
 public:
     UIManager(LGFXRP2040* addr1, LGFX_Sprite* addr2, CtrlManager* addr3, SynthManager* addr4, FileManager* addr5) {
@@ -167,6 +168,10 @@ public:
 
         ui_handler[DISPST_TITLE] = new UITitle(
             pSprite, pCtrl, &displayStatus, &long_count_to_enter_debug_mode
+        );
+
+        ui_handler[DISPST_MIDI_PLAYER] = new UIMidiPlayer(
+            pSprite, pCtrl, &displayStatus, &displayCursor
         );
     }
 
@@ -327,7 +332,7 @@ public:
     /** @brief キャンセルが押された場合の処理 */
     void handleButtonCancel(bool longPush = false) {
         ui_handler[displayStatus]->handleButtonCancel(longPush);
-        refreshUI();
+        if(displayStatus != DISPST_TITLE) refreshUI();
     }
 
     void buttonHandler() {

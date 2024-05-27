@@ -56,11 +56,11 @@ public:
         char r_sym = ':'; if (*displayCursor == 0x08) r_sym = '>';
         char a_chr[6]; sprintf(a_chr, "%d", *attack);
         char d_chr[6]; sprintf(d_chr, "%d", *decay);
-        char s_chr[6]; sprintf(s_chr, "%d", *sustain);
+        char s_chr[7]; sprintf(s_chr, "%.1f", *sustain / 10.0f);
         char r_chr[6]; sprintf(r_chr, "%d", *release);
         pSprite->drawString("Attack " + String(a_sym) + " " + String(a_chr) + "ms", 2, 16);
         pSprite->drawString("Decay  " + String(d_sym) + " " + String(d_chr) + "ms", 2, 26);
-        pSprite->drawString("Sustain" + String(s_sym) + " " + String(s_chr), 2, 36);
+        pSprite->drawString("Sustain" + String(s_sym) + " " + String(s_chr) + "%" , 2, 36);
         pSprite->drawString("Release" + String(r_sym) + " " + String(r_chr) + "ms", 2, 46);
 
         // 塗り

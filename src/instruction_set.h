@@ -27,6 +27,8 @@
 #define DISP_START_SYNTH 0x4C // シンセの制御を開始する
 #define DISP_SET_VOICE   0x4D // ボイスを設定
 #define DISP_SET_DETUNE  0x4E // デチューンを設定
+#define DISP_MIDI_ON     0x4F // DISPMIDIモードON
+#define DISP_MIDI_OFF    0x50 // DISPMIDIモードOFF
 
 //// 共通シンセ演奏状態コード
 #define SYNTH_SINGLE 0x00
