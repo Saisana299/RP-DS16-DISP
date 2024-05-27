@@ -5,14 +5,16 @@
 #include <graphics.h>
 #include <wokwi.h>
 #include <IUIHandler.h>
-#include <ui_adsr.h>
 #include <ui_debug.h>
 #include <ui_fileman.h>
 #include <ui_menu.h>
+#include <ui_adsr.h>
+#include <ui_osc_unison.h>
+#include <ui_osc_wave.h>
+#include <ui_osc.h>
 #include <ui_preset_edit.h>
 #include <ui_presets.h>
 #include <ui_title.h>
-#include <ui_unison.h>
 
 #ifndef UIMANAGER_H
 #define UIMANAGER_H
@@ -95,6 +97,7 @@ private:
     // UI用保存変数
     int fileman_index = 0;
     String currentDir = "/rp-ds16";
+    uint8_t selectedOsc = 1;
     
     // ファイル管理
     Files files[4];
@@ -114,7 +117,7 @@ private:
     SynthManager* pSynth;
     FileManager* pFile;
 
-    IUIHandler* ui_handler[9];
+    IUIHandler* ui_handler[12];
 
 public:
     UIManager(LGFXRP2040* addr1, LGFX_Sprite* addr2, CtrlManager* addr3, SynthManager* addr4, FileManager* addr5) {
@@ -124,9 +127,6 @@ public:
         pSynth = addr4;
         pFile = addr5;
 
-        ui_handler[DISPST_ADSR] = new UIAdsr(
-            &displayStatus, &displayCursor, &attack, &decay, &sustain, &release, pSprite, pSynth
-        );
         ui_handler[DISPST_DEBUG] = new UIDebug(pSprite);
 
         ui_handler[DISPST_FILEMAN] = new UIFileMan(
@@ -134,21 +134,39 @@ public:
             &fileman_index, &currentDir, files, file_buff,
             &isEndOfFile, &fileManRefresh
         );
+
         ui_handler[DISPST_MENU] = new UIMenu(pSprite, &displayStatus, &displayCursor);
 
-        ui_handler[DISPST_PRESET_EDIT] = new UIPresetEdit(pSprite, &displayStatus, &displayCursor);
+        ui_handler[DISPST_ADSR] = new UIAdsr(
+            &displayStatus, &displayCursor,
+            &attack, &decay, &sustain, &release,
+            pSprite, pSynth
+        );
+
+        ui_handler[DISPST_OSC_UNISON] = new UIOscUnison(
+            pSprite, pSynth, &displayStatus, &displayCursor,
+            &osc1_voice, &osc2_voice, &osc1_detune, &osc2_detune,
+            &selectedOsc
+        );
+
+        //ui_handler[DISPST_OSC_WAVE] = new UIOscWave();//
+
+        ui_handler[DISPST_OSC] = new UIOsc(
+            pSprite, &displayStatus, &displayCursor, &selectedOsc
+        );
+
+        ui_handler[DISPST_PRESET_EDIT] = new UIPresetEdit(
+            pSprite, &displayStatus, &displayCursor, &selectedOsc
+        );
         
         ui_handler[DISPST_PRESETS] = new UIPresets(
             pSprite, pSynth, pFile, &displayStatus, &displayCursor,
             &synthMode, &selectedPreset, &selectedPreset2,
             default_presets, modes, user_presets, wave_table_buff
         );
+
         ui_handler[DISPST_TITLE] = new UITitle(
             pSprite, pCtrl, &displayStatus, &long_count_to_enter_debug_mode
-        );
-        ui_handler[DISPST_UNISON] = new UIUnison(
-            pSprite, pSynth, &displayStatus, &displayCursor,
-            &osc1_voice, &osc2_voice, &osc1_detune, &osc2_detune
         );
     }
 

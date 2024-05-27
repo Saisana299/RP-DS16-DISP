@@ -1,13 +1,16 @@
 #include <IUIHandler.h>
 
-#ifndef UIMENU_H
-#define UIMENU_H
+#ifndef UIOSC_H
+#define UIOSC_H
 
-class UIMenu : public IUIHandler {
+class UIOsc : public IUIHandler {
 private:
+
     // ディスプレイ関連
     uint8_t* displayStatus;
     uint8_t* displayCursor;
+
+    uint8_t* selectedOsc;
 
     LGFX_Sprite* pSprite;
 
@@ -19,55 +22,45 @@ private:
     }
 
 public:
-    UIMenu(LGFX_Sprite* pSprite, uint8_t* displayStatus, uint8_t* displayCursor) {
+    UIOsc( LGFX_Sprite* pSprite, uint8_t* displayStatus, uint8_t* displayCursor, uint8_t* selectedOsc) {
         this->displayStatus = displayStatus;
         this->displayCursor = displayCursor;
         this->pSprite = pSprite;
+        this->selectedOsc = selectedOsc;
     }
 
     /** @brief 画面更新 */
     void refreshUI() override {
         // タイトル
-        pSprite->drawString("<RP-DS16 Menu>", 2, 2);
+        if(*selectedOsc == 0x01) pSprite->drawString("<OSC1 Settings>", 2, 2);
+        else if(*selectedOsc == 0x02) pSprite->drawString("<OSC2 Settings>", 2, 2);
 
         // 横線
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
 
-        pSprite->drawString("Global Settings", 2, 16);
-        pSprite->drawString("File Manager", 2, 26);
-        pSprite->drawString("MIDI Player", 2, 36);
-        pSprite->drawString("Wavetable Viewer", 2, 46);
-        pSprite->drawString("About", 2, 56);
+        pSprite->drawString("Wavetable", 2, 16);
+        pSprite->drawString("Unison", 2, 26);
 
         // 塗り
         if(*displayCursor == 0x01) {
-            cursorText("Global Settings", 2, 16);
+            cursorText("Wavetable", 2, 16);
         }
         else if(*displayCursor == 0x02) {
-            cursorText("File Manager", 2, 26);
-        }
-        else if(*displayCursor == 0x03) {
-            cursorText("MIDI Player", 2, 36);
-        }
-        else if(*displayCursor == 0x04) {
-            cursorText("Wavetable Viewer", 2, 46);
-        }
-        else if(*displayCursor == 0x05) {
-            cursorText("About", 2, 56);
+            cursorText("Unison", 2, 26);
         }
     }
 
     /** @brief 上ボタンが押された場合 */
     void handleButtonUp(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x01) *displayCursor = 0x05;
+        if(*displayCursor == 0x01) *displayCursor = 0x02;
         else (*displayCursor)--;
     }
 
     /** @brief 下ボタンが押された場合 */
     void handleButtonDown(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x05) *displayCursor = 0x01;
+        if(*displayCursor == 0x02) *displayCursor = 0x01;
         else (*displayCursor)++;
     }
 
@@ -86,12 +79,8 @@ public:
             case 0x01:
                 break;
             case 0x02:
-                *displayCursor = 0x00;
-                *displayStatus = DISPST_FILEMAN;
-                break;
-            case 0x03:
-                break;
-            case 0x04:
+                *displayCursor = 0x01;
+                *displayStatus = DISPST_OSC_UNISON;
                 break;
         }
     }
@@ -99,9 +88,10 @@ public:
     /** @brief キャンセルボタンが押された場合 */
     void handleButtonCancel(bool longPush = false) override {
         if (longPush) return;
-        *displayCursor = 0x00;
-        *displayStatus = DISPST_PRESETS;
+        if(*selectedOsc == 0x01) *displayCursor = 0x01;
+        else if(*selectedOsc == 0x02) *displayCursor = 0x02;
+        *displayStatus = DISPST_PRESET_EDIT;
     }
 };
 
-#endif // UIMENU_H
+#endif // UIOSC_H

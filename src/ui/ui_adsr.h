@@ -44,7 +44,7 @@ public:
     /** @brief 画面更新 */
     void refreshUI() override {
         // タイトル
-        pSprite->drawString("ADSR Setting", 2, 2);
+        pSprite->drawString("<ADSR Editor>", 2, 2);
 
         // 横線
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
@@ -58,10 +58,10 @@ public:
         char d_chr[6]; sprintf(d_chr, "%d", *decay);
         char s_chr[6]; sprintf(s_chr, "%d", *sustain);
         char r_chr[6]; sprintf(r_chr, "%d", *release);
-        pSprite->drawString("Attack " + String(a_sym) + " " + String(a_chr) + " ms", 2, 16);
-        pSprite->drawString("Decay  " + String(d_sym) + " " + String(d_chr) + " ms", 2, 26);
+        pSprite->drawString("Attack " + String(a_sym) + " " + String(a_chr) + "ms", 2, 16);
+        pSprite->drawString("Decay  " + String(d_sym) + " " + String(d_chr) + "ms", 2, 26);
         pSprite->drawString("Sustain" + String(s_sym) + " " + String(s_chr), 2, 36);
-        pSprite->drawString("Release" + String(r_sym) + " " + String(r_chr) + " ms", 2, 46);
+        pSprite->drawString("Release" + String(r_sym) + " " + String(r_chr) + "ms", 2, 46);
 
         // 塗り
         if(*displayCursor == 0x01 || *displayCursor == 0x05) {
@@ -299,7 +299,7 @@ public:
     /** @brief キャンセルボタンが押された場合 */
     void handleButtonCancel(bool longPush = false) override {
         if (longPush) return;
-        *displayCursor = 0x01;
+        *displayCursor = 0x03;
         *displayStatus = DISPST_PRESET_EDIT;
     }
 };

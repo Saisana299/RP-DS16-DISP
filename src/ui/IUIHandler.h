@@ -4,12 +4,15 @@
 #define DISPST_IDLE        0x00
 #define DISPST_TITLE       0x01
 #define DISPST_PRESETS     0x02
-#define DISPST_ADSR        0x03
-#define DISPST_DEBUG       0x04
-#define DISPST_MENU        0x05
-#define DISPST_FILEMAN     0x06
-#define DISPST_PRESET_EDIT 0x07
-#define DISPST_UNISON      0x08
+#define DISPST_DEBUG       0x03
+#define DISPST_MENU        0x04
+#define DISPST_FILEMAN     0x05
+#define DISPST_PRESET_EDIT 0x06
+#define DISPST_OSC         0x07
+#define DISPST_ADSR        0x08
+#define DISPST_OSC_UNISON  0x09
+#define DISPST_OSC_WAVE    0x0A
+#define DISPST_FILTER      0x0B
 
 struct Files {
     bool type;

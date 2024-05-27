@@ -10,6 +10,8 @@ private:
     uint8_t* displayStatus;
     uint8_t* displayCursor;
 
+    uint8_t* selectedOsc;
+
     LGFX_Sprite* pSprite;
 
     void cursorText(String text, uint8_t x, uint8_t y, uint8_t ex_width = 0, uint8_t ex_height = 0) {
@@ -20,47 +22,52 @@ private:
     }
 
 public:
-    UIPresetEdit( LGFX_Sprite* pSprite, uint8_t* displayStatus, uint8_t* displayCursor ) {
+    UIPresetEdit( LGFX_Sprite* pSprite, uint8_t* displayStatus, uint8_t* displayCursor, uint8_t* selectedOsc) {
         this->displayStatus = displayStatus;
         this->displayCursor = displayCursor;
         this->pSprite = pSprite;
+        this->selectedOsc = selectedOsc;
     }
 
     /** @brief 画面更新 */
     void refreshUI() override {
         // タイトル
-        pSprite->drawString("Edit Preset", 2, 2);
+        pSprite->drawString("<Preset Editor>", 2, 2);
 
         // 横線
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
 
-        pSprite->drawString("ADSR Envelope", 2, 16);
-        pSprite->drawString("Unison", 2, 26);
-        pSprite->drawString("Filter", 2, 36);
+        pSprite->drawString("Oscillator1", 2, 16);
+        pSprite->drawString("Oscillator2", 2, 26);
+        pSprite->drawString("ADSR Envelope", 2, 36);
+        pSprite->drawString("Filter", 2, 46);
 
         // 塗り
         if(*displayCursor == 0x01) {
-            cursorText("ADSR Envelope", 2, 16);
+            cursorText("Oscillator1", 2, 16);
         }
         else if(*displayCursor == 0x02) {
-            cursorText("Unison", 2, 26);
+            cursorText("Oscillator2", 2, 26);
         }
         else if(*displayCursor == 0x03) {
-            cursorText("Filter", 2, 36);
+            cursorText("ADSR Envelope", 2, 36);
+        }
+        else if(*displayCursor == 0x04) {
+            cursorText("Filter", 2, 46);
         }
     }
 
     /** @brief 上ボタンが押された場合 */
     void handleButtonUp(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x01) *displayCursor = 0x03;
+        if(*displayCursor == 0x01) *displayCursor = 0x04;
         else (*displayCursor)--;
     }
 
     /** @brief 下ボタンが押された場合 */
     void handleButtonDown(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x03) *displayCursor = 0x01;
+        if(*displayCursor == 0x04) *displayCursor = 0x01;
         else (*displayCursor)++;
     }
 
@@ -78,13 +85,19 @@ public:
         switch (*displayCursor) {
             case 0x01:
                 *displayCursor = 0x01;
-                *displayStatus = DISPST_ADSR;
+                *displayStatus = DISPST_OSC;
+                *selectedOsc = 0x01;
                 break;
             case 0x02:
                 *displayCursor = 0x01;
-                *displayStatus = DISPST_UNISON;
+                *displayStatus = DISPST_OSC;
+                *selectedOsc = 0x02;
                 break;
             case 0x03:
+                *displayCursor = 0x01;
+                *displayStatus = DISPST_ADSR;
+                break;
+            case 0x04:
                 break;
         }
     }
