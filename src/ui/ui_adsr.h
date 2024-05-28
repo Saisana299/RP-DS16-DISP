@@ -85,7 +85,7 @@ public:
             // 100倍
             case 0x05:
                 if (*attack + 100 <= 32000) {
-                    attack += 100; pSynth->setAttack(0xff, *attack);
+                    *attack += 100; pSynth->setAttack(0xff, *attack);
                 }
                 break;
             case 0x06:

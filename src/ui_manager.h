@@ -1,6 +1,7 @@
 #include <ctrl_manager.h>
 #include <synth_manager.h>
 #include <file_manager.h>
+#include <midi_manager.h>
 #include <ArduinoJson.h>
 #include <graphics.h>
 #include <wokwi.h>
@@ -102,7 +103,7 @@ private:
     
     // ファイル管理
     Files files[4];
-    File file_buff[4];
+    FsFile file_buff[4];
     bool isEndOfFile = false;
     bool fileManRefresh = true;
 
@@ -117,16 +118,18 @@ private:
     CtrlManager* pCtrl;
     SynthManager* pSynth;
     FileManager* pFile;
+    MidiManager* pMidi;
 
     IUIHandler* ui_handler[13];
 
 public:
-    UIManager(LGFXRP2040* addr1, LGFX_Sprite* addr2, CtrlManager* addr3, SynthManager* addr4, FileManager* addr5) {
+    UIManager(LGFXRP2040* addr1, LGFX_Sprite* addr2, CtrlManager* addr3, SynthManager* addr4, FileManager* addr5, MidiManager* addr6) {
         pDisplay = addr1;
         pSprite = addr2;
         pCtrl = addr3;
         pSynth = addr4;
         pFile = addr5;
+        pMidi = addr6;
 
         ui_handler[DISPST_DEBUG] = new UIDebug(pSprite);
 
@@ -171,7 +174,7 @@ public:
         );
 
         ui_handler[DISPST_MIDI_PLAYER] = new UIMidiPlayer(
-            pSprite, pCtrl, &displayStatus, &displayCursor
+            pSprite, pCtrl, &displayStatus, &displayCursor, pMidi
         );
     }
 
@@ -236,16 +239,18 @@ public:
             pFile->getFiles(dir_path, file_buff, 4, i);
             for(uint8_t j = 0; j < 4; j++) {
                 bool isNull = false;
-                if(file_buff[j].name() == nullptr) isNull = true;
+                char name[50];
+                file_buff[j].getName(name, sizeof(name));
+                if(strcmp(name, "") == 0) isNull = true;
                 else {
-                    if(!pFile->hasExtension(file_buff[j].name(), ".json")) continue;
-                    if(file_buff[j].name() == "---") continue;
-                    if(strlen(file_buff[j].name()) > 30) continue;
+                    if(!pFile->hasExtension(name, ".json")) continue;
+                    if(strcmp(name, "---") == 0) continue;
+                    if(strlen(name) > 30) continue;
                     if(file_buff[j].isDirectory()) continue;
                 }
 
                 if(!isNull) {
-                    String path = dir_path + "/" + String(file_buff[j].name());
+                    String path = dir_path + "/" + String(name);
                     JsonDocument doc ;
                     pFile->getJson(&doc, path);
                     String name = doc[key];

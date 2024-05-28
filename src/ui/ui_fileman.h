@@ -14,7 +14,7 @@ private:
     int* fileman_index;
     String* currentDir;
     Files* files;
-    File* file_buff;
+    FsFile* file_buff;
     bool* isEndOfFile;
     bool* fileManRefresh;
 
@@ -31,7 +31,7 @@ private:
 public:
     UIFileMan(
         LGFX_Sprite* pSprite, FileManager* pFile, uint8_t* displayStatus, uint8_t* displayCursor,
-        int* fileman_index, String* currentDir, Files* files, File* file_buff,
+        int* fileman_index, String* currentDir, Files* files, FsFile* file_buff,
         bool* isEndOfFile, bool* fileManRefresh)
     {
         this->pSprite = pSprite;
@@ -63,8 +63,10 @@ public:
         if(*fileManRefresh) {
             pFile->getFiles(*currentDir, file_buff, 4, *fileman_index);
             for(int8_t i = 0; i < 4; i++) {
+                char name[50];
+                file_buff[i].getName(name, sizeof(name));
                 files[i].type = file_buff[i].isDirectory();
-                files[i].name = file_buff[i].name();
+                files[i].name = name;
                 if(*currentDir == "/")
                     files[i].path = "/" + files[i].name;
                 else
@@ -201,7 +203,7 @@ public:
     void handleButtonCancel(bool longPush = false) override {
         if (longPush) return;
         if(*displayCursor == 0x05) {
-            *displayCursor = 0x00;
+            *displayCursor = 0x02;
             *displayStatus = DISPST_MENU;
         }
         else *displayCursor = 0x05;

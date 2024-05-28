@@ -12,6 +12,7 @@ private:
     #define SD_CS_PIN 5
 
     LGFXRP2040* pDisplay;
+    SdFs SD;
 
 public:
     FileManager(LGFXRP2040* addr1) {
@@ -32,7 +33,7 @@ public:
 
             // ファイル初期化
             if (!SD.exists(dir + "/" + file_name)) {
-                File newFile = SD.open(dir + "/" + file_name, FILE_WRITE);
+                FsFile newFile = SD.open(dir + "/" + file_name, FILE_WRITE);
                 newFile.println(json);
                 newFile.close();
             }
@@ -57,7 +58,7 @@ public:
     bool getJson(JsonDocument* doc, String path) {
         try {
             if(!SD.exists(path)) return false;
-            File file = SD.open(path, FILE_READ);
+            FsFile file = SD.open(path, FILE_READ);
             deserializeJson(*doc, file);
             file.close();
         } catch (const char* error) {
@@ -69,9 +70,9 @@ public:
         return true;
     }
 
-    void getFiles(String path, File *files, uint8_t count, int offset = 0) {
-        File dir = SD.open(path);
-        File file = dir.openNextFile();
+    void getFiles(String path, FsFile *files, uint8_t count, int offset = 0) {
+        FsFile dir = SD.open(path);
+        FsFile file = dir.openNextFile();
         for (uint8_t i = 0; i < count + offset; i++) {
             if(i - offset >= 0)    
                 files[i - offset] = file;
@@ -81,8 +82,8 @@ public:
     }
 
     int getFileCount(String path) {
-        File dir = SD.open(path);
-        File file = dir.openNextFile();
+        FsFile dir = SD.open(path);
+        FsFile file = dir.openNextFile();
         int count = 0;
         while (file) {
             count++;

@@ -4,12 +4,14 @@
 #include <lgfx_rp2040.h>
 #include <instruction_set.h>
 #include <SPI.h>
-#include <SD.h>
+#include <SdFat.h>
 #include <file_manager.h>
 #include <ctrl_manager.h>
 #include <ui_manager.h>
 #include <synth_manager.h>
 #include <wokwi.h>
+#include <MD_MIDIFile.h>
+#include <midi_manager.h>
 
 // 共通変数
 LGFXRP2040 display;
@@ -17,12 +19,11 @@ static LGFX_Sprite sprite(&display);
 
 // 各種制御クラス
 CtrlManager* CtrlManager::instance = nullptr;
-CtrlManager ctrl(&display, &sprite);
+CtrlManager  ctrl(&display, &sprite);
 SynthManager synth(&display, &sprite, &ctrl);
-FileManager file(&display);
-UIManager ui(
-    &display, &sprite, &ctrl, &synth, &file
-);
+FileManager  file(&display);
+MidiManager  midi(&ctrl);
+UIManager    ui(&display, &sprite, &ctrl, &synth, &file, &midi);
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
@@ -54,6 +55,8 @@ void setup() {
     ui.loadUserFiles("preset");
     ui.loadUserFiles("wavetable");
 
+    midi.init();
+
     display.showImage(&sprite, TITLE_IMG);
     delay(1);
     sprite.createSprite(2, 2);
@@ -72,8 +75,10 @@ void loop() {
     }
 }
 
-// #if WOKWI_MODE != 1
-// void loop1() {
-//     //todo
-// }
-// #endif
+#if WOKWI_MODE != 1
+void loop1() {
+    while(1) {
+        midi.midiHandler();
+    }
+}
+#endif
