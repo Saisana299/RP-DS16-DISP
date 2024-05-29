@@ -121,7 +121,6 @@ public:
 
     /** @brief 上ボタンが押された場合 */
     void handleButtonUp(bool longPush = false) override {
-        if(longPush) return;
         if(*displayCursor == 0x01) {
             if(*fileman_index != 0) {
                 (*fileman_index)--;
@@ -134,7 +133,6 @@ public:
 
     /** @brief 下ボタンが押された場合 */
     void handleButtonDown(bool longPush = false) override {
-        if(longPush) return;
         if(*displayCursor == 0x04) {
             if(!*isEndOfFile){
                 (*fileman_index)++;

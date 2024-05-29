@@ -21,8 +21,8 @@ static LGFX_Sprite sprite(&display);
 CtrlManager* CtrlManager::instance = nullptr;
 CtrlManager  ctrl(&display, &sprite);
 SynthManager synth(&display, &sprite, &ctrl);
-FileManager  file(&display);
 MidiManager  midi(&ctrl);
+FileManager  file(&display, &midi);
 UIManager    ui(&display, &sprite, &ctrl, &synth, &file, &midi);
 
 void setup() {

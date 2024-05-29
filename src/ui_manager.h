@@ -174,7 +174,8 @@ public:
         );
 
         ui_handler[DISPST_MIDI_PLAYER] = new UIMidiPlayer(
-            pSprite, pCtrl, &displayStatus, &displayCursor, pMidi
+            pSprite, pCtrl, &displayStatus, &displayCursor,
+            pMidi, pFile, files, file_buff
         );
     }
 

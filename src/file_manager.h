@@ -1,4 +1,5 @@
 #include <ArduinoJson.h>
+#include <midi_manager.h>
 
 #ifndef FILEMANAGER_H
 #define FILEMANAGER_H
@@ -12,11 +13,28 @@ private:
     #define SD_CS_PIN 5
 
     LGFXRP2040* pDisplay;
+    MidiManager* pMidi;
     SdFs SD;
 
+    bool lockSD() {
+        if(pMidi->isLocking) pMidi->pauseMidi();
+        uint8_t i;
+        for(i = 0; i < 20; i++) {
+            if(!pMidi->isLocking) break;
+            delay(500);
+        }
+        if(i == 20) return false;
+        return true;
+    }
+
+    void unlockSD() {
+        if(pMidi->isPlayMidi) pMidi->resumeMidi();
+    }
+
 public:
-    FileManager(LGFXRP2040* addr1) {
+    FileManager(LGFXRP2040* addr1, MidiManager* addr2) {
         pDisplay = addr1;
+        pMidi = addr2;
     }
 
     void init() {
@@ -27,6 +45,7 @@ public:
     }
 
     bool initJson(String dir, String file_name, String json = "{}") {
+        if(!lockSD()) return false;
         try {
             // ディレクトリ生成
             SD.mkdir(dir);
@@ -41,8 +60,10 @@ public:
             pDisplay->drawString("Error:1202", 1, 1);
             pDisplay->drawString("SD card error.", 1, 11);
             pDisplay->drawString(error, 1, 21);
+            unlockSD();
             return false;
         }
+        unlockSD();
         return true;
     }
 
@@ -56,6 +77,7 @@ public:
     }
 
     bool getJson(JsonDocument* doc, String path) {
+        if(!lockSD()) return false;
         try {
             if(!SD.exists(path)) return false;
             FsFile file = SD.open(path, FILE_READ);
@@ -65,12 +87,15 @@ public:
             pDisplay->drawString("Error:1202", 1, 1);
             pDisplay->drawString("SD card error.", 1, 11);
             pDisplay->drawString(error, 1, 21);
+            unlockSD();
             return false;
         }
+        unlockSD();
         return true;
     }
 
     void getFiles(String path, FsFile *files, uint8_t count, int offset = 0) {
+        if(!lockSD()) return;
         FsFile dir = SD.open(path);
         FsFile file = dir.openNextFile();
         for (uint8_t i = 0; i < count + offset; i++) {
@@ -79,9 +104,11 @@ public:
             file = dir.openNextFile();
         }
         dir.close();
+        unlockSD();
     }
 
     int getFileCount(String path) {
+        if(!lockSD()) return 0;
         FsFile dir = SD.open(path);
         FsFile file = dir.openNextFile();
         int count = 0;
@@ -90,26 +117,33 @@ public:
             file = dir.openNextFile();
         }
         dir.close();
+        unlockSD();
         return count;
     }
 
     bool checkSD() {
+        if(!lockSD()) return false;
         // SDカード確認
         if (!SD.begin(SD_CS_PIN)) {
             pDisplay->fillScreen(TFT_BLACK);
             pDisplay->drawString("Error:1201", 1, 1);
             pDisplay->drawString("SD card error.", 1, 11);
+            unlockSD();
             return false;
         }
 
         bool result = initJson("/rp-ds16", "settings.json");
-        if(!result) return false;
+        if(!result) {
+            unlockSD();
+            return false;
+        }
 
         SD.mkdir("/rp-ds16/preset"); // .json
         SD.mkdir("/rp-ds16/midi"); // .mid
         SD.mkdir("/rp-ds16/rlem"); // .rlem
         SD.mkdir("/rp-ds16/wavetable"); // .json
         
+        unlockSD();
         return true;
     }
 };
