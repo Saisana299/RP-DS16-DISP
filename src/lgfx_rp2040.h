@@ -63,7 +63,7 @@ public:
      * @param w 描画範囲：長さ
      * @param h 描画範囲：高さ
      */
-    void showImage(LGFX_Sprite* sprite, String data, int x = 0, int y = 0, int w = 128, int h = 64) {
+    void showImage(LGFX_Sprite* sprite, String data, int x = 0, int y = 0, int w = 128, int h = 64, LGFX_Sprite* parent = nullptr) {
         const uint16_t maxSize = 8192; // SSD1306 128x64 用 最大画素数
         uint8_t bitmap[maxSize];
         uint16_t count = 0;
@@ -86,9 +86,10 @@ public:
         }
 
         // データを表示
-        sprite->createSprite(128, 64);
-        sprite->pushImage(x, y, w, h, bitmap);
-        sprite->pushSprite(0, 0);
+        sprite->createSprite(w, h);
+        sprite->pushImage(0, 0, w, h, bitmap);
+        if(parent == nullptr) sprite->pushSprite(x, y);
+        else sprite->pushSprite(parent, x, y);
         sprite->deleteSprite();
     }
 };

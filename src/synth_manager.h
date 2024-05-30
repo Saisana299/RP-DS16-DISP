@@ -216,6 +216,16 @@ public:
         uint8_t received[1];
         pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
     }
+
+    // スプレドを設定
+    void setSpread(uint8_t synth, uint8_t spread, uint8_t osc) {
+        uint8_t data[] = {
+            INS_BEGIN, DISP_SET_SPREAD, DATA_BEGIN, 
+            0x03, synth, spread, osc
+        };
+        uint8_t received[1];
+        pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
+    }
 };
 
 #endif // SYNTHMANAGER_H

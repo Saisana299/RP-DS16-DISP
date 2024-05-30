@@ -3,6 +3,9 @@
 #ifndef UIPRESETS_H
 #define UIPRESETS_H
 
+#define FACTORY_PRESETS 4
+#define FACTORY_WAVETABLES 4
+
 class UIPresets : public IUIHandler {
 private:
 
@@ -37,12 +40,12 @@ private:
     }
 
     void setPreset(uint8_t id, uint8_t synth) {
-        if(id < 0x04)
+        if(id < FACTORY_PRESETS)
             // defaultプリセットはosc=0x01固定
             pSynth->setShape(synth, 0x01, id);
         else {
             JsonDocument doc;
-            pFile->getJson(&doc, user_presets[id - 4].path);
+            pFile->getJson(&doc, user_presets[id - FACTORY_PRESETS].path);
             String osc1_type = doc["osc1"]["type"];
             String osc2_type = doc["osc2"]["type"];
             
@@ -103,21 +106,37 @@ public:
     void refreshUI() override {
         uint8_t preset_x = pSprite->textWidth(" ");
         uint8_t preset_y = pSprite->height() / 2 - pSprite->fontHeight() / 2;
-        char idstr[5]; sprintf(idstr, "%03d ", *selectedPreset+1);
-        char idstr2[5]; sprintf(idstr2, "%03d ", *selectedPreset2+1);
+        char idstr[5]; 
+        char idstr2[5];
+        String fu1 = "F";
+        String fu2 = "F";
 
         String preset_name1, preset_name2;
-        if(*selectedPreset < 0x04) preset_name1 = default_presets[*selectedPreset];
-        else preset_name1 = user_presets[*selectedPreset - 4].name;
-        if(*selectedPreset2 < 0x04) preset_name2 = default_presets[*selectedPreset2];
-        else preset_name2 = user_presets[*selectedPreset2 - 4].name;
-
-        if(*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) {
-            pSprite->drawString(idstr + preset_name1, preset_x, preset_y - 7);
-            pSprite->drawString(idstr2 + preset_name2, preset_x, preset_y + 7);
+        if(*selectedPreset < 0x04) {
+            sprintf(idstr, "%03d ", *selectedPreset+1);
+            preset_name1 = default_presets[*selectedPreset];
         }
         else {
-            pSprite->drawString(idstr + preset_name1, preset_x, preset_y);
+            fu1 = "U";
+            sprintf(idstr, "%03d ", *selectedPreset+1 - FACTORY_PRESETS);
+            preset_name1 = user_presets[*selectedPreset - FACTORY_PRESETS].name;
+        }
+        if(*selectedPreset2 < 0x04) {
+            sprintf(idstr2, "%03d ", *selectedPreset2+1);
+            preset_name2 = default_presets[*selectedPreset2];
+        }
+        else {
+            fu2 = "U";
+            sprintf(idstr2, "%03d ", *selectedPreset2+1 - FACTORY_PRESETS);
+            preset_name2 = user_presets[*selectedPreset2 - FACTORY_PRESETS].name;
+        }
+
+        if(*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) {
+            pSprite->drawString(fu1 + idstr + preset_name1, preset_x, preset_y - 7);
+            pSprite->drawString(fu2 + idstr2 + preset_name2, preset_x, preset_y + 7);
+        }
+        else {
+            pSprite->drawString(fu1 + idstr + preset_name1, preset_x, preset_y);
         }
         
         // MIDIチャンネル
@@ -136,20 +155,29 @@ public:
         pSprite->drawLine(0, 51, 127, 51, TFT_WHITE);
 
         // メニュー
-        uint8_t menu_x = pSprite->textWidth("Menu>>");
-        pSprite->drawString("Menu>>", 128 - 2 - menu_x, 55);
+        uint8_t menu_x = pSprite->textWidth(">>");
+        pSprite->drawString(">>", 128 - 2 - menu_x, 55);
 
         // 塗り
         if(*displayCursor == 0x01) {
 
             uint8_t y = pSprite->height() / 2 - pSprite->fontHeight() / 2;
-            char idstr[6]; sprintf(idstr, " %03d", *selectedPreset+1);
+            char idstr[6];
+
+            String fu = "F";
+            if(*selectedPreset < FACTORY_PRESETS) {
+                sprintf(idstr, "%03d", *selectedPreset+1);
+            }
+            else {
+                fu = "U";
+                sprintf(idstr, "%03d", *selectedPreset+1 - FACTORY_PRESETS);
+            }
 
             if(*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) 
-                cursorText(idstr, 0, y - 7);
+                cursorText(" " + fu1 + idstr, 0, y - 7);
             
             else 
-                cursorText(idstr, 0, y);
+                cursorText(" " + fu1 + idstr, 0, y);
             
         }
         else if(*displayCursor == 0x02) {
@@ -162,13 +190,23 @@ public:
         else if(*displayCursor == 0x04) {
             if(*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) {
                 uint8_t y = pSprite->height() / 2 - pSprite->fontHeight() / 2;
-                char idstr2[5]; sprintf(idstr2, " %03d", *selectedPreset2+1);
-                cursorText(idstr2, 0, y + 7);
+                char idstr2[5];
+
+                String fu2 = "F";
+                if(*selectedPreset2 < FACTORY_PRESETS) {
+                    sprintf(idstr2, "%03d", *selectedPreset2+1);
+                }
+                else {
+                    fu2 = "U";
+                    sprintf(idstr2, "%03d", *selectedPreset2+1 - FACTORY_PRESETS);
+                }
+
+                cursorText(" " + fu2 + idstr2, 0, y + 7);
             }
         }
         else if(*displayCursor == 0x05) {
-            uint8_t menu_x = pSprite->textWidth("Menu>>");
-            cursorText("Menu>>", 128 - 2 - menu_x, 55);
+            uint8_t menu_x = pSprite->textWidth(">>");
+            cursorText(">>", 128 - 2 - menu_x, 55);
         }
     }
 
@@ -220,7 +258,7 @@ public:
     void handleButtonLeft(bool longPush = false) override {
         switch (*displayCursor) {
             case 0x01:
-                *selectedPreset = (*selectedPreset != 0x00) ? (*selectedPreset - 1) : 0xff;
+                *selectedPreset = (*selectedPreset != 0x00) ? (*selectedPreset - 1) : 0x83;
                 if(!longPush) {
                     setPreset(*selectedPreset, (*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
                 }
@@ -235,7 +273,7 @@ public:
                 }
                 break;
             case 0x04:
-                *selectedPreset2 = (*selectedPreset2 != 0x00) ? (*selectedPreset2 - 1) : 0xff;
+                *selectedPreset2 = (*selectedPreset2 != 0x00) ? (*selectedPreset2 - 1) : 0x83;
                 if(!longPush) {
                     setPreset(*selectedPreset2, 0x02);
                 }
@@ -247,7 +285,7 @@ public:
     void handleButtonRight(bool longPush = false) override {
         switch (*displayCursor) {
             case 0x01:
-                *selectedPreset = (*selectedPreset != 0xff) ? (*selectedPreset + 1) : 0x00;
+                *selectedPreset = (*selectedPreset != 0x83) ? (*selectedPreset + 1) : 0x00;
                 if(!longPush) {
                     setPreset(*selectedPreset, (*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
                 }
@@ -262,7 +300,7 @@ public:
                 }
                 break;
             case 0x04:
-                *selectedPreset2 = (*selectedPreset2 != 0xff) ? (*selectedPreset2 + 1) : 0x00;
+                *selectedPreset2 = (*selectedPreset2 != 0x83) ? (*selectedPreset2 + 1) : 0x00;
                 if(!longPush) {
                     setPreset(*selectedPreset2, 0x02);
                 }

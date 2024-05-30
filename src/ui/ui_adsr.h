@@ -44,7 +44,7 @@ public:
     /** @brief 画面更新 */
     void refreshUI() override {
         // タイトル
-        pSprite->drawString("<ADSR Editor>", 2, 2);
+        pSprite->drawString("> ADSR Editor", 2, 2);
 
         // 横線
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);

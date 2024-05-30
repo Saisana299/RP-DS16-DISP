@@ -48,14 +48,10 @@ void setup() {
     // SDカード確認
     if(!file.checkSD()) return;
 
+    midi.init();
+
     // CTRLとの接続を確認します
     if(!ctrl.checkConnection()) return;
-
-    // 全てのユーザーファイルをロードする
-    ui.loadUserFiles("preset");
-    ui.loadUserFiles("wavetable");
-
-    midi.init();
 
     display.showImage(&sprite, TITLE_IMG);
     delay(1);

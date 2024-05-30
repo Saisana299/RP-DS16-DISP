@@ -94,11 +94,11 @@ public:
         return true;
     }
 
-    void getFiles(String path, FsFile *files, uint8_t count, int offset = 0) {
+    void getFiles(String path, FsFile *files, uint8_t count, int32_t offset = 0) {
         if(!lockSD()) return;
         FsFile dir = SD.open(path);
         FsFile file = dir.openNextFile();
-        for (uint8_t i = 0; i < count + offset; i++) {
+        for (int32_t i = 0; i < count + offset; i++) {
             if(i - offset >= 0)    
                 files[i - offset] = file;
             file = dir.openNextFile();

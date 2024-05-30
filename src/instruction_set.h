@@ -29,6 +29,7 @@
 #define DISP_SET_DETUNE  0x4E // デチューンを設定
 #define DISP_MIDI_ON     0x4F // DISPMIDIモードON
 #define DISP_MIDI_OFF    0x50 // DISPMIDIモードOFF
+#define DISP_SET_SPREAD  0x51 // スプレードを設定
 
 //// 共通シンセ演奏状態コード
 #define SYNTH_SINGLE 0x00

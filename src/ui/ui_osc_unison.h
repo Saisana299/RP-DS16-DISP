@@ -14,6 +14,8 @@ private:
     uint8_t* osc2_voice;
     uint8_t* osc1_detune;
     uint8_t* osc2_detune;
+    uint8_t* osc1_spread;
+    uint8_t* osc2_spread;
 
     uint8_t* selectedOsc;
 
@@ -32,7 +34,8 @@ public:
     UIOscUnison(
         LGFX_Sprite* pSprite, SynthManager* pSynth,
         uint8_t* displayStatus, uint8_t* displayCursor,
-        uint8_t* osc1_voice, uint8_t* osc2_voice, uint8_t* osc1_detune, uint8_t* osc2_detune, uint8_t* selectedOsc)
+        uint8_t* osc1_voice, uint8_t* osc2_voice, uint8_t* osc1_detune, uint8_t* osc2_detune,
+        uint8_t* selectedOsc, uint8_t* osc1_spread, uint8_t* osc2_spread)
     {
         this->pSprite = pSprite;
         this->pSynth = pSynth;
@@ -43,13 +46,15 @@ public:
         this->osc1_detune = osc1_detune;
         this->osc2_detune = osc2_detune;
         this->selectedOsc = selectedOsc;
+        this->osc1_spread = osc1_spread;
+        this->osc2_spread = osc2_spread;
     }
 
     /** @brief 画面更新 */
     void refreshUI() override {
         // タイトル
-        if(*selectedOsc == 0x01) pSprite->drawString("<OSC1 Unison Editor>", 2, 2);
-        else if(*selectedOsc == 0x02) pSprite->drawString("<OSC2 Unison Editor>", 2, 2);
+        if(*selectedOsc == 0x01) pSprite->drawString("> OSC1 Unison Editor", 2, 2);
+        else if(*selectedOsc == 0x02) pSprite->drawString("> OSC2 Unison Editor", 2, 2);
 
         // 横線
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
@@ -58,14 +63,18 @@ public:
         if(*selectedOsc == 0x01) {
             char o1v_chr[6]; sprintf(o1v_chr, "%d", *osc1_voice);
             char o1d_chr[6]; sprintf(o1d_chr, "%d", *osc1_detune);
+            char o1s_chr[6]; sprintf(o1s_chr, "%d", *osc1_spread);
             pSprite->drawString("OSC1 Voice : " + String(o1v_chr) + "v", 2, 16);
             pSprite->drawString("OSC1 Detune: " + String(o1d_chr) + "%", 2, 26);
+            pSprite->drawString("OSC1 Spread: " + String(o1s_chr) + "%", 2, 36);
         }
         else if(*selectedOsc == 0x02) {
             char o2v_chr[6]; sprintf(o2v_chr, "%d", *osc2_voice);
             char o2d_chr[6]; sprintf(o2d_chr, "%d", *osc2_detune);
+            char o2s_chr[6]; sprintf(o2s_chr, "%d", *osc2_spread);
             pSprite->drawString("OSC2 Voice : " + String(o2v_chr) + "v", 2, 16);
             pSprite->drawString("OSC2 Detune: " + String(o2d_chr) + "%", 2, 26);
+            pSprite->drawString("OSC2 Spread: " + String(o2s_chr) + "%", 2, 36);
         }
 
         // 塗り
@@ -77,19 +86,23 @@ public:
             if(*selectedOsc == 0x01) cursorText("OSC1 Detune", 2, 26);
             else if(*selectedOsc == 0x02) cursorText("OSC2 Detune", 2, 26);
         }
+        else if(*displayCursor == 0x03) {
+            if(*selectedOsc == 0x01) cursorText("OSC1 Spread", 2, 36);
+            else if(*selectedOsc == 0x02) cursorText("OSC2 Spread", 2, 36);
+        }
     }
 
     /** @brief 上ボタンが押された場合 */
     void handleButtonUp(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x01) *displayCursor = 0x02;
+        if(*displayCursor == 0x01) *displayCursor = 0x03;
         else (*displayCursor)--;
     }
 
     /** @brief 下ボタンが押された場合 */
     void handleButtonDown(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x02) *displayCursor = 0x01;
+        if(*displayCursor == 0x03) *displayCursor = 0x01;
         else (*displayCursor)++;
     }
 
@@ -125,6 +138,21 @@ public:
                     if(!longPush) pSynth->setDetune(0xff, *osc2_detune, 0x02);
                 }
                 break;
+
+            case 0x03:
+                if(*selectedOsc == 0x01){
+                    if(*osc1_spread - 1 >= 0) {
+                        *osc1_spread -= 1; 
+                    }
+                    if(!longPush) pSynth->setSpread(0xff, *osc1_spread, 0x01);
+                }
+                else if(*selectedOsc == 0x02){
+                    if(*osc2_spread - 1 >= 0) {
+                        *osc2_spread -= 1; 
+                    }
+                    if(!longPush) pSynth->setSpread(0xff, *osc2_spread, 0x02);
+                }
+                break;
         }
     }
 
@@ -158,6 +186,21 @@ public:
                         *osc2_detune += 1; 
                     }
                     if(!longPush) pSynth->setDetune(0xff, *osc2_detune, 0x02);
+                }
+                break;
+
+            case 0x03:
+                if(*selectedOsc == 0x01) {
+                    if(*osc1_spread + 1 <= 100) {
+                        *osc1_spread += 1; 
+                    }
+                    if(!longPush) pSynth->setSpread(0xff, *osc1_spread, 0x01);
+                }
+                else if(*selectedOsc == 0x02) {
+                    if(*osc2_spread + 1 <= 100) {
+                        *osc2_spread += 1; 
+                    }
+                    if(!longPush) pSynth->setSpread(0xff, *osc2_spread, 0x02);
                 }
                 break;
         }

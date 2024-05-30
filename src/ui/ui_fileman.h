@@ -18,8 +18,11 @@ private:
     bool* isEndOfFile;
     bool* fileManRefresh;
 
+    LGFXRP2040* pDisplay;
     LGFX_Sprite* pSprite;
     FileManager* pFile;
+
+    LGFX_Sprite newSprite;
 
     void cursorText(String text, uint8_t x, uint8_t y, uint8_t ex_width = 0, uint8_t ex_height = 0) {
         pSprite->fillRect(x-1, y-1, pSprite->textWidth(text)+1 + ex_width, pSprite->fontHeight()+1 + ex_height, TFT_WHITE);
@@ -30,10 +33,11 @@ private:
 
 public:
     UIFileMan(
-        LGFX_Sprite* pSprite, FileManager* pFile, uint8_t* displayStatus, uint8_t* displayCursor,
+        LGFXRP2040* pDisplay, LGFX_Sprite* pSprite, FileManager* pFile, uint8_t* displayStatus, uint8_t* displayCursor,
         int* fileman_index, String* currentDir, Files* files, FsFile* file_buff,
         bool* isEndOfFile, bool* fileManRefresh)
     {
+        this->pDisplay = pDisplay;
         this->pSprite = pSprite;
         this->pFile = pFile;
         this->displayStatus = displayStatus;
@@ -51,10 +55,11 @@ public:
         // タイトル
         if(currentDir->length() > 18) {
             String title = "..." + currentDir->substring(currentDir->length() - 18);
-            pSprite->drawString(title, 2, 2);
+            pSprite->drawString(title, 2+9, 2);
         }else{
-            pSprite->drawString(*currentDir, 2, 2);
+            pSprite->drawString(*currentDir, 2+9, 2);
         }
+        pDisplay->showImage(&newSprite, FOLDER_8x7_IMG, 2, 2, 8, 7, pSprite);
 
         // 横線
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);

@@ -49,6 +49,8 @@
     #define PUSH_LONG   5
 #endif
 
+#define USER_PRESET_LIMIT 128
+
 class UIManager {
 private:
     TwoWire& ctrl = Wire1;
@@ -78,6 +80,8 @@ private:
     uint8_t osc2_voice = 1;
     uint8_t osc1_detune = 20;
     uint8_t osc2_detune = 20;
+    uint8_t osc1_spread = 0;
+    uint8_t osc2_spread = 0;
 
     String default_presets[4] = {
         "Basic Sine", "Basic Triangle", "Basic Saw", "Basic Square"
@@ -89,9 +93,15 @@ private:
         "SINGLE MODE", "OCTAVE MODE", "DUAL MODE", "MULTI MODE"
     };
 
-    // ユーザープリセット
-    Preset user_presets[252];
-    Preset user_wavetables[252];
+    // ユーザーファイル
+    Preset user_presets[USER_PRESET_LIMIT];
+    bool isUserPresetLoaded = false;
+    Preset user_wavetables[USER_PRESET_LIMIT];
+    bool isUserWaveLoaded = false;
+    Preset midi_files[USER_PRESET_LIMIT];
+    bool isMidiLoaded = false;
+    Preset rlem_files[USER_PRESET_LIMIT];
+    bool isRlemLoaded = false;
 
     // プリセット用バッファ
     int16_t wave_table_buff[2048];
@@ -134,7 +144,7 @@ public:
         ui_handler[DISPST_DEBUG] = new UIDebug(pSprite);
 
         ui_handler[DISPST_FILEMAN] = new UIFileMan(
-            pSprite, pFile, &displayStatus, &displayCursor,
+            pDisplay, pSprite, pFile, &displayStatus, &displayCursor,
             &fileman_index, &currentDir, files, file_buff,
             &isEndOfFile, &fileManRefresh
         );
@@ -150,7 +160,7 @@ public:
         ui_handler[DISPST_OSC_UNISON] = new UIOscUnison(
             pSprite, pSynth, &displayStatus, &displayCursor,
             &osc1_voice, &osc2_voice, &osc1_detune, &osc2_detune,
-            &selectedOsc
+            &selectedOsc, &osc1_spread, &osc2_spread
         );
 
         //ui_handler[DISPST_OSC_WAVE] = new UIOscWave();//
@@ -174,8 +184,7 @@ public:
         );
 
         ui_handler[DISPST_MIDI_PLAYER] = new UIMidiPlayer(
-            pSprite, pCtrl, &displayStatus, &displayCursor,
-            pMidi, pFile, files, file_buff
+            pSprite, pCtrl, &displayStatus, &displayCursor, pMidi, pFile, midi_files
         );
     }
 
@@ -207,7 +216,8 @@ public:
 
     void loadUserFiles(String type) {
         // ユーザーファイルを読み込む
-        String msg, dir_path, key;
+        uint8_t size;
+        String msg, dir_path, key, ext;
         Preset* preset;
         if(type == "preset")
         {
@@ -215,6 +225,8 @@ public:
             dir_path = "/rp-ds16/preset";
             key = "preset_name";
             preset = user_presets;
+            ext = ".json";
+            size = USER_PRESET_LIMIT;
         }
         else if(type == "wavetable")
         {
@@ -222,62 +234,85 @@ public:
             dir_path = "/rp-ds16/wavetable";
             key = "wave_name";
             preset = user_wavetables;
+            ext = ".json";
+            size = USER_PRESET_LIMIT;
+        }
+        else if(type == "midi")
+        {
+            msg = "MIDI LOADING...";
+            dir_path = "/rp-ds16/midi";
+            key = "";
+            preset = midi_files;
+            ext = ".mid";
+            size = USER_PRESET_LIMIT;
         }
         else {
             return;
         }
 
         uint8_t index = 0;
+        int32_t counter = 0;
 
         #if WOKWI_MODE != 1
-        for(uint8_t i = 0; i < 252; i+=4) {
 
+        while(index < size) {
             pSprite->createSprite(128, 64);
             pSprite->fillScreen(TFT_BLACK);
             pSprite->setTextColor(TFT_WHITE);
             pSprite->drawString(msg, 2, 2);
 
-            pFile->getFiles(dir_path, file_buff, 4, i);
+            pFile->getFiles(dir_path, file_buff, 4, counter);
+
             for(uint8_t j = 0; j < 4; j++) {
                 bool isNull = false;
-                char name[50];
-                file_buff[j].getName(name, sizeof(name));
-                if(strcmp(name, "") == 0) isNull = true;
+                char file_name[50];
+                file_buff[j].getName(file_name, sizeof(file_name));
+                if(strcmp(file_name, "") == 0) isNull = true;
                 else {
-                    if(!pFile->hasExtension(name, ".json")) continue;
-                    if(strcmp(name, "---") == 0) continue;
-                    if(strlen(name) > 30) continue;
-                    if(file_buff[j].isDirectory()) continue;
+                    bool isContinue = false;
+                    if(!pFile->hasExtension(file_name, ext)) isContinue = true;
+                    else if(strcmp(file_name, "---") == 0) isContinue = true;
+                    else if(strlen(file_name) > 30) isContinue = true;
+                    else if(file_buff[j].isDirectory()) isContinue = true;
+                    
+                    if(isContinue) {
+                        file_buff[j].close();
+                        continue;
+                    }
                 }
 
                 if(!isNull) {
-                    String path = dir_path + "/" + String(name);
-                    JsonDocument doc ;
-                    pFile->getJson(&doc, path);
-                    String name = doc[key];
-                    preset[index].name = name;
-                    preset[index].path = path;
+                    String path = dir_path + "/" + String(file_name);
+                    if(key != "") {
+                        JsonDocument doc ;
+                        pFile->getJson(&doc, path);
+                        String name = doc[key];
+                        preset[index].name = name;
+                        preset[index].path = path;
+                    }
+                    else {
+                        preset[index].name = file_name;
+                        preset[index].path = path;
+                    }
                 } else {
                     preset[index].name = "---";
                     preset[index].path = "";
                 }
                 file_buff[j].close();
                 index++;
+
+                // presetが埋まったら終了
+                if(index >= size) break;
             }
 
-            pSprite->drawString(String(i + 8) + "/256", 2, 12);
-            pSprite->drawLine(0, 63, (float(i+8)/256.0f)*127, 63, TFT_WHITE);
+            pSprite->drawString(String(index) + "/" + String(size), 2, 12);
+            pSprite->drawLine(0, 63, (float(index)/(float)size)*127, 63, TFT_WHITE);
             pSprite->pushSprite(0, 0);
             pSprite->deleteSprite();
+
+            counter += 4;
         }
         #endif
-
-        // 最後に埋める continueでskipされた分
-        while(index < 252) {
-            preset[index].name = "---";
-            preset[index].path = "";
-            index++;
-        }
 
         delay(1000);
     }
@@ -288,6 +323,20 @@ public:
     
     /** @brief UIを更新 */
     void refreshUI() {
+        if(displayStatus == DISPST_TITLE) return;
+        if(displayStatus == DISPST_PRESETS) {
+            if(!isUserPresetLoaded) {
+                loadUserFiles("preset");
+                isUserPresetLoaded = true;
+            }
+        }
+        if(displayStatus == DISPST_MIDI_PLAYER) {
+            if(!isMidiLoaded) {
+                loadUserFiles("midi");
+                isMidiLoaded = true;
+            }
+        }
+
         pSprite->createSprite(128, 64);
 
         pSprite->fillScreen(TFT_BLACK);

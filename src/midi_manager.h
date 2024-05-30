@@ -4,12 +4,14 @@
 #ifndef MIDIMANAGER_H
 #define MIDIMANAGER_H
 
-#define MIDI_IDLE    0x00
-#define MIDI_PLAY    0x01
-#define MIDI_PLAYING 0x02
-#define MIDI_STOP    0x03
-#define MIDI_PAUSE   0x04
-#define MIDI_RESUME  0x05
+#define MIDI_IDLE     0x00
+#define MIDI_PLAY     0x01
+#define MIDI_PLAYING  0x02
+#define MIDI_STOP     0x03
+#define MIDI_PAUSE    0x04
+#define MIDI_RESUME   0x05
+#define MIDI_LOOP_ON  0x06
+#define MIDI_LOOP_OFF 0x07
 
 #define SDFS_CS_PIN 5
 
@@ -102,6 +104,11 @@ public:
         flag = MIDI_STOP;
     }
 
+    void loopMidi(bool v) {
+        if(v) flag = MIDI_LOOP_ON;
+        else flag = MIDI_LOOP_OFF;
+    }
+
     // Core1で実行
     void midiHandler() {
         if(flag == MIDI_PLAY) {
@@ -134,6 +141,14 @@ public:
         else if(flag == MIDI_RESUME) {
             SMF.pause(false);
             isLocking = true;
+            flag = MIDI_PLAYING;
+        }
+        else if(flag == MIDI_LOOP_ON) {
+            SMF.looping(true);
+            flag = MIDI_PLAYING;
+        }
+        else if(flag == MIDI_LOOP_OFF) {
+            SMF.looping(false);
             flag = MIDI_PLAYING;
         }
     }

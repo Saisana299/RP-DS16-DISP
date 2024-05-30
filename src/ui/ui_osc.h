@@ -32,8 +32,8 @@ public:
     /** @brief 画面更新 */
     void refreshUI() override {
         // タイトル
-        if(*selectedOsc == 0x01) pSprite->drawString("<OSC1 Settings>", 2, 2);
-        else if(*selectedOsc == 0x02) pSprite->drawString("<OSC2 Settings>", 2, 2);
+        if(*selectedOsc == 0x01) pSprite->drawString("> OSC1 Settings", 2, 2);
+        else if(*selectedOsc == 0x02) pSprite->drawString("> OSC2 Settings", 2, 2);
 
         // 横線
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
