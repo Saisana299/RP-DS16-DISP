@@ -75,7 +75,7 @@ public:
     /** @brief キャンセルボタンが押された場合 */
     void handleButtonCancel(bool longPush = false) override {
         if (longPush) return;
-        *displayCursor = 0x03;
+        *displayCursor = 0x02;
         *displayStatus = DISPST_MENU;
     }
 };

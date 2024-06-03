@@ -10,8 +10,6 @@ private:
     uint8_t* displayStatus;
     uint8_t* displayCursor;
 
-    uint8_t* selectedOsc;
-
     LGFX_Sprite* pSprite;
 
     void cursorText(String text, uint8_t x, uint8_t y, uint8_t ex_width = 0, uint8_t ex_height = 0) {
@@ -22,11 +20,10 @@ private:
     }
 
 public:
-    UIPresetEdit( LGFX_Sprite* pSprite, uint8_t* displayStatus, uint8_t* displayCursor, uint8_t* selectedOsc) {
+    UIPresetEdit( LGFX_Sprite* pSprite, uint8_t* displayStatus, uint8_t* displayCursor) {
         this->displayStatus = displayStatus;
         this->displayCursor = displayCursor;
         this->pSprite = pSprite;
-        this->selectedOsc = selectedOsc;
     }
 
     /** @brief 画面更新 */
@@ -37,24 +34,24 @@ public:
         // 横線
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
 
-        pSprite->drawString("Oscillator1", 2, 16);
-        pSprite->drawString("Oscillator2", 2, 26);
-        pSprite->drawString("ADSR Envelope", 2, 36);
-        pSprite->drawString("Filter", 2, 46);
+        pSprite->drawString("Oscillator", 2, 16);
+        pSprite->drawString("Common", 2, 26);
+        pSprite->drawString("Filter", 2, 36);
+        pSprite->drawString("LFO", 2, 46);
         pSprite->drawString("Effector", 2, 56);
 
         // 塗り
         if(*displayCursor == 0x01) {
-            cursorText("Oscillator1", 2, 16);
+            cursorText("Oscillator", 2, 16);
         }
         else if(*displayCursor == 0x02) {
-            cursorText("Oscillator2", 2, 26);
+            cursorText("Common", 2, 26);
         }
         else if(*displayCursor == 0x03) {
-            cursorText("ADSR Envelope", 2, 36);
+            cursorText("Filter", 2, 36);
         }
         else if(*displayCursor == 0x04) {
-            cursorText("Filter", 2, 46);
+            cursorText("LFO", 2, 46);
         }
         else if(*displayCursor == 0x05) {
             cursorText("Effector", 2, 56);
@@ -90,16 +87,14 @@ public:
             case 0x01:
                 *displayCursor = 0x01;
                 *displayStatus = DISPST_OSC;
-                *selectedOsc = 0x01;
                 break;
             case 0x02:
                 *displayCursor = 0x01;
-                *displayStatus = DISPST_OSC;
-                *selectedOsc = 0x02;
+                *displayStatus = DISPST_COMMON;
                 break;
             case 0x03:
                 *displayCursor = 0x01;
-                *displayStatus = DISPST_ADSR;
+                *displayStatus = DISPST_FILTER;
                 break;
             case 0x04:
                 break;

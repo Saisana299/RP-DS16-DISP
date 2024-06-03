@@ -1,6 +1,10 @@
 #ifndef IUIHANDLER_H
 #define IUIHANDLER_H
 
+#define USER_PRESET_LIMIT 128
+#define FACTORY_PRESETS 4
+#define FACTORY_WAVETABLES 5
+
 #define DISPST_IDLE        0x00
 #define DISPST_TITLE       0x01
 #define DISPST_PRESETS     0x02
@@ -14,6 +18,7 @@
 #define DISPST_OSC_WAVE    0x0A
 #define DISPST_FILTER      0x0B
 #define DISPST_MIDI_PLAYER 0x0C
+#define DISPST_COMMON      0x0D
 
 struct Files {
     bool type;

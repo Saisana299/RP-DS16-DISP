@@ -31,36 +31,68 @@ public:
 
     /** @brief 画面更新 */
     void refreshUI() override {
-        // タイトル
-        if(*selectedOsc == 0x01) pSprite->drawString("> OSC1 Settings", 2, 2);
-        else if(*selectedOsc == 0x02) pSprite->drawString("> OSC2 Settings", 2, 2);
+
+        if(*displayCursor < 0x04) {
+            // タイトル
+            pSprite->drawString("> Select Oscillator", 2, 2);
+            // オシレータ選択
+            pSprite->drawString("OSC1", 2, 16);
+            pSprite->drawString("OSC2", 2, 26);
+            pSprite->drawString("Sub OSC", 2, 36);
+        }
+        else {
+            if(*selectedOsc == 0x01) pSprite->drawString("> OSC1 Settings", 2, 2);
+            else if(*selectedOsc == 0x02) pSprite->drawString("> OSC2 Settings", 2, 2);
+            pSprite->drawString("Wavetable", 2, 16);
+            pSprite->drawString("Unison", 2, 26);
+            pSprite->drawString("Pitch", 2, 36);
+            pSprite->drawString("Level: ---", 2, 46);
+            pSprite->drawString("Pan: ---", 2, 56);
+        }
 
         // 横線
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
 
-        pSprite->drawString("Wavetable", 2, 16);
-        pSprite->drawString("Unison", 2, 26);
-
         // 塗り
         if(*displayCursor == 0x01) {
-            cursorText("Wavetable", 2, 16);
+            cursorText("OSC1", 2, 16);
         }
         else if(*displayCursor == 0x02) {
+            cursorText("OSC2", 2, 26);
+        }
+        else if(*displayCursor == 0x03) {
+            cursorText("Sub OSC", 2, 36);
+        }
+        else if(*displayCursor == 0x04) {
+            cursorText("Wavetable", 2, 16);
+        }
+        else if(*displayCursor == 0x05) {
             cursorText("Unison", 2, 26);
+        }
+        else if(*displayCursor == 0x06) {
+            cursorText("Pitch", 2, 36);
+        }
+        else if(*displayCursor == 0x07) {
+            cursorText("Level", 2, 46);
+        }
+        else if(*displayCursor == 0x08) {
+            cursorText("Pan", 2, 56);
         }
     }
 
     /** @brief 上ボタンが押された場合 */
     void handleButtonUp(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x01) *displayCursor = 0x02;
+        if(*displayCursor == 0x01) *displayCursor = 0x03;
+        else if(*displayCursor == 0x04) *displayCursor = 0x08;
         else (*displayCursor)--;
     }
 
     /** @brief 下ボタンが押された場合 */
     void handleButtonDown(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x02) *displayCursor = 0x01;
+        if(*displayCursor == 0x03) *displayCursor = 0x01;
+        else if(*displayCursor == 0x08) *displayCursor = 0x04;
         else (*displayCursor)++;
     }
 
@@ -77,10 +109,24 @@ public:
         if(longPush) return;
         switch (*displayCursor) {
             case 0x01:
+                *displayCursor = 0x04;
+                *selectedOsc = 0x01;
                 break;
             case 0x02:
+                *displayCursor = 0x04;
+                *selectedOsc = 0x02;
+                break;
+            case 0x03:
+                break;
+            case 0x04:
+                break;
+            case 0x05:
                 *displayCursor = 0x01;
                 *displayStatus = DISPST_OSC_UNISON;
+                break;
+            case 0x06:
+                break;
+            case 0x07:
                 break;
         }
     }
@@ -88,9 +134,14 @@ public:
     /** @brief キャンセルボタンが押された場合 */
     void handleButtonCancel(bool longPush = false) override {
         if (longPush) return;
-        if(*selectedOsc == 0x01) *displayCursor = 0x01;
-        else if(*selectedOsc == 0x02) *displayCursor = 0x02;
-        *displayStatus = DISPST_PRESET_EDIT;
+        if(*displayCursor < 0x04) {
+            *displayCursor = 0x01;
+            *displayStatus = DISPST_PRESET_EDIT;
+        }
+        else {
+            if(*selectedOsc == 0x01) *displayCursor = 0x01;
+            else if(*selectedOsc == 0x02) *displayCursor = 0x02;
+        }
     }
 };
 

@@ -35,7 +35,7 @@ public:
             return true;
         #endif
 
-        uint8_t data[] = {INS_BEGIN, DISP_CONNECT};
+        uint8_t data[] = {INS_BEGIN, CTRL_CONNECT};
         uint8_t received[1];
         ctrlTransmission(data, sizeof(data), received, 1);
 
@@ -122,8 +122,8 @@ public:
             instruction = receivedData[1];
         }
 
-        if(instruction == DISP_DEBUG_DATA) {
-            // 例: {INS_BEGIN, DISP_DEBUG_DATA, DETA_BEGIN, 0x04, 0x01, 0x11, 0xA2, 0x01}
+        if(instruction == CTRL_DEBUG_DATA) {
+            // 例: {INS_BEGIN, CTRL_DEBUG_DATA, DETA_BEGIN, 0x04, 0x01, 0x11, 0xA2, 0x01}
             if(bytes < 6) return;
             uint8_t statusByte = receivedData[4];
             uint8_t dataByte[2] = {0xff, 0xff};

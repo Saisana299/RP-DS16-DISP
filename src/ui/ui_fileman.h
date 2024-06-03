@@ -206,7 +206,7 @@ public:
     void handleButtonCancel(bool longPush = false) override {
         if (longPush) return;
         if(*displayCursor == 0x05) {
-            *displayCursor = 0x02;
+            *displayCursor = 0x01;
             *displayStatus = DISPST_MENU;
         }
         else *displayCursor = 0x05;

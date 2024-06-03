@@ -213,7 +213,7 @@ public:
     /** @brief キャンセルボタンが押された場合 */
     void handleButtonCancel(bool longPush = false) override {
         if (longPush) return;
-        *displayCursor = 0x02;
+        *displayCursor = 0x05;
         *displayStatus = DISPST_OSC;
     }
 };

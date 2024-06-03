@@ -16,11 +16,11 @@ private:
         uint8_t received[1];
 
         // シンセリセット
-        uint8_t reset_data[] = {INS_BEGIN, DISP_RESET_SYNTH, DATA_BEGIN, 0x01, 0xff};
+        uint8_t reset_data[] = {INS_BEGIN, CTRL_RESET_SYNTH, DATA_BEGIN, 0x01, 0xff};
         pCtrl->ctrlTransmission(reset_data, sizeof(reset_data), received, 1);
 
         // シンセ制御停止
-        uint8_t stop_data[] = {INS_BEGIN, DISP_STOP_SYNTH};
+        uint8_t stop_data[] = {INS_BEGIN, CTRL_STOP_SYNTH};
         pCtrl->ctrlTransmission(stop_data, sizeof(stop_data), received, 1);
 
         memset(cshape_buff, 0, 4096 * sizeof(uint8_t)); // バッファをクリア
@@ -39,7 +39,7 @@ private:
             uint8_t data[30];
             for (uint16_t i = 0; i < 30; i++) {
                 if(i == 0) data[i] = INS_BEGIN;
-                else if(i == 1) data[i] = DISP_SET_CSHAPE;
+                else if(i == 1) data[i] = SYNTH_SET_CSHAPE;
                 else if(i == 2) data[i] = DATA_BEGIN;
                 else if(i == 3) data[i] = 0x24;
                 else if(i == 4) data[i] = synth;
@@ -63,7 +63,7 @@ private:
         }
 
         // シンセ制御再開
-        uint8_t start_data[] = {INS_BEGIN, DISP_START_SYNTH};
+        uint8_t start_data[] = {INS_BEGIN, CTRL_START_SYNTH};
         pCtrl->ctrlTransmission(start_data, sizeof(start_data), received, 1);
     }
 
@@ -84,7 +84,7 @@ public:
         if(wave != nullptr){
             setCustomShape(synth, osc, wave);
         }else{
-            uint8_t data[] = {INS_BEGIN, DISP_SET_SHAPE, DATA_BEGIN, 0x02, synth, id};
+            uint8_t data[] = {INS_BEGIN, SYNTH_SET_SHAPE, DATA_BEGIN, 0x02, synth, id, osc};
             uint8_t received[1];
             pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
         }
@@ -96,7 +96,7 @@ public:
      * @param mode シンセモード番号
      */
     void setSynthMode(uint8_t mode) {
-        uint8_t data[] = {INS_BEGIN, DISP_SET_SYNTH, DATA_BEGIN, 0x01, mode};
+        uint8_t data[] = {INS_BEGIN, CTRL_SET_SYNTH, DATA_BEGIN, 0x01, mode};
         uint8_t received[1];
         pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
     }
@@ -107,7 +107,7 @@ public:
      * @param synth 対象のシンセ
      */
     void resetSynth(uint8_t synth) {
-        uint8_t data[] = {INS_BEGIN, DISP_RESET_SYNTH, DATA_BEGIN, 0x01, synth};
+        uint8_t data[] = {INS_BEGIN, CTRL_RESET_SYNTH, DATA_BEGIN, 0x01, synth};
         uint8_t received[1];
         pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
     }
@@ -127,7 +127,7 @@ public:
         }
 
         uint8_t data[] = {
-            INS_BEGIN, DISP_SET_ATTACK, DATA_BEGIN,
+            INS_BEGIN, SYNTH_SET_ATTACK, DATA_BEGIN,
             0x06, synth, attack_sec, attack_ms[0], attack_ms[1], attack_ms[2], attack_ms[3]
         };
         uint8_t received[1];
@@ -149,7 +149,7 @@ public:
         }
 
         uint8_t data[] = {
-            INS_BEGIN, DISP_SET_RELEASE, DATA_BEGIN, 
+            INS_BEGIN, SYNTH_SET_RELEASE, DATA_BEGIN, 
             0x06, synth, release_sec, release_ms[0], release_ms[1], release_ms[2], release_ms[3]
         };
         uint8_t received[1];
@@ -171,7 +171,7 @@ public:
         }
 
         uint8_t data[] = {
-            INS_BEGIN, DISP_SET_DECAY, DATA_BEGIN,
+            INS_BEGIN, SYNTH_SET_DECAY, DATA_BEGIN,
             0x06, synth, decay_sec, decay_ms[0], decay_ms[1], decay_ms[2], decay_ms[3]
         };
         uint8_t received[1];
@@ -190,7 +190,7 @@ public:
         }
 
         uint8_t data[] = {
-            INS_BEGIN, DISP_SET_SUSTAIN, DATA_BEGIN, 
+            INS_BEGIN, SYNTH_SET_SUSTAIN, DATA_BEGIN, 
             0x05, synth, sustains[0], sustains[1], sustains[2], sustains[3]
         };
         uint8_t received[1];
@@ -200,7 +200,7 @@ public:
     // ボイス数を設定
     void setVoice(uint8_t synth, uint8_t voice, uint8_t osc) {
         uint8_t data[] = {
-            INS_BEGIN, DISP_SET_VOICE, DATA_BEGIN, 
+            INS_BEGIN, SYNTH_SET_VOICE, DATA_BEGIN, 
             0x03, synth, voice, osc
         };
         uint8_t received[1];
@@ -210,7 +210,7 @@ public:
     // デチューンを設定
     void setDetune(uint8_t synth, uint8_t detune, uint8_t osc) {
         uint8_t data[] = {
-            INS_BEGIN, DISP_SET_DETUNE, DATA_BEGIN, 
+            INS_BEGIN, SYNTH_SET_DETUNE, DATA_BEGIN, 
             0x03, synth, detune, osc
         };
         uint8_t received[1];
@@ -220,12 +220,64 @@ public:
     // スプレドを設定
     void setSpread(uint8_t synth, uint8_t spread, uint8_t osc) {
         uint8_t data[] = {
-            INS_BEGIN, DISP_SET_SPREAD, DATA_BEGIN, 
+            INS_BEGIN, SYNTH_SET_SPREAD, DATA_BEGIN, 
             0x03, synth, spread, osc
         };
         uint8_t received[1];
         pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
     }
+
+    // ローパスフィルタを設定
+    void setLowPassFilter(uint8_t synth, uint8_t enable, float freq = 1000.0f, float q = 1.0f/sqrt(2.0f)) {
+        if(enable == 0x01) {
+            uint8_t d_freq[sizeof(float)];
+            memcpy(d_freq, &freq, sizeof(float));
+            uint8_t d_q[sizeof(float)];
+            memcpy(d_q, &q, sizeof(float));
+
+            uint8_t data[] = {
+                INS_BEGIN, SYNTH_SET_LPF, DATA_BEGIN, 
+                0x0A, synth, enable, d_freq[0], d_freq[1], d_freq[2], d_freq[3], d_q[0], d_q[1], d_q[2], d_q[3]
+            };
+            uint8_t received[1];
+            pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
+        }
+        else {
+            uint8_t data[] = {
+                INS_BEGIN, SYNTH_SET_LPF, DATA_BEGIN, 
+                0x02, synth, enable
+            };
+            uint8_t received[1];
+            pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
+        }
+    }
+
+    // ハイパスフィルタを設定
+    void setHighPassFilter(uint8_t synth, uint8_t enable, float freq = 1000.0f, float q = 1.0f/sqrt(2.0f)) {
+        if(enable == 0x01) {
+            uint8_t d_freq[sizeof(float)];
+            memcpy(d_freq, &freq, sizeof(float));
+            uint8_t d_q[sizeof(float)];
+            memcpy(d_q, &q, sizeof(float));
+
+            uint8_t data[] = {
+                INS_BEGIN, SYNTH_SET_HPF, DATA_BEGIN, 
+                0x0A, synth, enable, d_freq[0], d_freq[1], d_freq[2], d_freq[3], d_q[0], d_q[1], d_q[2], d_q[3]
+            };
+            uint8_t received[1];
+            pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
+        }
+        else {
+            uint8_t data[] = {
+                INS_BEGIN, SYNTH_SET_HPF, DATA_BEGIN, 
+                0x02, synth, enable
+            };
+            uint8_t received[1];
+            pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
+        }
+    }
+
+    // ローパスハイパスを設定
 };
 
 #endif // SYNTHMANAGER_H

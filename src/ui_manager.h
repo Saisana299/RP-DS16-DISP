@@ -17,6 +17,8 @@
 #include <ui_presets.h>
 #include <ui_title.h>
 #include <ui_midi_player.h>
+#include <ui_common.h>
+#include <ui_filter.h>
 
 #ifndef UIMANAGER_H
 #define UIMANAGER_H
@@ -49,7 +51,10 @@
     #define PUSH_LONG   5
 #endif
 
-#define USER_PRESET_LIMIT 128
+#define FILTER_NONE 0x00
+#define FILTER_LPF  0x01
+#define FILTER_HPF  0x02
+#define FILTER_LHF  0x03
 
 class UIManager {
 private:
@@ -67,7 +72,6 @@ private:
 
     // シンセ関連
     uint8_t synthMode = SYNTH_SINGLE;
-    uint8_t synthPan = LR_PAN_C;
     uint8_t selectedPreset = 0x00;
     uint8_t selectedPreset2 = 0x00;
 
@@ -83,11 +87,17 @@ private:
     uint8_t osc1_spread = 0;
     uint8_t osc2_spread = 0;
 
-    String default_presets[4] = {
+    uint8_t filter_mode = FILTER_NONE;
+    float lpf_freq = 1000.0f;
+    float lpf_q = 1.0f/sqrt(2.0f);
+    float hpf_freq = 500.0f;
+    float hpf_q = 1.0f/sqrt(2.0f);
+
+    String default_presets[FACTORY_PRESETS] = {
         "Basic Sine", "Basic Triangle", "Basic Saw", "Basic Square"
     };
-    String default_wavetables[4] = {
-        "sine", "triangle", "saw", "square"
+    String default_wavetables[FACTORY_WAVETABLES] = {
+        "sine", "triangle", "saw", "square", "noise"
     };
     String modes[4] = {
         "SINGLE MODE", "OCTAVE MODE", "DUAL MODE", "MULTI MODE"
@@ -130,7 +140,7 @@ private:
     FileManager* pFile;
     MidiManager* pMidi;
 
-    IUIHandler* ui_handler[13];
+    IUIHandler* ui_handler[15];
 
 public:
     UIManager(LGFXRP2040* addr1, LGFX_Sprite* addr2, CtrlManager* addr3, SynthManager* addr4, FileManager* addr5, MidiManager* addr6) {
@@ -170,7 +180,11 @@ public:
         );
 
         ui_handler[DISPST_PRESET_EDIT] = new UIPresetEdit(
-            pSprite, &displayStatus, &displayCursor, &selectedOsc
+            pSprite, &displayStatus, &displayCursor
+        );
+
+        ui_handler[DISPST_COMMON] = new UICommon(
+            pSprite, &displayStatus, &displayCursor
         );
         
         ui_handler[DISPST_PRESETS] = new UIPresets(
@@ -185,6 +199,11 @@ public:
 
         ui_handler[DISPST_MIDI_PLAYER] = new UIMidiPlayer(
             pSprite, pCtrl, &displayStatus, &displayCursor, pMidi, pFile, midi_files
+        );
+
+        ui_handler[DISPST_FILTER] = new UIFilter(
+            pSprite, pSynth, &displayStatus, &displayCursor,
+            &filter_mode, &lpf_freq, &lpf_q, &hpf_freq, &hpf_q
         );
     }
 
@@ -253,8 +272,6 @@ public:
         uint8_t index = 0;
         int32_t counter = 0;
 
-        #if WOKWI_MODE != 1
-
         while(index < size) {
             pSprite->createSprite(128, 64);
             pSprite->fillScreen(TFT_BLACK);
@@ -312,7 +329,6 @@ public:
 
             counter += 4;
         }
-        #endif
 
         delay(1000);
     }

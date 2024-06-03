@@ -37,7 +37,7 @@ private:
     }
 
     void sendResetSynth() {
-        uint8_t data[] = {INS_BEGIN, DISP_RESET_SYNTH, DATA_BEGIN, 0x01, 0xff};
+        uint8_t data[] = {INS_BEGIN, CTRL_RESET_SYNTH, DATA_BEGIN, 0x01, 0xff};
         uint8_t received[1];
         pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
     }
@@ -47,8 +47,8 @@ private:
             sendResetSynth();
         }
         uint8_t data[2] = {INS_BEGIN};
-        if(v) data[1] = DISP_MIDI_ON;
-        else  data[1] = DISP_MIDI_OFF;
+        if(v) data[1] = CTRL_MIDI_ON;
+        else  data[1] = CTRL_MIDI_OFF;
         uint8_t received[1];
         pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
     }

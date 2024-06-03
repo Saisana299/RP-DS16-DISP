@@ -33,21 +33,21 @@ public:
         // 横線
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
 
-        pSprite->drawString("Global Settings", 2, 16);
-        pSprite->drawString("File Manager", 2, 26);
-        pSprite->drawString("MIDI Player", 2, 36);
+        pSprite->drawString("File Manager", 2, 16);
+        pSprite->drawString("MIDI Player", 2, 26);
+        pSprite->drawString("Video Player", 2, 36);
         pSprite->drawString("Wavetable Viewer", 2, 46);
         pSprite->drawString("About", 2, 56);
 
         // 塗り
         if(*displayCursor == 0x01) {
-            cursorText("Global Settings", 2, 16);
+            cursorText("File Manager", 2, 16);
         }
         else if(*displayCursor == 0x02) {
-            cursorText("File Manager", 2, 26);
+            cursorText("MIDI Player", 2, 26);
         }
         else if(*displayCursor == 0x03) {
-            cursorText("MIDI Player", 2, 36);
+            cursorText("Video Player", 2, 36);
         }
         else if(*displayCursor == 0x04) {
             cursorText("Wavetable Viewer", 2, 46);
@@ -84,14 +84,14 @@ public:
         if(longPush) return;
         switch (*displayCursor) {
             case 0x01:
-                break;
-            case 0x02:
                 *displayCursor = 0x00;
                 *displayStatus = DISPST_FILEMAN;
                 break;
-            case 0x03:
+            case 0x02:
                 *displayCursor = 0x00;
                 *displayStatus = DISPST_MIDI_PLAYER;
+                break;
+            case 0x03:
                 break;
             case 0x04:
                 break;

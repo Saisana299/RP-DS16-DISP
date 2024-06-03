@@ -3,9 +3,6 @@
 #ifndef UIPRESETS_H
 #define UIPRESETS_H
 
-#define FACTORY_PRESETS 4
-#define FACTORY_WAVETABLES 4
-
 class UIPresets : public IUIHandler {
 private:
 
