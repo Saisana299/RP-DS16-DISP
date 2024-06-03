@@ -24,6 +24,25 @@ private:
         pSprite->setTextColor(TFT_WHITE);
     }
 
+    void updateFilter() {
+        if(*filter_mode == 0x00) {
+            pSynth->setLowPassFilter(0xff, 0x00);
+            pSynth->setHighPassFilter(0xff, 0x00);
+        }
+        else if(*filter_mode == 0x01) {
+            pSynth->setLowPassFilter(0xff, 0x01, *lpf_freq, *lpf_q);
+            pSynth->setHighPassFilter(0xff, 0x00);
+        }
+        else if(*filter_mode == 0x02) {
+            pSynth->setLowPassFilter(0xff, 0x00);
+            pSynth->setHighPassFilter(0xff, 0x01, *hpf_freq, *hpf_q);
+        }
+        else if(*filter_mode == 0x03) {
+            pSynth->setLowPassFilter(0xff, 0x01, *lpf_freq, *lpf_q);
+            pSynth->setHighPassFilter(0xff, 0x01, *hpf_freq, *hpf_q);
+        }
+    }
+
 public:
     UIFilter(
         LGFX_Sprite* pSprite, SynthManager* pSynth,
@@ -54,30 +73,34 @@ public:
         if(*filter_mode == 0x01) mode = "LPF";
         else if(*filter_mode == 0x02) mode = "HPF";
         else if(*filter_mode == 0x03) mode = "LPF+HPF";
+        char sym_2 = ':'; if (*displayCursor == 0x07) sym_2 = '>';
+        char sym_3 = ':'; if (*displayCursor == 0x08) sym_3 = '>';
+        char sym_4 = ':'; if (*displayCursor == 0x09) sym_4 = '>';
+        char sym_5 = ':'; if (*displayCursor == 0x0A) sym_5 = '>';
         char lpff_chr[10]; sprintf(lpff_chr, "%.2f", *lpf_freq);
         char lpfq_chr[6]; sprintf(lpfq_chr, "%.2f", *lpf_q);
         char hpff_chr[10]; sprintf(hpff_chr, "%.2f", *hpf_freq);
         char hpfq_chr[6]; sprintf(hpfq_chr, "%.2f", *hpf_q);
         pSprite->drawString("Mode:     " + mode, 2, 16);
-        pSprite->drawString("LPF Freq: " + String(lpff_chr) + "Hz", 2, 26);
-        pSprite->drawString("LPF Q:    " + String(lpfq_chr), 2, 36);
-        pSprite->drawString("HPF Freq: " + String(hpff_chr) + "Hz", 2, 46);
-        pSprite->drawString("HPF Q:    " + String(hpfq_chr), 2, 56);
+        pSprite->drawString("LPF Freq" + String(sym_2) + " " + String(lpff_chr) + "Hz", 2, 26);
+        pSprite->drawString("LPF Q" + String(sym_3) + "    " + String(lpfq_chr), 2, 36);
+        pSprite->drawString("HPF Freq" + String(sym_4) + " " + String(hpff_chr) + "Hz", 2, 46);
+        pSprite->drawString("HPF Q" + String(sym_5) + "    " + String(hpfq_chr), 2, 56);
 
         // 塗り
-        if(*displayCursor == 0x01) {
+        if(*displayCursor == 0x01 || *displayCursor == 0x06) {
             cursorText("Mode", 2, 16);
         }
-        else if(*displayCursor == 0x02) {
+        else if(*displayCursor == 0x02 || *displayCursor == 0x07) {
             cursorText("LPF Freq", 2, 26);
         }
-        else if(*displayCursor == 0x03) {
+        else if(*displayCursor == 0x03 || *displayCursor == 0x08) {
             cursorText("LPF Q", 2, 36);
         }
-        else if(*displayCursor == 0x04) {
+        else if(*displayCursor == 0x04 || *displayCursor == 0x09) {
             cursorText("HPF Freq", 2, 46);
         }
-        else if(*displayCursor == 0x05) {
+        else if(*displayCursor == 0x05 || *displayCursor == 0x0A) {
             cursorText("HPF Q", 2, 56);
         }
     }
@@ -85,33 +108,23 @@ public:
     /** @brief 上ボタンが押された場合 */
     void handleButtonUp(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x01) *displayCursor = 0x05;
-        else (*displayCursor)--;
+        switch (*displayCursor) {
+            default:
+                if(*displayCursor == 0x01) *displayCursor = 0x05;
+                else (*displayCursor)--;
+                break;
+        }
+        
     }
 
     /** @brief 下ボタンが押された場合 */
     void handleButtonDown(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x05) *displayCursor = 0x01;
-        else (*displayCursor)++;
-    }
-
-    void updateFilter() {
-        if(*filter_mode == 0x00) {
-            pSynth->setLowPassFilter(0xff, 0x00);
-            pSynth->setHighPassFilter(0xff, 0x00);
-        }
-        else if(*filter_mode == 0x01) {
-            pSynth->setLowPassFilter(0xff, 0x01, *lpf_freq, *lpf_q);
-            pSynth->setHighPassFilter(0xff, 0x00);
-        }
-        else if(*filter_mode == 0x02) {
-            pSynth->setLowPassFilter(0xff, 0x00);
-            pSynth->setHighPassFilter(0xff, 0x01, *hpf_freq, *hpf_q);
-        }
-        else if(*filter_mode == 0x03) {
-            pSynth->setLowPassFilter(0xff, 0x01, *lpf_freq, *lpf_q);
-            pSynth->setHighPassFilter(0xff, 0x01, *hpf_freq, *hpf_q);
+        switch (*displayCursor) {
+            default:
+                if(*displayCursor == 0x05) *displayCursor = 0x01;
+                else (*displayCursor)++;
+                break;
         }
     }
 
@@ -215,6 +228,26 @@ public:
 
     /** @brief 決定ボタンが押された場合 */
     void handleButtonEnter(bool longPush = false) override {
+        if(longPush) return;
+        switch (*displayCursor) {
+            case 0x02: *displayCursor = 0x07;
+                break;
+            case 0x03: *displayCursor = 0x08;
+                break;
+            case 0x04: *displayCursor = 0x09;
+                break;
+            case 0x05: *displayCursor = 0x0A;
+                break;
+
+            case 0x07: *displayCursor = 0x02;
+                break;
+            case 0x08: *displayCursor = 0x03;
+                break;
+            case 0x09: *displayCursor = 0x04;
+                break;
+            case 0x0A: *displayCursor = 0x05;
+                break;
+        }
     }
 
     /** @brief キャンセルボタンが押された場合 */

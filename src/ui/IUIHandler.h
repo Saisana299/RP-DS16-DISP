@@ -13,12 +13,12 @@
 #define DISPST_FILEMAN     0x05
 #define DISPST_PRESET_EDIT 0x06
 #define DISPST_OSC         0x07
-#define DISPST_ADSR        0x08
+#define DISPST_AMP_ADSR    0x08
 #define DISPST_OSC_UNISON  0x09
 #define DISPST_OSC_WAVE    0x0A
 #define DISPST_FILTER      0x0B
 #define DISPST_MIDI_PLAYER 0x0C
-#define DISPST_COMMON      0x0D
+#define DISPST_AMP         0x0D
 
 struct Files {
     bool type;

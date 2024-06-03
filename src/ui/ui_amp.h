@@ -1,9 +1,9 @@
 #include <IUIHandler.h>
 
-#ifndef UICOMMON_H
-#define UICOMMON_H
+#ifndef UIAMP_H
+#define UIAMP_H
 
-class UICommon : public IUIHandler {
+class UIAmp : public IUIHandler {
 private:
 
     // ディスプレイ関連
@@ -20,7 +20,7 @@ private:
     }
 
 public:
-    UICommon( LGFX_Sprite* pSprite, uint8_t* displayStatus, uint8_t* displayCursor) {
+    UIAmp( LGFX_Sprite* pSprite, uint8_t* displayStatus, uint8_t* displayCursor) {
         this->displayStatus = displayStatus;
         this->displayCursor = displayCursor;
         this->pSprite = pSprite;
@@ -29,36 +29,45 @@ public:
     /** @brief 画面更新 */
     void refreshUI() override {
         // タイトル
-        pSprite->drawString("> Common Settings", 2, 2);
+        pSprite->drawString("> Amplifier Settings", 2, 2);
 
         // 横線
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
 
-        pSprite->drawString("ADSR Envelope", 2, 16);
+        // char lv_chr[5]; sprintf(lv_chr, "%d", *);
+        // char pn_chr[5]; sprintf(pn_chr, "%d", *);
+
+        pSprite->drawString("Level Envelope", 2, 16);
         pSprite->drawString("Portamento", 2, 26);
         pSprite->drawString("Level: ---", 2, 36);
         pSprite->drawString("Pan: ---", 2, 46);
 
         // 塗り
         if(*displayCursor == 0x01) {
-            cursorText("ADSR Envelope", 2, 16);
+            cursorText("Level Envelope", 2, 16);
         }
         else if(*displayCursor == 0x02) {
             cursorText("Portamento", 2, 26);
+        }
+        else if(*displayCursor == 0x03) {
+            cursorText("Level", 2, 36);
+        }
+        else if(*displayCursor == 0x04) {
+            cursorText("Pan", 2, 46);
         }
     }
 
     /** @brief 上ボタンが押された場合 */
     void handleButtonUp(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x01) *displayCursor = 0x02;
+        if(*displayCursor == 0x01) *displayCursor = 0x04;
         else (*displayCursor)--;
     }
 
     /** @brief 下ボタンが押された場合 */
     void handleButtonDown(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x02) *displayCursor = 0x01;
+        if(*displayCursor == 0x04) *displayCursor = 0x01;
         else (*displayCursor)++;
     }
 
@@ -76,7 +85,7 @@ public:
         switch (*displayCursor) {
             case 0x01:
                 *displayCursor = 0x01;
-                *displayStatus = DISPST_ADSR;
+                *displayStatus = DISPST_AMP_ADSR;
                 break;
             case 0x02:
                 break;
@@ -91,4 +100,4 @@ public:
     }
 };
 
-#endif // UICOMMON_H
+#endif // UIAMP_H

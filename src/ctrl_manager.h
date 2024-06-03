@@ -156,17 +156,17 @@ public:
             if(synthByte == 0x00) {
                 pSprite->drawString("Global", 2, 16);
             }else{
-                char sy_chr[12]; sprintf(sy_chr, "Synth%x", synthByte);
+                char sy_chr[12]; sprintf(sy_chr, "Synth%X", synthByte);
                 pSprite->drawString(sy_chr, 2, 16);
             }
 
-            char sb_chr[5]; sprintf(sb_chr, "0x%02x", statusByte);
+            char sb_chr[5]; sprintf(sb_chr, "0x%02X", statusByte);
             char db1_chr[5];
             if(dataByte[0] == 0xff) sprintf(db1_chr, "%s", "----");
-            else sprintf(db1_chr, "0x%02x", dataByte[0]);
+            else sprintf(db1_chr, "0x%02X", dataByte[0]);
             char db2_chr[5];
             if (dataByte[1] == 0xff) sprintf(db2_chr, "%s", "----");
-            else sprintf(db2_chr, "0x%02x", dataByte[1]);
+            else sprintf(db2_chr, "0x%02X", dataByte[1]);
             
             pSprite->fillRect(2, 26, 126, 9, TFT_BLACK);
             char msg[10]; sprintf(msg, " %s %s %s", sb_chr, db1_chr, db2_chr);
@@ -174,7 +174,7 @@ public:
 
             pSprite->fillRect(2, 36, 126, 9, TFT_BLACK);
             char statusStr[13] = "";
-            sprintf(statusStr, "%x", statusByte);
+            sprintf(statusStr, "%X", statusByte);
             if(statusByte == 0x90) strcpy(statusStr, "CH1_NOTE_ON");
             else if(statusByte == 0x80) strcpy(statusStr, "CH1_NOTE_OFF");
             else if(statusByte == 0x91) strcpy(statusStr, "CH2_NOTE_ON");

@@ -70,6 +70,7 @@ public:
     /** @brief 決定ボタンが押された場合 */
     void handleButtonEnter(bool longPush = false) override {
         if(longPush) return;
+        pMidi->playMidi("/rp-ds16/midi/test2.mid");
     }
 
     /** @brief キャンセルボタンが押された場合 */

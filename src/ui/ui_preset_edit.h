@@ -35,7 +35,7 @@ public:
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
 
         pSprite->drawString("Oscillator", 2, 16);
-        pSprite->drawString("Common", 2, 26);
+        pSprite->drawString("Amplifier", 2, 26);
         pSprite->drawString("Filter", 2, 36);
         pSprite->drawString("LFO", 2, 46);
         pSprite->drawString("Effector", 2, 56);
@@ -45,7 +45,7 @@ public:
             cursorText("Oscillator", 2, 16);
         }
         else if(*displayCursor == 0x02) {
-            cursorText("Common", 2, 26);
+            cursorText("Amplifier", 2, 26);
         }
         else if(*displayCursor == 0x03) {
             cursorText("Filter", 2, 36);
@@ -90,7 +90,7 @@ public:
                 break;
             case 0x02:
                 *displayCursor = 0x01;
-                *displayStatus = DISPST_COMMON;
+                *displayStatus = DISPST_AMP;
                 break;
             case 0x03:
                 *displayCursor = 0x01;

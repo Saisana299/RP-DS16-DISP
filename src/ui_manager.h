@@ -9,7 +9,7 @@
 #include <ui_debug.h>
 #include <ui_fileman.h>
 #include <ui_menu.h>
-#include <ui_adsr.h>
+#include <ui_amp_adsr.h>
 #include <ui_osc_unison.h>
 #include <ui_osc_wave.h>
 #include <ui_osc.h>
@@ -17,7 +17,7 @@
 #include <ui_presets.h>
 #include <ui_title.h>
 #include <ui_midi_player.h>
-#include <ui_common.h>
+#include <ui_amp.h>
 #include <ui_filter.h>
 
 #ifndef UIMANAGER_H
@@ -161,7 +161,7 @@ public:
 
         ui_handler[DISPST_MENU] = new UIMenu(pSprite, &displayStatus, &displayCursor);
 
-        ui_handler[DISPST_ADSR] = new UIAdsr(
+        ui_handler[DISPST_AMP_ADSR] = new UIAmpAdsr(
             &displayStatus, &displayCursor,
             &attack, &decay, &sustain, &release,
             pSprite, pSynth
@@ -183,7 +183,7 @@ public:
             pSprite, &displayStatus, &displayCursor
         );
 
-        ui_handler[DISPST_COMMON] = new UICommon(
+        ui_handler[DISPST_AMP] = new UIAmp(
             pSprite, &displayStatus, &displayCursor
         );
         

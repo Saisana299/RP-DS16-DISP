@@ -1,9 +1,9 @@
 #include <IUIHandler.h>
 
-#ifndef UIADSR_H
-#define UIADSR_H
+#ifndef UIAMPADSR_H
+#define UIAMPADSR_H
 
-class UIAdsr : public IUIHandler {
+class UIAmpAdsr : public IUIHandler {
 private:
 
     // ディスプレイ関連
@@ -26,7 +26,7 @@ private:
     }
 
 public:
-    UIAdsr(
+    UIAmpAdsr(
         uint8_t* displayStatus, uint8_t* displayCursor,
         int16_t* attack, int16_t* decay, int16_t* sustain, int16_t* release,
         LGFX_Sprite* pSprite, SynthManager* pSynth)
@@ -44,7 +44,7 @@ public:
     /** @brief 画面更新 */
     void refreshUI() override {
         // タイトル
-        pSprite->drawString("> ADSR Editor", 2, 2);
+        pSprite->drawString("> Level Env. Editor", 2, 2);
 
         // 横線
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
@@ -300,8 +300,8 @@ public:
     void handleButtonCancel(bool longPush = false) override {
         if (longPush) return;
         *displayCursor = 0x01;
-        *displayStatus = DISPST_COMMON;
+        *displayStatus = DISPST_AMP;
     }
 };
 
-#endif // UIADSR_H
+#endif // UIAMPADSR_H
