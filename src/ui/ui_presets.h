@@ -60,7 +60,7 @@ private:
                 JsonArray waveTableArray = doc["wave_table"].as<JsonArray>();
                 copyArray(waveTableArray, wave_table_buff, waveTableArray.size());
                 pSynth->setShape(synth, 0x01, id, wave_table_buff);
-                *selectedWave = 0x00;
+                *selectedWave = FACTORY_PRESETS + 1;
 
             } else if(osc1_type == "default") {
                 uint8_t osc1_id = doc["osc1"]["id"];
@@ -76,7 +76,7 @@ private:
                 JsonArray waveTableArray = doc["wave_table"].as<JsonArray>();
                 copyArray(waveTableArray, wave_table_buff, waveTableArray.size());
                 pSynth->setShape(synth, 0x02, id, wave_table_buff);
-                *selectedWave2 = 0x00;
+                *selectedWave2 = FACTORY_PRESETS + 1;
 
             } else if(osc2_type == "default") {
                 uint8_t osc2_id = doc["osc2"]["id"];
