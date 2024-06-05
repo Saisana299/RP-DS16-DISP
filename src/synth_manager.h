@@ -267,7 +267,7 @@ public:
     void setOscLevel(uint8_t synth, uint8_t osc, int16_t level) {
         uint8_t data[] = {
             SYNTH_SET_OSC_LVL, synth, osc,
-            static_cast<uint8_t>(level >> 8),
+            static_cast<uint8_t>((level >> 8) & 0xFF),
             static_cast<uint8_t>(level & 0xFF)
         };
         uint8_t received[1];
@@ -305,7 +305,7 @@ public:
     void setAmpLevel(uint8_t synth, int16_t level) {
         uint8_t data[] = {
             SYNTH_SET_LEVEL, synth,
-            static_cast<uint8_t>(level >> 8),
+            static_cast<uint8_t>((level >> 8) & 0xFF),
             static_cast<uint8_t>(level & 0xFF)
         };
         uint8_t received[1];
@@ -325,19 +325,19 @@ public:
     void setDelay(uint8_t synth, uint8_t enable, int16_t time = 250, int16_t level = 300, int16_t feedback = 500) {
         if(enable == 0x01) {
             uint8_t data[] = {
-                SYNTH_SET_LEVEL, synth, enable,
-                static_cast<uint8_t>(level >> 8),
+                SYNTH_SET_DELAY, synth, enable,
+                static_cast<uint8_t>((time >> 8) & 0xFF),
+                static_cast<uint8_t>(time & 0xFF),
+                static_cast<uint8_t>((level >> 8) & 0xFF),
                 static_cast<uint8_t>(level & 0xFF),
-                static_cast<uint8_t>(feedback >> 8),
-                static_cast<uint8_t>(feedback & 0xFF),
-                static_cast<uint8_t>(time >> 8),
-                static_cast<uint8_t>(time & 0xFF)
+                static_cast<uint8_t>((feedback >> 8) & 0xFF),
+                static_cast<uint8_t>(feedback & 0xFF)
             };
             uint8_t received[1];
             pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
         }
         else {
-            uint8_t data[] = {SYNTH_SET_LEVEL, synth, enable};
+            uint8_t data[] = {SYNTH_SET_DELAY, synth, enable};
             uint8_t received[1];
             pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
         }

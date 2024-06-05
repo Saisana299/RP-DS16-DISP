@@ -1,9 +1,9 @@
 #include <IUIHandler.h>
 
-#ifndef UIPRESETEDIT_H
-#define UIPRESETEDIT_H
+#ifndef UIEFFECT_H
+#define UIEFFECT_H
 
-class UIPresetEdit : public IUIHandler {
+class UIEffect : public IUIHandler {
 private:
 
     // ディスプレイ関連
@@ -20,7 +20,7 @@ private:
     }
 
 public:
-    UIPresetEdit( LGFX_Sprite* pSprite, uint8_t* displayStatus, uint8_t* displayCursor) {
+    UIEffect(LGFX_Sprite* pSprite, uint8_t* displayStatus, uint8_t* displayCursor) {
         this->displayStatus = displayStatus;
         this->displayCursor = displayCursor;
         this->pSprite = pSprite;
@@ -29,46 +29,30 @@ public:
     /** @brief 画面更新 */
     void refreshUI() override {
         // タイトル
-        pSprite->drawString("> Preset Editor", 2, 2);
+        pSprite->drawString("> Effect Settings", 2, 2);
 
         // 横線
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
 
-        pSprite->drawString("Oscillator", 2, 16);
-        pSprite->drawString("Amplifier", 2, 26);
-        pSprite->drawString("Filter", 2, 36);
-        pSprite->drawString("LFO", 2, 46);
-        pSprite->drawString("Effector", 2, 56);
+        pSprite->drawString("Delay", 2, 16);
 
         // 塗り
         if(*displayCursor == 0x01) {
-            cursorText("Oscillator", 2, 16);
-        }
-        else if(*displayCursor == 0x02) {
-            cursorText("Amplifier", 2, 26);
-        }
-        else if(*displayCursor == 0x03) {
-            cursorText("Filter", 2, 36);
-        }
-        else if(*displayCursor == 0x04) {
-            cursorText("LFO", 2, 46);
-        }
-        else if(*displayCursor == 0x05) {
-            cursorText("Effector", 2, 56);
+            cursorText("Delay", 2, 16);
         }
     }
 
     /** @brief 上ボタンが押された場合 */
     void handleButtonUp(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x01) *displayCursor = 0x05;
+        if(*displayCursor == 0x01) *displayCursor = 0x01;
         else (*displayCursor)--;
     }
 
     /** @brief 下ボタンが押された場合 */
     void handleButtonDown(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x05) *displayCursor = 0x01;
+        if(*displayCursor == 0x01) *displayCursor = 0x01;
         else (*displayCursor)++;
     }
 
@@ -86,21 +70,7 @@ public:
         switch (*displayCursor) {
             case 0x01:
                 *displayCursor = 0x01;
-                *displayStatus = DISPST_OSC;
-                break;
-            case 0x02:
-                *displayCursor = 0x01;
-                *displayStatus = DISPST_AMP;
-                break;
-            case 0x03:
-                *displayCursor = 0x01;
-                *displayStatus = DISPST_FILTER;
-                break;
-            case 0x04:
-                break;
-            case 0x05:
-                *displayCursor = 0x01;
-                *displayStatus = DISPST_EFFECT;
+                *displayStatus = DISPST_DELAY;
                 break;
         }
     }
@@ -108,9 +78,9 @@ public:
     /** @brief キャンセルボタンが押された場合 */
     void handleButtonCancel(bool longPush = false) override {
         if (longPush) return;
-        *displayCursor = 0x01;
-        *displayStatus = DISPST_PRESETS;
+        *displayCursor = 0x05;
+        *displayStatus = DISPST_PRESET_EDIT;
     }
 };
 
-#endif // UIPRESETEDIT_H
+#endif // UIEFFECT_H

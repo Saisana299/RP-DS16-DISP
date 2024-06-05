@@ -20,6 +20,9 @@
 #include <ui_amp.h>
 #include <ui_filter.h>
 #include <ui_osc_wave.h>
+#include <ui_osc_pitch.h>
+#include <ui_effect.h>
+#include <ui_effect_delay.h>
 
 #ifndef UIMANAGER_H
 #define UIMANAGER_H
@@ -76,6 +79,9 @@ private:
     uint8_t selectedPreset = 0x00;
     uint8_t selectedPreset2 = 0x00;
 
+    int16_t amp_gain = 1000;
+    uint8_t pan = 50;
+
     int16_t attack = 1;
     int16_t decay = 1000;
     int16_t sustain = 1000; // max=1000
@@ -87,12 +93,25 @@ private:
     uint8_t osc2_detune = 20;
     uint8_t osc1_spread = 0;
     uint8_t osc2_spread = 0;
+    int8_t osc1_oct = 0;
+    int8_t osc2_oct = 0;
+    int8_t osc1_semi = 0;
+    int8_t osc2_semi = 0;
+    int8_t osc1_cent = 0;
+    int8_t osc2_cent = 0;
+    int16_t osc1_level = 1000;
+    int16_t osc2_level = 1000;
 
     uint8_t filter_mode = FILTER_NONE;
     float lpf_freq = 1000.0f;
     float lpf_q = 1.0f/sqrt(2.0f);
     float hpf_freq = 500.0f;
     float hpf_q = 1.0f/sqrt(2.0f);
+
+    int16_t delay_time = 250;
+    int16_t delay_level = 300;
+    int16_t delay_feedback = 500;
+    uint8_t delay_status = 0x00;
 
     String default_presets[FACTORY_PRESETS] = {
         "Basic Sine", "Basic Triangle", "Basic Saw", "Basic Square"
@@ -141,7 +160,7 @@ private:
     FileManager* pFile;
     MidiManager* pMidi;
 
-    IUIHandler* ui_handler[15];
+    IUIHandler* ui_handler[18];
 
 public:
     UIManager(LGFXRP2040* addr1, LGFX_Sprite* addr2, CtrlManager* addr3, SynthManager* addr4, FileManager* addr5, MidiManager* addr6) {
@@ -174,21 +193,35 @@ public:
             &selectedOsc, &osc1_spread, &osc2_spread
         );
 
+        ui_handler[DISPST_OSC_PITCH] = new UIOscPitch(
+            pSprite, pSynth, &displayStatus, &displayCursor, &selectedOsc,
+            &osc1_oct, &osc2_oct, &osc1_semi, &osc2_semi, &osc1_cent, &osc2_cent
+        );
+
         ui_handler[DISPST_OSC_WAVE] = new UIOscWave(
             pSprite, pSynth, &displayStatus, &displayCursor,
             &selectedOsc, default_wavetables, user_wavetables
         );
 
         ui_handler[DISPST_OSC] = new UIOsc(
-            pSprite, &displayStatus, &displayCursor, &selectedOsc
+            pSprite, pSynth, &displayStatus, &displayCursor, &selectedOsc, &osc1_level, &osc2_level
         );
 
         ui_handler[DISPST_PRESET_EDIT] = new UIPresetEdit(
             pSprite, &displayStatus, &displayCursor
         );
 
-        ui_handler[DISPST_AMP] = new UIAmp(
+        ui_handler[DISPST_EFFECT] = new UIEffect(
             pSprite, &displayStatus, &displayCursor
+        );
+
+        ui_handler[DISPST_DELAY] = new UIEffectDelay(
+            pSprite, pSynth, &displayStatus, &displayCursor,
+            &delay_time, &delay_level, &delay_feedback, &delay_status
+        );
+
+        ui_handler[DISPST_AMP] = new UIAmp(
+            pSprite, pSynth, &displayStatus, &displayCursor, &amp_gain, &pan
         );
         
         ui_handler[DISPST_PRESETS] = new UIPresets(

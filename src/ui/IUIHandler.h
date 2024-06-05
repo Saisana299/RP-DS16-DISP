@@ -19,6 +19,9 @@
 #define DISPST_FILTER      0x0B
 #define DISPST_MIDI_PLAYER 0x0C
 #define DISPST_AMP         0x0D
+#define DISPST_DELAY       0x0E
+#define DISPST_OSC_PITCH   0x0F
+#define DISPST_EFFECT      0x10
 
 struct Files {
     bool type;
