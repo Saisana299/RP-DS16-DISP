@@ -18,9 +18,10 @@ private:
     uint8_t* osc2_spread;
 
     uint8_t* selectedOsc;
+    uint8_t* selectedWave;
+    uint8_t* selectedWave2;
 
     LGFX_Sprite* pSprite;
-
     SynthManager* pSynth;
 
     void cursorText(String text, uint8_t x, uint8_t y, uint8_t ex_width = 0, uint8_t ex_height = 0) {
@@ -30,12 +31,35 @@ private:
         pSprite->setTextColor(TFT_WHITE);
     }
 
+    bool canSetVoice(uint8_t osc, uint8_t voice) {
+        if(osc == 0x01) {
+            if (*selectedWave == 0xff) return false;
+            uint8_t sum = 0;
+            sum += voice;
+            if (*selectedWave2 != 0xff) {
+                sum += *osc2_voice;
+            }
+            return sum <= MAX_VOICE;
+        }
+        else if(osc == 0x02) {
+            if (*selectedWave2 == 0xff) return false;
+            uint8_t sum = 0;
+            sum += voice;
+            if (*selectedWave != 0xff) {
+                sum += *osc1_voice;
+            }
+            return sum <= MAX_VOICE;
+        }
+        return false;
+    }
+
 public:
     UIOscUnison(
         LGFX_Sprite* pSprite, SynthManager* pSynth,
         uint8_t* displayStatus, uint8_t* displayCursor,
         uint8_t* osc1_voice, uint8_t* osc2_voice, uint8_t* osc1_detune, uint8_t* osc2_detune,
-        uint8_t* selectedOsc, uint8_t* osc1_spread, uint8_t* osc2_spread)
+        uint8_t* selectedOsc, uint8_t* selectedWave, uint8_t* selectedWave2,
+        uint8_t* osc1_spread, uint8_t* osc2_spread)
     {
         this->pSprite = pSprite;
         this->pSynth = pSynth;
@@ -46,6 +70,8 @@ public:
         this->osc1_detune = osc1_detune;
         this->osc2_detune = osc2_detune;
         this->selectedOsc = selectedOsc;
+        this->selectedWave = selectedWave;
+        this->selectedWave2 = selectedWave2;
         this->osc1_spread = osc1_spread;
         this->osc2_spread = osc2_spread;
     }
@@ -112,13 +138,13 @@ public:
             case 0x01:
                 if(*selectedOsc == 0x01){
                     if(*osc1_voice - 1 >= 1) {
-                        *osc1_voice -= 1; 
+                        if(canSetVoice(1, *osc1_voice - 1)) *osc1_voice -= 1; 
                     }
                     if(!longPush) pSynth->setVoice(0xff, *osc1_voice, 0x01);
                 }
                 else if(*selectedOsc == 0x02){
                     if(*osc2_voice - 1 >= 1) {
-                        *osc2_voice -= 1; 
+                        if(canSetVoice(2, *osc2_voice - 1)) *osc2_voice -= 1; 
                     }
                     if(!longPush) pSynth->setVoice(0xff, *osc2_voice, 0x02);
                 }
@@ -162,13 +188,13 @@ public:
             case 0x01:
                 if(*selectedOsc == 0x01) {
                     if(*osc1_voice + 1 <= 8) {
-                        *osc1_voice += 1; 
+                        if(canSetVoice(1, *osc1_voice + 1)) *osc1_voice += 1; 
                     }
                     if(!longPush) pSynth->setVoice(0xff, *osc1_voice, 0x01);
                 }
                 else if(*selectedOsc == 0x02) {
                     if(*osc2_voice + 1 <= 8) {
-                        *osc2_voice += 1; 
+                        if(canSetVoice(2, *osc2_voice + 1)) *osc2_voice += 1; 
                     }
                     if(!longPush) pSynth->setVoice(0xff, *osc2_voice, 0x02);
                 }

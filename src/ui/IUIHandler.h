@@ -5,6 +5,8 @@
 #define FACTORY_PRESETS 4
 #define FACTORY_WAVETABLES 5
 
+#define MAX_VOICE 8
+
 #define DISPST_IDLE        0x00
 #define DISPST_TITLE       0x01
 #define DISPST_PRESETS     0x02

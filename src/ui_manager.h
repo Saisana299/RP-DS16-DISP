@@ -79,6 +79,9 @@ private:
     uint8_t selectedPreset = 0x00;
     uint8_t selectedPreset2 = 0x00;
 
+    uint8_t selectedWave = 0xff;
+    uint8_t selectedWave2 = 0xff;
+
     int16_t amp_gain = 1000;
     uint8_t pan = 50;
 
@@ -190,7 +193,7 @@ public:
         ui_handler[DISPST_OSC_UNISON] = new UIOscUnison(
             pSprite, pSynth, &displayStatus, &displayCursor,
             &osc1_voice, &osc2_voice, &osc1_detune, &osc2_detune,
-            &selectedOsc, &osc1_spread, &osc2_spread
+            &selectedOsc, &selectedWave, &selectedWave2, &osc1_spread, &osc2_spread
         );
 
         ui_handler[DISPST_OSC_PITCH] = new UIOscPitch(
@@ -200,7 +203,8 @@ public:
 
         ui_handler[DISPST_OSC_WAVE] = new UIOscWave(
             pSprite, pSynth, &displayStatus, &displayCursor,
-            &selectedOsc, default_wavetables, user_wavetables
+            &osc1_voice, &osc2_voice,
+            &selectedOsc, &selectedWave, &selectedWave2, default_wavetables, user_wavetables
         );
 
         ui_handler[DISPST_OSC] = new UIOsc(
