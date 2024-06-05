@@ -79,7 +79,7 @@ private:
     uint8_t selectedPreset = 0x00;
     uint8_t selectedPreset2 = 0x00;
 
-    uint8_t selectedWave = 0xff;
+    uint8_t selectedWave = 0x00;
     uint8_t selectedWave2 = 0xff;
 
     int16_t amp_gain = 1000;
@@ -231,6 +231,7 @@ public:
         ui_handler[DISPST_PRESETS] = new UIPresets(
             pSprite, pSynth, pFile, &displayStatus, &displayCursor,
             &synthMode, &selectedPreset, &selectedPreset2,
+            &osc1_voice, &osc2_voice, &selectedWave, &selectedWave2,
             default_presets, modes, user_presets, wave_table_buff
         );
 

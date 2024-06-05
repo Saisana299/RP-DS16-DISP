@@ -114,8 +114,24 @@ public:
 
         pSprite->drawString(fu + idstr + wave_name, wave_x, wave_y);
 
-        if(*selectedOsc == 0x01) pSprite->drawString(String((*selectedWave)+1), 2, 56);
-        else if(*selectedOsc == 0x02) pSprite->drawString(String((*selectedWave2)+1), 2, 56);
+        if(*selectedOsc == 0x01)
+        {
+            if(*selectedWave == 0xff) pSprite->drawString("Wave is null", 2, 56);
+
+            else if(*selectedWave < FACTORY_WAVETABLES)
+                pSprite->drawString(String((*selectedWave) + 1) + ":" + default_wavetables[*selectedWave], 2, 56);
+
+            else pSprite->drawString("User Wavetable", 2, 56);
+        }
+        else if(*selectedOsc == 0x02)
+        {
+            if(*selectedWave2 == 0xff) pSprite->drawString("Wave is null", 2, 56);
+
+            else if(*selectedWave2 < FACTORY_WAVETABLES)
+                pSprite->drawString(String((*selectedWave2)+1) + ":" + default_wavetables[*selectedWave2], 2, 56);
+
+            else pSprite->drawString("User Wavetable", 2, 56);
+        }
 
         // 塗り
         if(*displayCursor == 0x01) {

@@ -15,6 +15,11 @@ private:
     uint8_t* selectedPreset;
     uint8_t* selectedPreset2;
 
+    uint8_t* osc1_voice;
+    uint8_t* osc2_voice;
+    uint8_t* selectedWave;
+    uint8_t* selectedWave2;
+
     String* default_presets;
     String* modes;
 
@@ -40,6 +45,8 @@ private:
         if(id < FACTORY_PRESETS)
             // defaultプリセットはosc=0x01固定
             pSynth->setShape(synth, 0x01, id);
+            *selectedWave = id;
+            if(id == 0xff) *osc1_voice = 1;
         else {
             JsonDocument doc;
             pFile->getJson(&doc, user_presets[id - FACTORY_PRESETS].path);
@@ -53,10 +60,13 @@ private:
                 JsonArray waveTableArray = doc["wave_table"].as<JsonArray>();
                 copyArray(waveTableArray, wave_table_buff, waveTableArray.size());
                 pSynth->setShape(synth, 0x01, id, wave_table_buff);
+                *selectedWave = 0x00;
 
             } else if(osc1_type == "default") {
                 uint8_t osc1_id = doc["osc1"]["id"];
                 pSynth->setShape(synth, 0x01, osc1_id);
+                *selectedWave = osc1_id;
+                if(osc1_id == 0xff) *osc1_voice = 1;
             }
 
             // osc2
@@ -66,10 +76,13 @@ private:
                 JsonArray waveTableArray = doc["wave_table"].as<JsonArray>();
                 copyArray(waveTableArray, wave_table_buff, waveTableArray.size());
                 pSynth->setShape(synth, 0x02, id, wave_table_buff);
+                *selectedWave2 = 0x00;
 
             } else if(osc2_type == "default") {
                 uint8_t osc2_id = doc["osc2"]["id"];
                 pSynth->setShape(synth, 0x02, osc2_id);
+                *selectedWave2 = osc2_id;
+                if(osc2_id == 0xff) *osc2_voice = 1;
             }
 
             // ADSR
@@ -83,6 +96,7 @@ public:
         LGFX_Sprite* pSprite, SynthManager* pSynth, FileManager* pFile,
         uint8_t* displayStatus, uint8_t* displayCursor,
         uint8_t* synthMode, uint8_t* selectedPreset, uint8_t* selectedPreset2,
+        uint8_t* osc1_voice, uint8_t* osc2_voice, uint8_t* selectedWave, uint8_t* selectedWave2,
         String* default_presets, String* modes, Preset* user_presets, int16_t* wave_table_buff)
     {
         this->pSprite = pSprite;
@@ -93,6 +107,10 @@ public:
         this->synthMode = synthMode;
         this->selectedPreset = selectedPreset;
         this->selectedPreset2 = selectedPreset2;
+        this->osc1_voice = osc1_voice;
+        this->osc2_voice = osc2_voice;
+        this->selectedWave = selectedWave;
+        this->selectedWave2 = selectedWave2;
         this->default_presets = default_presets;
         this->modes = modes;
         this->user_presets = user_presets;
