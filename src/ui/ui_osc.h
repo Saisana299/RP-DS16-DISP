@@ -19,6 +19,8 @@ private:
     int16_t* osc1_level;
     int16_t* osc2_level;
 
+    bool* isFirst;
+
     void cursorText(String text, uint8_t x, uint8_t y, uint8_t ex_width = 0, uint8_t ex_height = 0) {
         pSprite->fillRect(x-1, y-1, pSprite->textWidth(text)+1 + ex_width, pSprite->fontHeight()+1 + ex_height, TFT_WHITE);
         pSprite->setTextColor(TFT_BLACK);
@@ -27,7 +29,7 @@ private:
     }
 
 public:
-    UIOsc( LGFX_Sprite* pSprite, SynthManager* pSynth, uint8_t* displayStatus, uint8_t* displayCursor, uint8_t* selectedOsc, int16_t* osc1_level, int16_t* osc2_level) {
+    UIOsc( LGFX_Sprite* pSprite, SynthManager* pSynth, uint8_t* displayStatus, uint8_t* displayCursor, uint8_t* selectedOsc, int16_t* osc1_level, int16_t* osc2_level, bool* isFirst) {
         this->displayStatus = displayStatus;
         this->displayCursor = displayCursor;
         this->pSprite = pSprite;
@@ -35,6 +37,7 @@ public:
         this->selectedOsc = selectedOsc;
         this->osc1_level = osc1_level;
         this->osc2_level = osc2_level;
+        this->isFirst = isFirst;
     }
 
     /** @brief 画面更新 */
@@ -156,6 +159,7 @@ public:
             case 0x04:
                 *displayCursor = 0x01;
                 *displayStatus = DISPST_OSC_WAVE;
+                *isFirst = true;
                 break;
             case 0x05:
                 *displayCursor = 0x01;

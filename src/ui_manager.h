@@ -116,6 +116,8 @@ private:
     int16_t delay_feedback = 500;
     uint8_t delay_status = 0x00;
 
+    bool isFirst = false;
+
     String default_presets[FACTORY_PRESETS] = {
         "Basic Sine", "Basic Triangle", "Basic Saw", "Basic Square"
     };
@@ -204,11 +206,11 @@ public:
         ui_handler[DISPST_OSC_WAVE] = new UIOscWave(
             pSprite, pSynth, &displayStatus, &displayCursor,
             &osc1_voice, &osc2_voice,
-            &selectedOsc, &selectedWave, &selectedWave2, default_wavetables, user_wavetables
+            &selectedOsc, &selectedWave, &selectedWave2, default_wavetables, user_wavetables, &isFirst
         );
 
         ui_handler[DISPST_OSC] = new UIOsc(
-            pSprite, pSynth, &displayStatus, &displayCursor, &selectedOsc, &osc1_level, &osc2_level
+            pSprite, pSynth, &displayStatus, &displayCursor, &selectedOsc, &osc1_level, &osc2_level, &isFirst
         );
 
         ui_handler[DISPST_PRESET_EDIT] = new UIPresetEdit(
