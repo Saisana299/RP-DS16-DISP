@@ -35,7 +35,7 @@ public:
             return true;
         #endif
 
-        uint8_t data[] = {INS_BEGIN, CTRL_CONNECT};
+        uint8_t data[] = {CTRL_CONNECT};
         uint8_t received[1];
         ctrlTransmission(data, sizeof(data), received, 1);
 
@@ -103,8 +103,8 @@ public:
     
     // debugモード時に通信を受け取るためのコード
     void receiveEvent(int bytes) {
-        // 2バイト以上のみ受け付ける
-        if(bytes < 2) return;
+        // 1バイト以上のみ受け付ける
+        if(bytes < 1) return;
 
         int i = 0;
         uint8_t receivedData[bytes];
@@ -117,26 +117,23 @@ public:
             }
         }
 
-        uint8_t instruction = 0x00; // コード種別
-        if(receivedData[0] == INS_BEGIN) {
-            instruction = receivedData[1];
-        }
+        uint8_t instruction = receivedData[0];
 
         if(instruction == CTRL_DEBUG_DATA) {
-            // 例: {INS_BEGIN, CTRL_DEBUG_DATA, DETA_BEGIN, 0x04, 0x01, 0x11, 0xA2, 0x01}
-            if(bytes < 6) return;
-            uint8_t statusByte = receivedData[4];
+            // 例: {CTRL_DEBUG_DATA, 0x01, 0x11, 0xA2, 0x01}
+            if(bytes < 3) return;
+            uint8_t statusByte = receivedData[1];
             uint8_t dataByte[2] = {0xff, 0xff};
-            uint8_t synthByte = receivedData[5];
+            uint8_t synthByte = receivedData[2];
 
-            if(bytes > 7) {
-                dataByte[0] = receivedData[5];
-                dataByte[1] = receivedData[6];
-                synthByte = receivedData[7];
+            if(bytes > 4) {
+                dataByte[0] = receivedData[2];
+                dataByte[1] = receivedData[3];
+                synthByte = receivedData[4];
             }
-            else if(bytes > 6) {
-                dataByte[0] = receivedData[5];
-                synthByte = receivedData[6];
+            else if(bytes > 3) {
+                dataByte[0] = receivedData[2];
+                synthByte = receivedData[3];
             }
 
             pSprite->createSprite(128, 64);

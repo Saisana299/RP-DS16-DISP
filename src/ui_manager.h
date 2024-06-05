@@ -19,6 +19,7 @@
 #include <ui_midi_player.h>
 #include <ui_amp.h>
 #include <ui_filter.h>
+#include <ui_osc_wave.h>
 
 #ifndef UIMANAGER_H
 #define UIMANAGER_H
@@ -78,7 +79,7 @@ private:
     int16_t attack = 1;
     int16_t decay = 1000;
     int16_t sustain = 1000; // max=1000
-    int16_t release = 1;
+    int16_t release = 10;
 
     uint8_t osc1_voice = 1;
     uint8_t osc2_voice = 1;
@@ -173,7 +174,10 @@ public:
             &selectedOsc, &osc1_spread, &osc2_spread
         );
 
-        //ui_handler[DISPST_OSC_WAVE] = new UIOscWave();//
+        ui_handler[DISPST_OSC_WAVE] = new UIOscWave(
+            pSprite, pSynth, &displayStatus, &displayCursor,
+            &selectedOsc, default_wavetables, user_wavetables
+        );
 
         ui_handler[DISPST_OSC] = new UIOsc(
             pSprite, &displayStatus, &displayCursor, &selectedOsc
@@ -340,13 +344,19 @@ public:
     /** @brief UIを更新 */
     void refreshUI() {
         if(displayStatus == DISPST_TITLE) return;
-        if(displayStatus == DISPST_PRESETS) {
+        else if(displayStatus == DISPST_PRESETS) {
             if(!isUserPresetLoaded) {
                 loadUserFiles("preset");
                 isUserPresetLoaded = true;
             }
         }
-        if(displayStatus == DISPST_MIDI_PLAYER) {
+        else if(displayStatus == DISPST_OSC_WAVE) {
+            if(!isUserWaveLoaded) {
+                loadUserFiles("wavetable");
+                isUserWaveLoaded = true;
+            }
+        }
+        else if(displayStatus == DISPST_MIDI_PLAYER) {
             if(!isMidiLoaded) {
                 loadUserFiles("midi");
                 isMidiLoaded = true;

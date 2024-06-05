@@ -81,11 +81,11 @@ public:
         char lpfq_chr[6]; sprintf(lpfq_chr, "%.2f", *lpf_q);
         char hpff_chr[10]; sprintf(hpff_chr, "%.2f", *hpf_freq);
         char hpfq_chr[6]; sprintf(hpfq_chr, "%.2f", *hpf_q);
-        pSprite->drawString("Mode:     " + mode, 2, 16);
+        pSprite->drawString("Mode    : " + mode, 2, 16);
         pSprite->drawString("LPF Freq" + String(sym_2) + " " + String(lpff_chr) + "Hz", 2, 26);
-        pSprite->drawString("LPF Q" + String(sym_3) + "    " + String(lpfq_chr), 2, 36);
+        pSprite->drawString("LPF Q   " + String(sym_3) + " " + String(lpfq_chr), 2, 36);
         pSprite->drawString("HPF Freq" + String(sym_4) + " " + String(hpff_chr) + "Hz", 2, 46);
-        pSprite->drawString("HPF Q" + String(sym_5) + "    " + String(hpfq_chr), 2, 56);
+        pSprite->drawString("HPF Q   " + String(sym_5) + " " + String(hpfq_chr), 2, 56);
 
         // 塗り
         if(*displayCursor == 0x01 || *displayCursor == 0x06) {

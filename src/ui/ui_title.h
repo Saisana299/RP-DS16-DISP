@@ -65,7 +65,7 @@ public:
     void handleButtonCancel(bool longPush = false) override {
         if(longPush) {
             if(*long_count_to_enter_debug_mode > 10) {
-                uint8_t data[] = {INS_BEGIN, CTRL_DEBUG_ON};
+                uint8_t data[] = {CTRL_DEBUG_ON};
                 uint8_t received[1];
                 pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
 

@@ -119,6 +119,8 @@ public:
             case 0x03:
                 break;
             case 0x04:
+                *displayCursor = 0x01;
+                *displayStatus = DISPST_OSC_WAVE;
                 break;
             case 0x05:
                 *displayCursor = 0x01;

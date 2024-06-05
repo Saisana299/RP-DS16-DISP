@@ -109,7 +109,7 @@ public:
         String fu2 = "F";
 
         String preset_name1, preset_name2;
-        if(*selectedPreset < 0x04) {
+        if(*selectedPreset < FACTORY_PRESETS) {
             sprintf(idstr, "%03d ", *selectedPreset+1);
             preset_name1 = default_presets[*selectedPreset];
         }
@@ -118,7 +118,7 @@ public:
             sprintf(idstr, "%03d ", *selectedPreset+1 - FACTORY_PRESETS);
             preset_name1 = user_presets[*selectedPreset - FACTORY_PRESETS].name;
         }
-        if(*selectedPreset2 < 0x04) {
+        if(*selectedPreset2 < FACTORY_PRESETS) {
             sprintf(idstr2, "%03d ", *selectedPreset2+1);
             preset_name2 = default_presets[*selectedPreset2];
         }
@@ -255,7 +255,7 @@ public:
     void handleButtonLeft(bool longPush = false) override {
         switch (*displayCursor) {
             case 0x01:
-                *selectedPreset = (*selectedPreset != 0x00) ? (*selectedPreset - 1) : 0x83;
+                *selectedPreset = (*selectedPreset != 0x00) ? (*selectedPreset - 1) : 128 + FACTORY_PRESETS - 1;
                 if(!longPush) {
                     setPreset(*selectedPreset, (*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
                 }
@@ -270,7 +270,7 @@ public:
                 }
                 break;
             case 0x04:
-                *selectedPreset2 = (*selectedPreset2 != 0x00) ? (*selectedPreset2 - 1) : 0x83;
+                *selectedPreset2 = (*selectedPreset2 != 0x00) ? (*selectedPreset2 - 1) : 128 + FACTORY_PRESETS - 1;
                 if(!longPush) {
                     setPreset(*selectedPreset2, 0x02);
                 }
@@ -282,7 +282,7 @@ public:
     void handleButtonRight(bool longPush = false) override {
         switch (*displayCursor) {
             case 0x01:
-                *selectedPreset = (*selectedPreset != 0x83) ? (*selectedPreset + 1) : 0x00;
+                *selectedPreset = (*selectedPreset != 128 + FACTORY_PRESETS - 1) ? (*selectedPreset + 1) : 0x00;
                 if(!longPush) {
                     setPreset(*selectedPreset, (*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
                 }
@@ -297,7 +297,7 @@ public:
                 }
                 break;
             case 0x04:
-                *selectedPreset2 = (*selectedPreset2 != 0x83) ? (*selectedPreset2 + 1) : 0x00;
+                *selectedPreset2 = (*selectedPreset2 != 128 + FACTORY_PRESETS - 1) ? (*selectedPreset2 + 1) : 0x00;
                 if(!longPush) {
                     setPreset(*selectedPreset2, 0x02);
                 }
