@@ -81,6 +81,7 @@ private:
 
     uint8_t selectedWave = 0x00;
     uint8_t selectedWave2 = 0xff;
+    uint8_t selectedWaveSub = 0xff;
 
     int16_t amp_gain = 1000;
     uint8_t pan = 50;
@@ -104,6 +105,11 @@ private:
     int8_t osc2_cent = 0;
     int16_t osc1_level = 1000;
     int16_t osc2_level = 1000;
+
+    int8_t osc_sub_oct = 0;
+    int8_t osc_sub_semi = 0;
+    int8_t osc_sub_cent = 0;
+    int16_t osc_sub_level = 1000;
 
     uint8_t filter_mode = FILTER_NONE;
     float lpf_freq = 1000.0f;
@@ -195,22 +201,23 @@ public:
         ui_handler[DISPST_OSC_UNISON] = new UIOscUnison(
             pSprite, pSynth, &displayStatus, &displayCursor,
             &osc1_voice, &osc2_voice, &osc1_detune, &osc2_detune,
-            &selectedOsc, &selectedWave, &selectedWave2, &osc1_spread, &osc2_spread
+            &selectedOsc, &selectedWave, &selectedWave2, &selectedWaveSub ,&osc1_spread, &osc2_spread
         );
 
         ui_handler[DISPST_OSC_PITCH] = new UIOscPitch(
             pSprite, pSynth, &displayStatus, &displayCursor, &selectedOsc,
-            &osc1_oct, &osc2_oct, &osc1_semi, &osc2_semi, &osc1_cent, &osc2_cent
+            &osc1_oct, &osc2_oct, &osc1_semi, &osc2_semi, &osc1_cent, &osc2_cent,
+            &osc_sub_oct, &osc_sub_semi, &osc_sub_cent
         );
 
         ui_handler[DISPST_OSC_WAVE] = new UIOscWave(
             pSprite, pSynth, &displayStatus, &displayCursor,
             &osc1_voice, &osc2_voice,
-            &selectedOsc, &selectedWave, &selectedWave2, default_wavetables, user_wavetables, &isFirst
+            &selectedOsc, &selectedWave, &selectedWave2, &selectedWaveSub, default_wavetables, user_wavetables, &isFirst
         );
 
         ui_handler[DISPST_OSC] = new UIOsc(
-            pSprite, pSynth, &displayStatus, &displayCursor, &selectedOsc, &osc1_level, &osc2_level, &isFirst
+            pSprite, pSynth, &displayStatus, &displayCursor, &selectedOsc, &osc1_level, &osc2_level, &osc_sub_level, &isFirst
         );
 
         ui_handler[DISPST_PRESET_EDIT] = new UIPresetEdit(

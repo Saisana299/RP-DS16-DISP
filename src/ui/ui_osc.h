@@ -18,6 +18,7 @@ private:
 
     int16_t* osc1_level;
     int16_t* osc2_level;
+    int16_t* osc_sub_level;
 
     bool* isFirst;
 
@@ -29,7 +30,10 @@ private:
     }
 
 public:
-    UIOsc( LGFX_Sprite* pSprite, SynthManager* pSynth, uint8_t* displayStatus, uint8_t* displayCursor, uint8_t* selectedOsc, int16_t* osc1_level, int16_t* osc2_level, bool* isFirst) {
+    UIOsc( LGFX_Sprite* pSprite, SynthManager* pSynth,
+    uint8_t* displayStatus, uint8_t* displayCursor, uint8_t* selectedOsc,
+    int16_t* osc1_level, int16_t* osc2_level, int16_t* osc_sub_level, bool* isFirst)
+    {
         this->displayStatus = displayStatus;
         this->displayCursor = displayCursor;
         this->pSprite = pSprite;
@@ -37,6 +41,7 @@ public:
         this->selectedOsc = selectedOsc;
         this->osc1_level = osc1_level;
         this->osc2_level = osc2_level;
+        this->osc_sub_level = osc_sub_level;
         this->isFirst = isFirst;
     }
 
@@ -61,8 +66,13 @@ public:
                 pSprite->drawString("> OSC2 Settings", 2, 2);
                 sprintf(lv_chr, "%.1f", (float)*osc2_level / 10.0f);
             }
+            else if(*selectedOsc == 0x03) {
+                pSprite->drawString("> Sub OSC Settings", 2, 2);
+                sprintf(lv_chr, "%.1f", (float)*osc_sub_level / 10.0f);
+            }
             pSprite->drawString("Wavetable", 2, 16);
-            pSprite->drawString("Unison", 2, 26);
+            if(*selectedOsc != 0x03) pSprite->drawString("Unison", 2, 26);
+            else pSprite->drawString("---", 2, 26);
             pSprite->drawString("Pitch", 2, 36);
             pSprite->drawString("Level: " + String(lv_chr) + "%", 2, 46);
             pSprite->drawString("Pan  : ---", 2, 56);
@@ -85,7 +95,8 @@ public:
             cursorText("Wavetable", 2, 16);
         }
         else if(*displayCursor == 0x05) {
-            cursorText("Unison", 2, 26);
+            if(*selectedOsc != 0x03) cursorText("Unison", 2, 26);
+            else cursorText("---", 2, 26);
         }
         else if(*displayCursor == 0x06) {
             cursorText("Pitch", 2, 36);
@@ -125,6 +136,10 @@ public:
                 if(*osc2_level - 10 >= 0) *osc2_level -= 10;
                 if(!longPush) pSynth->setOscLevel(0xff, 0x02, *osc2_level);
             }
+            else if(*selectedOsc == 0x03) {
+                if(*osc_sub_level - 10 >= 0) *osc_sub_level -= 10;
+                if(!longPush) pSynth->setOscLevel(0xff, 0x03, *osc_sub_level);
+            }
         }
     }
 
@@ -138,6 +153,10 @@ public:
             else if(*selectedOsc == 0x02) {
                 if(*osc2_level + 10 <= 1000) *osc2_level += 10;
                 if(!longPush) pSynth->setOscLevel(0xff, 0x02, *osc2_level);
+            }
+            else if(*selectedOsc == 0x03) {
+                if(*osc_sub_level + 10 <= 1000) *osc_sub_level += 10;
+                if(!longPush) pSynth->setOscLevel(0xff, 0x03, *osc_sub_level);
             }
         }
     }
@@ -155,6 +174,8 @@ public:
                 *selectedOsc = 0x02;
                 break;
             case 0x03:
+                *displayCursor = 0x04;
+                *selectedOsc = 0x03;
                 break;
             case 0x04:
                 *displayCursor = 0x01;
@@ -162,8 +183,10 @@ public:
                 *isFirst = true;
                 break;
             case 0x05:
-                *displayCursor = 0x01;
-                *displayStatus = DISPST_OSC_UNISON;
+                if(*selectedOsc != 0x03) {
+                    *displayCursor = 0x01;
+                    *displayStatus = DISPST_OSC_UNISON;
+                }
                 break;
             case 0x06:
                 *displayCursor = 0x01;
@@ -184,6 +207,7 @@ public:
         else {
             if(*selectedOsc == 0x01) *displayCursor = 0x01;
             else if(*selectedOsc == 0x02) *displayCursor = 0x02;
+            else if(*selectedOsc == 0x03) *displayCursor = 0x03;
         }
     }
 };

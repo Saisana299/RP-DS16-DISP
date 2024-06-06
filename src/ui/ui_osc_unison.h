@@ -20,6 +20,7 @@ private:
     uint8_t* selectedOsc;
     uint8_t* selectedWave;
     uint8_t* selectedWave2;
+    uint8_t* selectedWaveSub;
 
     LGFX_Sprite* pSprite;
     SynthManager* pSynth;
@@ -36,18 +37,27 @@ private:
             if (*selectedWave == 0xff) return false;
             uint8_t sum = 0;
             sum += voice;
-            if (*selectedWave2 != 0xff) {
-                sum += *osc2_voice;
-            }
+            if (*selectedWave2 != 0xff) sum += *osc2_voice;
+            if (*selectedWaveSub != 0xff) sum += 1;
+
             return sum <= MAX_VOICE;
         }
         else if(osc == 0x02) {
             if (*selectedWave2 == 0xff) return false;
             uint8_t sum = 0;
             sum += voice;
-            if (*selectedWave != 0xff) {
-                sum += *osc1_voice;
-            }
+            if (*selectedWave != 0xff) sum += *osc1_voice;
+            if (*selectedWaveSub != 0xff) sum += 1;
+
+            return sum <= MAX_VOICE;
+        }
+        else if(osc == 0x03) {
+            if (*selectedWaveSub == 0xff) return false;
+            uint8_t sum = 0;
+            sum += voice;
+            if (*selectedWave != 0xff) sum += *osc1_voice;
+            if (*selectedWave2 != 0xff) sum += *osc2_voice;
+
             return sum <= MAX_VOICE;
         }
         return false;
@@ -58,7 +68,7 @@ public:
         LGFX_Sprite* pSprite, SynthManager* pSynth,
         uint8_t* displayStatus, uint8_t* displayCursor,
         uint8_t* osc1_voice, uint8_t* osc2_voice, uint8_t* osc1_detune, uint8_t* osc2_detune,
-        uint8_t* selectedOsc, uint8_t* selectedWave, uint8_t* selectedWave2,
+        uint8_t* selectedOsc, uint8_t* selectedWave, uint8_t* selectedWave2, uint8_t* selectedWaveSub,
         uint8_t* osc1_spread, uint8_t* osc2_spread)
     {
         this->pSprite = pSprite;
@@ -72,6 +82,7 @@ public:
         this->selectedOsc = selectedOsc;
         this->selectedWave = selectedWave;
         this->selectedWave2 = selectedWave2;
+        this->selectedWaveSub = selectedWaveSub;
         this->osc1_spread = osc1_spread;
         this->osc2_spread = osc2_spread;
     }
@@ -138,13 +149,13 @@ public:
             case 0x01:
                 if(*selectedOsc == 0x01){
                     if(*osc1_voice - 1 >= 1) {
-                        if(canSetVoice(1, *osc1_voice - 1)) *osc1_voice -= 1; 
+                        if(canSetVoice(1, *osc1_voice - 1)) *osc1_voice -= 1;
                     }
                     if(!longPush) pSynth->setVoice(0xff, *osc1_voice, 0x01);
                 }
                 else if(*selectedOsc == 0x02){
                     if(*osc2_voice - 1 >= 1) {
-                        if(canSetVoice(2, *osc2_voice - 1)) *osc2_voice -= 1; 
+                        if(canSetVoice(2, *osc2_voice - 1)) *osc2_voice -= 1;
                     }
                     if(!longPush) pSynth->setVoice(0xff, *osc2_voice, 0x02);
                 }
@@ -153,13 +164,13 @@ public:
             case 0x02:
                 if(*selectedOsc == 0x01){
                     if(*osc1_detune - 1 >= 0) {
-                        *osc1_detune -= 1; 
+                        *osc1_detune -= 1;
                     }
                     if(!longPush) pSynth->setDetune(0xff, *osc1_detune, 0x01);
                 }
                 else if(*selectedOsc == 0x02){
                     if(*osc2_detune - 1 >= 0) {
-                        *osc2_detune -= 1; 
+                        *osc2_detune -= 1;
                     }
                     if(!longPush) pSynth->setDetune(0xff, *osc2_detune, 0x02);
                 }
@@ -168,13 +179,13 @@ public:
             case 0x03:
                 if(*selectedOsc == 0x01){
                     if(*osc1_spread - 1 >= 0) {
-                        *osc1_spread -= 1; 
+                        *osc1_spread -= 1;
                     }
                     if(!longPush) pSynth->setSpread(0xff, *osc1_spread, 0x01);
                 }
                 else if(*selectedOsc == 0x02){
                     if(*osc2_spread - 1 >= 0) {
-                        *osc2_spread -= 1; 
+                        *osc2_spread -= 1;
                     }
                     if(!longPush) pSynth->setSpread(0xff, *osc2_spread, 0x02);
                 }
@@ -188,13 +199,13 @@ public:
             case 0x01:
                 if(*selectedOsc == 0x01) {
                     if(*osc1_voice + 1 <= 8) {
-                        if(canSetVoice(1, *osc1_voice + 1)) *osc1_voice += 1; 
+                        if(canSetVoice(1, *osc1_voice + 1)) *osc1_voice += 1;
                     }
                     if(!longPush) pSynth->setVoice(0xff, *osc1_voice, 0x01);
                 }
                 else if(*selectedOsc == 0x02) {
                     if(*osc2_voice + 1 <= 8) {
-                        if(canSetVoice(2, *osc2_voice + 1)) *osc2_voice += 1; 
+                        if(canSetVoice(2, *osc2_voice + 1)) *osc2_voice += 1;
                     }
                     if(!longPush) pSynth->setVoice(0xff, *osc2_voice, 0x02);
                 }
@@ -203,13 +214,13 @@ public:
             case 0x02:
                 if(*selectedOsc == 0x01) {
                     if(*osc1_detune + 1 <= 100) {
-                        *osc1_detune += 1; 
+                        *osc1_detune += 1;
                     }
                     if(!longPush) pSynth->setDetune(0xff, *osc1_detune, 0x01);
                 }
                 else if(*selectedOsc == 0x02) {
                     if(*osc2_detune + 1 <= 100) {
-                        *osc2_detune += 1; 
+                        *osc2_detune += 1;
                     }
                     if(!longPush) pSynth->setDetune(0xff, *osc2_detune, 0x02);
                 }
@@ -218,13 +229,13 @@ public:
             case 0x03:
                 if(*selectedOsc == 0x01) {
                     if(*osc1_spread + 1 <= 100) {
-                        *osc1_spread += 1; 
+                        *osc1_spread += 1;
                     }
                     if(!longPush) pSynth->setSpread(0xff, *osc1_spread, 0x01);
                 }
                 else if(*selectedOsc == 0x02) {
                     if(*osc2_spread + 1 <= 100) {
-                        *osc2_spread += 1; 
+                        *osc2_spread += 1;
                     }
                     if(!longPush) pSynth->setSpread(0xff, *osc2_spread, 0x02);
                 }

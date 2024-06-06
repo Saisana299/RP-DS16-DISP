@@ -16,6 +16,9 @@ private:
     int8_t* osc2_semi;
     int8_t* osc1_cent;
     int8_t* osc2_cent;
+    int8_t* osc_sub_oct;
+    int8_t* osc_sub_semi;
+    int8_t* osc_sub_cent;
 
     uint8_t* selectedOsc;
 
@@ -35,7 +38,8 @@ public:
         uint8_t* displayStatus, uint8_t* displayCursor, uint8_t* selectedOsc,
         int8_t* osc1_oct, int8_t* osc2_oct,
         int8_t* osc1_semi, int8_t* osc2_semi,
-        int8_t* osc1_cent, int8_t* osc2_cent)
+        int8_t* osc1_cent, int8_t* osc2_cent,
+        int8_t* osc_sub_oct, int8_t* osc_sub_semi, int8_t* osc_sub_cent)
     {
         this->pSprite = pSprite;
         this->pSynth = pSynth;
@@ -48,6 +52,9 @@ public:
         this->osc2_semi = osc2_semi;
         this->osc1_cent = osc1_cent;
         this->osc2_cent = osc2_cent;
+        this->osc_sub_oct = osc_sub_oct;
+        this->osc_sub_semi = osc_sub_semi;
+        this->osc_sub_cent = osc_sub_cent;
     }
 
     /** @brief 画面更新 */
@@ -55,6 +62,7 @@ public:
         // タイトル
         if(*selectedOsc == 0x01) pSprite->drawString("> OSC1 Pitch Editor", 2, 2);
         else if(*selectedOsc == 0x02) pSprite->drawString("> OSC2 Pitch Editor", 2, 2);
+        else if(*selectedOsc == 0x03) pSprite->drawString("> Sub Pitch Editor", 2, 2);
 
         // 横線
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
@@ -76,19 +84,30 @@ public:
             pSprite->drawString("OSC2 Semitone: " + String(o2s_chr), 2, 26);
             pSprite->drawString("OSC2 Cent    : " + String(o2c_chr), 2, 36);
         }
+        else if(*selectedOsc == 0x03) {
+            char oso_chr[6]; sprintf(oso_chr, "%d", *osc_sub_oct);
+            char oss_chr[6]; sprintf(oss_chr, "%d", *osc_sub_semi);
+            char osc_chr[6]; sprintf(osc_chr, "%d", *osc_sub_cent);
+            pSprite->drawString("Sub Octave  : " + String(oso_chr), 2, 16);
+            pSprite->drawString("Sub Semitone: " + String(oss_chr), 2, 26);
+            pSprite->drawString("Sub Cent    : " + String(osc_chr), 2, 36);
+        }
 
         // 塗り
         if(*displayCursor == 0x01) {
             if(*selectedOsc == 0x01) cursorText("OSC1 Octave", 2, 16);
             else if(*selectedOsc == 0x02) cursorText("OSC2 Octave", 2, 16);
+            else if(*selectedOsc == 0x03) cursorText("Sub Octave", 2, 16);
         }
         else if(*displayCursor == 0x02) {
             if(*selectedOsc == 0x01) cursorText("OSC1 Semitone", 2, 26);
             else if(*selectedOsc == 0x02) cursorText("OSC2 Semitone", 2, 26);
+            else if(*selectedOsc == 0x03) cursorText("Sub Semitone", 2, 26);
         }
         else if(*displayCursor == 0x03) {
             if(*selectedOsc == 0x01) cursorText("OSC1 Cent", 2, 36);
             else if(*selectedOsc == 0x02) cursorText("OSC2 Cent", 2, 36);
+            else if(*selectedOsc == 0x03) cursorText("Sub Cent", 2, 36);
         }
     }
 
@@ -122,6 +141,12 @@ public:
                     }
                     if(!longPush) pSynth->setOscOctave(0xff, 0x02, *osc2_oct);
                 }
+                else if(*selectedOsc == 0x03){
+                    if(*osc_sub_oct - 1 >= -4) {
+                        *osc_sub_oct -= 1; 
+                    }
+                    if(!longPush) pSynth->setOscOctave(0xff, 0x03, *osc_sub_oct);
+                }
                 break;
 
             case 0x02:
@@ -137,6 +162,12 @@ public:
                     }
                     if(!longPush) pSynth->setOscSemitone(0xff, 0x02, *osc2_semi);
                 }
+                else if(*selectedOsc == 0x03){
+                    if(*osc_sub_semi - 1 >= -12) {
+                        *osc_sub_semi -= 1; 
+                    }
+                    if(!longPush) pSynth->setOscSemitone(0xff, 0x03, *osc_sub_semi);
+                }
                 break;
 
             case 0x03:
@@ -151,6 +182,12 @@ public:
                         *osc2_cent -= 1; 
                     }
                     if(!longPush) pSynth->setOscCent(0xff, 0x02, *osc2_cent);
+                }
+                else if(*selectedOsc == 0x03){
+                    if(*osc_sub_cent - 1 >= -100) {
+                        *osc_sub_cent -= 1; 
+                    }
+                    if(!longPush) pSynth->setOscCent(0xff, 0x03, *osc_sub_cent);
                 }
                 break;
         }
@@ -172,6 +209,12 @@ public:
                     }
                     if(!longPush) pSynth->setOscOctave(0xff, 0x02, *osc2_oct);
                 }
+                else if(*selectedOsc == 0x03) {
+                    if(*osc_sub_oct + 1 <= 4) {
+                        *osc_sub_oct += 1; 
+                    }
+                    if(!longPush) pSynth->setOscOctave(0xff, 0x03, *osc_sub_oct);
+                }
                 break;
 
             case 0x02:
@@ -187,6 +230,12 @@ public:
                     }
                     if(!longPush) pSynth->setOscSemitone(0xff, 0x02, *osc2_semi);
                 }
+                else if(*selectedOsc == 0x03) {
+                    if(*osc_sub_semi + 1 <= 12) {
+                        *osc_sub_semi += 1; 
+                    }
+                    if(!longPush) pSynth->setOscSemitone(0xff, 0x03, *osc_sub_semi);
+                }
                 break;
 
             case 0x03:
@@ -201,6 +250,12 @@ public:
                         *osc2_cent += 1; 
                     }
                     if(!longPush) pSynth->setOscCent(0xff, 0x02, *osc2_cent);
+                }
+                else if(*selectedOsc == 0x03) {
+                    if(*osc_sub_cent + 1 <= 100) {
+                        *osc_sub_cent += 1; 
+                    }
+                    if(!longPush) pSynth->setOscCent(0xff, 0x03, *osc_sub_cent);
                 }
                 break;
         }
