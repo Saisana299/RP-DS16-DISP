@@ -342,6 +342,45 @@ public:
             pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
         }
     }
+
+    // モジュレーションを設定
+    void setMod(uint8_t synth, uint8_t mod) {
+        uint8_t data[] = {
+            SYNTH_SET_MOD, synth, mod
+        };
+        uint8_t received[1];
+        pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
+    }
+
+    void setMonophonic(uint8_t synth, bool enable) {
+        uint8_t b = enable ? 0x01 : 0x00;
+        uint8_t data[] = {
+            SYNTH_SET_MONO, synth, b
+        };
+        uint8_t received[1];
+        pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
+    }
+
+    void setGlideMode(uint8_t synth, bool enable, uint16_t time = 15) {
+        uint8_t b = enable ? 0x01 : 0x00;
+        if(!enable) {
+            uint8_t data[] = {
+                SYNTH_SET_MONO, synth, b
+            };
+            uint8_t received[1];
+            pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
+        }
+
+        else {
+            uint8_t data[] = {
+                SYNTH_SET_MONO, synth, b,
+                static_cast<uint8_t>((time >> 8) & 0xFF),
+                static_cast<uint8_t>(time & 0xFF)
+            };
+            uint8_t received[1];
+            pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
+        }
+    }
 };
 
 #endif // SYNTHMANAGER_H

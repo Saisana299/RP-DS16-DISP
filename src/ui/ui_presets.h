@@ -42,20 +42,23 @@ private:
     }
 
     void setPreset(uint8_t id, uint8_t synth) {
-        if(id < FACTORY_PRESETS)
+        if(id < FACTORY_PRESETS) {
             // defaultプリセットはosc=0x01固定
             pSynth->setShape(synth, 0x01, id);
             *selectedWave = id;
             if(id == 0xff) *osc1_voice = 1;
+        }
+
         else {
             JsonDocument doc;
             pFile->getJson(&doc, user_presets[id - FACTORY_PRESETS].path);
-            String osc1_type = doc["osc1"]["type"];
-            String osc2_type = doc["osc2"]["type"];
-            
+            String osc1_type = doc["osc1"]["wavetable"]["type"];
+            String osc2_type = doc["osc2"]["wavetable"]["type"];
+            String sub_type = doc["sub"]["wavetable"]["type"];
+
             // osc1
             if(osc1_type == "custom") {
-                String wave = doc["osc1"]["wave"];
+                String wave = doc["osc1"]["wavetable"]["path"];
                 pFile->getJson(&doc, "/rp-ds16/wavetable/" + wave);
                 JsonArray waveTableArray = doc["wave_table"].as<JsonArray>();
                 copyArray(waveTableArray, wave_table_buff, waveTableArray.size());
@@ -63,15 +66,17 @@ private:
                 *selectedWave = FACTORY_PRESETS + 1;
 
             } else if(osc1_type == "default") {
-                uint8_t osc1_id = doc["osc1"]["id"];
+                uint8_t osc1_id = doc["osc1"]["wavetable"]["path"];
                 pSynth->setShape(synth, 0x01, osc1_id);
                 *selectedWave = osc1_id;
                 if(osc1_id == 0xff) *osc1_voice = 1;
+            } else {
+                pSynth->setShape(synth, 0x01, 0xff);
             }
 
             // osc2
             if(osc2_type == "custom") {
-                String wave = doc["osc2"]["wave"];
+                String wave = doc["osc2"]["wavetable"]["path"];
                 pFile->getJson(&doc, "/rp-ds16/wavetable/" + wave);
                 JsonArray waveTableArray = doc["wave_table"].as<JsonArray>();
                 copyArray(waveTableArray, wave_table_buff, waveTableArray.size());
@@ -79,13 +84,17 @@ private:
                 *selectedWave2 = FACTORY_PRESETS + 1;
 
             } else if(osc2_type == "default") {
-                uint8_t osc2_id = doc["osc2"]["id"];
+                uint8_t osc2_id = doc["osc2"]["wavetable"]["path"];
                 pSynth->setShape(synth, 0x02, osc2_id);
                 *selectedWave2 = osc2_id;
                 if(osc2_id == 0xff) *osc2_voice = 1;
+            } else {
+                pSynth->setShape(synth, 0x02, 0xff);
             }
 
-            // ADSR
+            // sub osc
+
+            // Amp
 
             // todo
         }
@@ -155,7 +164,7 @@ public:
         }
         
         // MIDIチャンネル
-        if(*synthMode == SYNTH_MULTI){
+        if(*synthMode == SYNTH_MULTI || *synthMode == SYNTH_MONO){
             pSprite->drawString("MIDI=1&2", 2, 2);
         }else{
             pSprite->drawString("MIDI=1", 2, 2);
@@ -280,7 +289,7 @@ public:
                 break;
             case 0x02:
                 if (longPush) return;
-                *synthMode = (*synthMode == SYNTH_SINGLE) ? SYNTH_MULTI : (*synthMode - 1);
+                *synthMode = (*synthMode == SYNTH_POLY) ? SYNTH_MULTI : (*synthMode - 1);
                 pSynth->setSynthMode(*synthMode);
                 setPreset(*selectedPreset, (*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
                 if(*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) {
@@ -307,7 +316,7 @@ public:
                 break;
             case 0x02:
                 if (longPush) return;
-                *synthMode = (*synthMode == SYNTH_MULTI) ? SYNTH_SINGLE : (*synthMode + 1);
+                *synthMode = (*synthMode == SYNTH_MULTI) ? SYNTH_POLY : (*synthMode + 1);
                 pSynth->setSynthMode(*synthMode);
                 setPreset(*selectedPreset, (*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
                 if(*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) {

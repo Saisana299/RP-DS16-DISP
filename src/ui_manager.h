@@ -75,7 +75,7 @@ private:
     uint8_t displayCursor = 0x00;
 
     // シンセ関連
-    uint8_t synthMode = SYNTH_SINGLE;
+    uint8_t synthMode = SYNTH_POLY;
     uint8_t selectedPreset = 0x00;
     uint8_t selectedPreset2 = 0x00;
 
@@ -122,16 +122,18 @@ private:
     int16_t delay_feedback = 500;
     uint8_t delay_status = 0x00;
 
+    uint8_t mod_status = 0x00;
+
     bool isFirst = false;
 
     String default_presets[FACTORY_PRESETS] = {
         "Basic Sine", "Basic Triangle", "Basic Saw", "Basic Square"
     };
     String default_wavetables[FACTORY_WAVETABLES] = {
-        "sine", "triangle", "saw", "square", "noise"
+        "sine", "triangle", "saw", "square"
     };
     String modes[4] = {
-        "SINGLE MODE", "OCTAVE MODE", "DUAL MODE", "MULTI MODE"
+        "POLY MODE", "MONO MODE", "DUAL MODE", "MULTI MODE"
     };
 
     // ユーザーファイル
@@ -217,7 +219,7 @@ public:
         );
 
         ui_handler[DISPST_OSC] = new UIOsc(
-            pSprite, pSynth, &displayStatus, &displayCursor, &selectedOsc, &osc1_level, &osc2_level, &osc_sub_level, &isFirst
+            pSprite, pSynth, &displayStatus, &displayCursor, &selectedOsc, &osc1_level, &osc2_level, &osc_sub_level, &isFirst, &mod_status
         );
 
         ui_handler[DISPST_PRESET_EDIT] = new UIPresetEdit(

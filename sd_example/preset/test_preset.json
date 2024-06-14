@@ -1,7 +1,80 @@
 {
 	"preset_name": "Test Preset",
+	"modulation": "disable",
+	"amp": {
+		"level": 1000,
+		"pan": 50,
+		"envelope":{
+			"attack": 1,
+			"decay": 1000,
+			"sustain": 1000,
+			"release": 10
+		}
+	},
 	"osc1": {
-		"type": "custom",
-		"wave": "test_table.json"
+		"wavetable": {
+			"type": "custom",
+			"path": "test_table.json"
+		},
+		"unison": {
+			"voice": 1,
+			"detune": 20,
+			"spread": 0
+		},
+		"pitch": {
+			"octave": 0,
+			"semitone": 0,
+			"cent": 0
+		},
+		"level": 1000,
+		"pan": 50
+	},
+	"osc2": {
+		"wavetable": {
+			"type": "default",
+			"path": 2
+		},
+		"unison": {
+			"voice": 1,
+			"detune": 20,
+			"spread": 0
+		},
+		"pitch": {
+			"octave": 0,
+			"semitone": 0,
+			"cent": 0
+		},
+		"level": 1000,
+		"pan": 50
+	},
+	"sub": {
+		"wavetable": {
+			"type": "disable",
+			"path": 0
+		},
+		"pitch": {
+			"octave": 0,
+			"semitone": 0,
+			"cent": 0
+		},
+		"level": 1000,
+		"pan": 50
+	},
+	"filter": {
+		"mode": "disable",
+		"lpf": {
+			"freq": 1000.0,
+			"q": 0.7
+		},
+		"hpf": {
+			"freq": 1000.0,
+			"q": 0.7
+		}
+	},
+	"delay": {
+		"mode": "disable",
+		"time": 250,
+		"level": 300,
+		"feedback": 500
 	}
 }

@@ -22,6 +22,8 @@ private:
 
     bool* isFirst;
 
+    uint8_t* mod_status;
+
     void cursorText(String text, uint8_t x, uint8_t y, uint8_t ex_width = 0, uint8_t ex_height = 0) {
         pSprite->fillRect(x-1, y-1, pSprite->textWidth(text)+1 + ex_width, pSprite->fontHeight()+1 + ex_height, TFT_WHITE);
         pSprite->setTextColor(TFT_BLACK);
@@ -32,7 +34,7 @@ private:
 public:
     UIOsc( LGFX_Sprite* pSprite, SynthManager* pSynth,
     uint8_t* displayStatus, uint8_t* displayCursor, uint8_t* selectedOsc,
-    int16_t* osc1_level, int16_t* osc2_level, int16_t* osc_sub_level, bool* isFirst)
+    int16_t* osc1_level, int16_t* osc2_level, int16_t* osc_sub_level, bool* isFirst, uint8_t* mod_status)
     {
         this->displayStatus = displayStatus;
         this->displayCursor = displayCursor;
@@ -43,18 +45,21 @@ public:
         this->osc2_level = osc2_level;
         this->osc_sub_level = osc_sub_level;
         this->isFirst = isFirst;
+        this->mod_status = mod_status;
     }
 
     /** @brief 画面更新 */
     void refreshUI() override {
 
-        if(*displayCursor < 0x04) {
+        if(*displayCursor < 0x06) {
             // タイトル
             pSprite->drawString("> Select Oscillator", 2, 2);
             // オシレータ選択
             pSprite->drawString("OSC1", 2, 16);
             pSprite->drawString("OSC2", 2, 26);
-            pSprite->drawString("Sub OSC", 2, 36);
+            pSprite->drawString("Sub", 2, 36);
+            pSprite->drawString("Noise", 2, 46);
+            pSprite->drawString("Mod: ---", 2, 56);
         }
         else {
             char lv_chr[5];
@@ -67,7 +72,7 @@ public:
                 sprintf(lv_chr, "%.1f", (float)*osc2_level / 10.0f);
             }
             else if(*selectedOsc == 0x03) {
-                pSprite->drawString("> Sub OSC Settings", 2, 2);
+                pSprite->drawString("> Sub Settings", 2, 2);
                 sprintf(lv_chr, "%.1f", (float)*osc_sub_level / 10.0f);
             }
             pSprite->drawString("Wavetable", 2, 16);
@@ -89,22 +94,28 @@ public:
             cursorText("OSC2", 2, 26);
         }
         else if(*displayCursor == 0x03) {
-            cursorText("Sub OSC", 2, 36);
+            cursorText("Sub", 2, 36);
         }
         else if(*displayCursor == 0x04) {
-            cursorText("Wavetable", 2, 16);
+            cursorText("Noise", 2, 46);
         }
         else if(*displayCursor == 0x05) {
+            cursorText("Mod", 2, 56);
+        }
+        else if(*displayCursor == 0x06) {
+            cursorText("Wavetable", 2, 16);
+        }
+        else if(*displayCursor == 0x07) {
             if(*selectedOsc != 0x03) cursorText("Unison", 2, 26);
             else cursorText("---", 2, 26);
         }
-        else if(*displayCursor == 0x06) {
+        else if(*displayCursor == 0x08) {
             cursorText("Pitch", 2, 36);
         }
-        else if(*displayCursor == 0x07) {
+        else if(*displayCursor == 0x09) {
             cursorText("Level", 2, 46);
         }
-        else if(*displayCursor == 0x08) {
+        else if(*displayCursor == 0x0A) {
             cursorText("Pan", 2, 56);
         }
     }
@@ -112,22 +123,22 @@ public:
     /** @brief 上ボタンが押された場合 */
     void handleButtonUp(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x01) *displayCursor = 0x03;
-        else if(*displayCursor == 0x04) *displayCursor = 0x08;
+        if(*displayCursor == 0x01) *displayCursor = 0x05;
+        else if(*displayCursor == 0x06) *displayCursor = 0x0A;
         else (*displayCursor)--;
     }
 
     /** @brief 下ボタンが押された場合 */
     void handleButtonDown(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x03) *displayCursor = 0x01;
-        else if(*displayCursor == 0x08) *displayCursor = 0x04;
+        if(*displayCursor == 0x05) *displayCursor = 0x01;
+        else if(*displayCursor == 0x0A) *displayCursor = 0x06;
         else (*displayCursor)++;
     }
 
     /** @brief 左ボタンが押された場合 */
     void handleButtonLeft(bool longPush = false) override {
-        if(*displayCursor == 0x07) {
+        if(*displayCursor == 0x09) {
             if(*selectedOsc == 0x01) {
                 if(*osc1_level - 10 >= 0) *osc1_level -= 10;
                 if(!longPush) pSynth->setOscLevel(0xff, 0x01, *osc1_level);
@@ -145,7 +156,7 @@ public:
 
     /** @brief 右ボタンが押された場合 */
     void handleButtonRight(bool longPush = false) override {
-        if(*displayCursor == 0x07) {
+        if(*displayCursor == 0x09) {
             if(*selectedOsc == 0x01) {
                 if(*osc1_level + 10 <= 1000) *osc1_level += 10;
                 if(!longPush) pSynth->setOscLevel(0xff, 0x01, *osc1_level);
@@ -166,33 +177,39 @@ public:
         if(longPush) return;
         switch (*displayCursor) {
             case 0x01:
-                *displayCursor = 0x04;
+                *displayCursor = 0x06;
                 *selectedOsc = 0x01;
                 break;
             case 0x02:
-                *displayCursor = 0x04;
+                *displayCursor = 0x06;
                 *selectedOsc = 0x02;
                 break;
             case 0x03:
-                *displayCursor = 0x04;
+                *displayCursor = 0x06;
                 *selectedOsc = 0x03;
                 break;
             case 0x04:
+                break;
+            case 0x05:
+                *mod_status = 0x01;
+                pSynth->setMod(0xff, 0x01);
+                break;
+            case 0x06:
                 *displayCursor = 0x01;
                 *displayStatus = DISPST_OSC_WAVE;
                 *isFirst = true;
                 break;
-            case 0x05:
+            case 0x07:
                 if(*selectedOsc != 0x03) {
                     *displayCursor = 0x01;
                     *displayStatus = DISPST_OSC_UNISON;
                 }
                 break;
-            case 0x06:
+            case 0x08:
                 *displayCursor = 0x01;
                 *displayStatus = DISPST_OSC_PITCH;
                 break;
-            case 0x07:
+            case 0x09:
                 break;
         }
     }
@@ -200,7 +217,7 @@ public:
     /** @brief キャンセルボタンが押された場合 */
     void handleButtonCancel(bool longPush = false) override {
         if (longPush) return;
-        if(*displayCursor < 0x04) {
+        if(*displayCursor < 0x06) {
             *displayCursor = 0x01;
             *displayStatus = DISPST_PRESET_EDIT;
         }
