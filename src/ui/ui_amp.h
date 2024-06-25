@@ -46,7 +46,7 @@ public:
         char pn_chr[5]; sprintf(pn_chr, "%d", *pan);
 
         pSprite->drawString("Level Envelope", 2, 16);
-        pSprite->drawString("Portamento", 2, 26);
+        pSprite->drawString("Glide", 2, 26);
         pSprite->drawString("Level: " + String(lv_chr) + "%", 2, 36);
         pSprite->drawString("Pan  : " + String(pn_chr), 2, 46);
 
@@ -55,7 +55,7 @@ public:
             cursorText("Level Envelope", 2, 16);
         }
         else if(*displayCursor == 0x02) {
-            cursorText("Portamento", 2, 26);
+            cursorText("Glide", 2, 26);
         }
         else if(*displayCursor == 0x03) {
             cursorText("Level", 2, 36);
@@ -112,6 +112,8 @@ public:
                 *displayStatus = DISPST_AMP_ADSR;
                 break;
             case 0x02:
+                *displayCursor = 0x01;
+                *displayStatus = DISPST_AMP_GLIDE;
                 break;
         }
     }

@@ -23,6 +23,7 @@
 #include <ui_osc_pitch.h>
 #include <ui_effect.h>
 #include <ui_effect_delay.h>
+#include <ui_amp_glide.h>
 
 #ifndef UIMANAGER_H
 #define UIMANAGER_H
@@ -124,6 +125,9 @@ private:
 
     uint8_t mod_status = 0x00;
 
+    bool isGlide = false;
+    uint16_t glide_time = 15;
+
     bool isFirst = false;
 
     String default_presets[FACTORY_PRESETS] = {
@@ -153,7 +157,7 @@ private:
     int fileman_index = 0;
     String currentDir = "/rp-ds16";
     uint8_t selectedOsc = 1;
-    
+
     // ファイル管理
     Files files[4];
     FsFile file_buff[4];
@@ -238,12 +242,16 @@ public:
         ui_handler[DISPST_AMP] = new UIAmp(
             pSprite, pSynth, &displayStatus, &displayCursor, &amp_gain, &pan
         );
-        
+
+        ui_handler[DISPST_AMP_GLIDE] = new UIAmpGlide(
+            pSprite, pSynth, &displayStatus, &displayCursor, &synthMode, &isGlide, &glide_time
+        );
+
         ui_handler[DISPST_PRESETS] = new UIPresets(
             pSprite, pSynth, pFile, &displayStatus, &displayCursor,
             &synthMode, &selectedPreset, &selectedPreset2,
             &osc1_voice, &osc2_voice, &selectedWave, &selectedWave2,
-            default_presets, modes, user_presets, wave_table_buff
+            default_presets, modes, user_presets, wave_table_buff, &isGlide
         );
 
         ui_handler[DISPST_TITLE] = new UITitle(
@@ -264,7 +272,7 @@ public:
         // ローディング処理
         pDisplay->init();
         pDisplay->fillScreen(TFT_BLACK);
-        
+
         //powered by raspberry pi
         pDisplay->showImage(pSprite, POWERED_IMG);
         delay(3000);

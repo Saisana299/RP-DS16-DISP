@@ -365,7 +365,7 @@ public:
         uint8_t b = enable ? 0x01 : 0x00;
         if(!enable) {
             uint8_t data[] = {
-                SYNTH_SET_MONO, synth, b
+                SYNTH_SET_GLIDE, synth, b
             };
             uint8_t received[1];
             pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
@@ -373,7 +373,7 @@ public:
 
         else {
             uint8_t data[] = {
-                SYNTH_SET_MONO, synth, b,
+                SYNTH_SET_GLIDE, synth, b,
                 static_cast<uint8_t>((time >> 8) & 0xFF),
                 static_cast<uint8_t>(time & 0xFF)
             };

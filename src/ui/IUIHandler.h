@@ -24,6 +24,7 @@
 #define DISPST_DELAY       0x0E
 #define DISPST_OSC_PITCH   0x0F
 #define DISPST_EFFECT      0x10
+#define DISPST_AMP_GLIDE   0x11
 
 struct Files {
     bool type;

@@ -34,6 +34,8 @@ private:
     SynthManager* pSynth;
     FileManager* pFile;
 
+    bool* isGlide;
+
     void cursorText(String text, uint8_t x, uint8_t y, uint8_t ex_width = 0, uint8_t ex_height = 0) {
         pSprite->fillRect(x-1, y-1, pSprite->textWidth(text)+1 + ex_width, pSprite->fontHeight()+1 + ex_height, TFT_WHITE);
         pSprite->setTextColor(TFT_BLACK);
@@ -106,7 +108,7 @@ public:
         uint8_t* displayStatus, uint8_t* displayCursor,
         uint8_t* synthMode, uint8_t* selectedPreset, uint8_t* selectedPreset2,
         uint8_t* osc1_voice, uint8_t* osc2_voice, uint8_t* selectedWave, uint8_t* selectedWave2,
-        String* default_presets, String* modes, Preset* user_presets, int16_t* wave_table_buff)
+        String* default_presets, String* modes, Preset* user_presets, int16_t* wave_table_buff, bool* isGlide)
     {
         this->pSprite = pSprite;
         this->pSynth = pSynth;
@@ -124,6 +126,7 @@ public:
         this->modes = modes;
         this->user_presets = user_presets;
         this->wave_table_buff = wave_table_buff;
+        this->isGlide = isGlide;
     }
 
     /** @brief 画面更新 */
@@ -162,7 +165,7 @@ public:
         else {
             pSprite->drawString(fu1 + idstr + preset_name1, preset_x, preset_y);
         }
-        
+
         // MIDIチャンネル
         if(*synthMode == SYNTH_MULTI || *synthMode == SYNTH_MONO){
             pSprite->drawString("MIDI=1&2", 2, 2);
@@ -197,12 +200,10 @@ public:
                 sprintf(idstr, "%03d", *selectedPreset+1 - FACTORY_PRESETS);
             }
 
-            if(*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) 
+            if(*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL)
                 cursorText(" " + fu1 + idstr, 0, y - 7);
-            
-            else 
+            else
                 cursorText(" " + fu1 + idstr, 0, y);
-            
         }
         else if(*displayCursor == 0x02) {
             uint8_t synth_x = pSprite->textWidth(modes[*synthMode]);
@@ -290,7 +291,14 @@ public:
             case 0x02:
                 if (longPush) return;
                 *synthMode = (*synthMode == SYNTH_POLY) ? SYNTH_MULTI : (*synthMode - 1);
+                pSynth->setGlideMode(0xff, false);
+                *isGlide = false;
                 pSynth->setSynthMode(*synthMode);
+                if(*synthMode == SYNTH_MONO){
+                    pSynth->setMonophonic(0xff, true);
+                } else {
+                    pSynth->setMonophonic(0xff, false);
+                }
                 setPreset(*selectedPreset, (*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
                 if(*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) {
                     setPreset(*selectedPreset2, 0x02);
@@ -317,7 +325,14 @@ public:
             case 0x02:
                 if (longPush) return;
                 *synthMode = (*synthMode == SYNTH_MULTI) ? SYNTH_POLY : (*synthMode + 1);
+                pSynth->setGlideMode(0xff, false);
+                *isGlide = false;
                 pSynth->setSynthMode(*synthMode);
+                if(*synthMode == SYNTH_MONO){
+                    pSynth->setMonophonic(0xff, true);
+                } else {
+                    pSynth->setMonophonic(0xff, false);
+                }
                 setPreset(*selectedPreset, (*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
                 if(*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) {
                     setPreset(*selectedPreset2, 0x02);
