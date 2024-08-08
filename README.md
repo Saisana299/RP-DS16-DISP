@@ -1,5 +1,5 @@
 # RP-DS16-DISP
-[![GitHub license](https://img.shields.io/badge/RP--DS16-Rev.2.0-seagreen)](https://github.com/Saisana299/RP-DS16)　
+[![GitHub license](https://img.shields.io/badge/RP--DS16-Rev.3.0-seagreen)](https://github.com/Saisana299/RP-DS16)　
 
 RP2040を利用したWavetableシンセ「RP-DS16」のUI部  
 OLED制御、ボタン制御、TFカード制御、RP-DS16-CTRLとの通信
