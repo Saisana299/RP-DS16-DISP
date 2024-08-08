@@ -74,8 +74,9 @@ private:
     // ディスプレイ関連
     uint8_t displayStatus = DISPST_IDLE;
     uint8_t displayCursor = 0x00;
+    uint8_t selectedSynth = 0x00;
 
-    // シンセ関連
+    // シンセ関連 DUAL又はMULTIの場合、プリセット編集は0x01のみに限る
     uint8_t synthMode = SYNTH_POLY;
     uint8_t selectedPreset = 0x00;
     uint8_t selectedPreset2 = 0x00;
@@ -201,29 +202,29 @@ public:
         ui_handler[DISPST_AMP_ADSR] = new UIAmpAdsr(
             &displayStatus, &displayCursor,
             &attack, &decay, &sustain, &release,
-            pSprite, pSynth
+            pSprite, pSynth, &selectedSynth
         );
 
         ui_handler[DISPST_OSC_UNISON] = new UIOscUnison(
             pSprite, pSynth, &displayStatus, &displayCursor,
             &osc1_voice, &osc2_voice, &osc1_detune, &osc2_detune,
-            &selectedOsc, &selectedWave, &selectedWave2, &selectedWaveSub ,&osc1_spread, &osc2_spread
+            &selectedOsc, &selectedWave, &selectedWave2, &selectedWaveSub ,&osc1_spread, &osc2_spread, &selectedSynth
         );
 
         ui_handler[DISPST_OSC_PITCH] = new UIOscPitch(
             pSprite, pSynth, &displayStatus, &displayCursor, &selectedOsc,
             &osc1_oct, &osc2_oct, &osc1_semi, &osc2_semi, &osc1_cent, &osc2_cent,
-            &osc_sub_oct, &osc_sub_semi, &osc_sub_cent
+            &osc_sub_oct, &osc_sub_semi, &osc_sub_cent, &selectedSynth
         );
 
         ui_handler[DISPST_OSC_WAVE] = new UIOscWave(
             pSprite, pSynth, &displayStatus, &displayCursor,
             &osc1_voice, &osc2_voice,
-            &selectedOsc, &selectedWave, &selectedWave2, &selectedWaveSub, default_wavetables, user_wavetables, &isFirst
+            &selectedOsc, &selectedWave, &selectedWave2, &selectedWaveSub, default_wavetables, user_wavetables, &isFirst, &selectedSynth
         );
 
         ui_handler[DISPST_OSC] = new UIOsc(
-            pSprite, pSynth, &displayStatus, &displayCursor, &selectedOsc, &osc1_level, &osc2_level, &osc_sub_level, &isFirst, &mod_status
+            pSprite, pSynth, &displayStatus, &displayCursor, &selectedOsc, &osc1_level, &osc2_level, &osc_sub_level, &isFirst, &mod_status, &selectedSynth
         );
 
         ui_handler[DISPST_PRESET_EDIT] = new UIPresetEdit(
@@ -236,22 +237,22 @@ public:
 
         ui_handler[DISPST_DELAY] = new UIEffectDelay(
             pSprite, pSynth, &displayStatus, &displayCursor,
-            &delay_time, &delay_level, &delay_feedback, &delay_status
+            &delay_time, &delay_level, &delay_feedback, &delay_status, &selectedSynth
         );
 
         ui_handler[DISPST_AMP] = new UIAmp(
-            pSprite, pSynth, &displayStatus, &displayCursor, &amp_gain, &pan
+            pSprite, pSynth, &displayStatus, &displayCursor, &amp_gain, &pan, &selectedSynth
         );
 
         ui_handler[DISPST_AMP_GLIDE] = new UIAmpGlide(
-            pSprite, pSynth, &displayStatus, &displayCursor, &synthMode, &isGlide, &glide_time
+            pDisplay, pSprite, pSynth, &displayStatus, &displayCursor, &synthMode, &isGlide, &glide_time
         );
 
         ui_handler[DISPST_PRESETS] = new UIPresets(
             pSprite, pSynth, pFile, &displayStatus, &displayCursor,
             &synthMode, &selectedPreset, &selectedPreset2,
             &osc1_voice, &osc2_voice, &selectedWave, &selectedWave2,
-            default_presets, modes, user_presets, wave_table_buff, &isGlide
+            default_presets, modes, user_presets, wave_table_buff, &isGlide, &selectedSynth
         );
 
         ui_handler[DISPST_TITLE] = new UITitle(
@@ -264,7 +265,7 @@ public:
 
         ui_handler[DISPST_FILTER] = new UIFilter(
             pSprite, pSynth, &displayStatus, &displayCursor,
-            &filter_mode, &lpf_freq, &lpf_q, &hpf_freq, &hpf_q
+            &filter_mode, &lpf_freq, &lpf_q, &hpf_freq, &hpf_q, &selectedSynth
         );
     }
 
@@ -295,6 +296,9 @@ public:
     }
 
     void loadUserFiles(String type) {
+        // MIDI Player が動いている場合終了させる
+        if(pMidi->getStatus() != MIDI_IDLE) pMidi->stopMidi();
+
         // ユーザーファイルを読み込む
         uint8_t size;
         String msg, dir_path, key, ext;

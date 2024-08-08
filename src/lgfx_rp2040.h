@@ -92,4 +92,20 @@ public:
         else sprite->pushSprite(parent, x, y);
         sprite->deleteSprite();
     }
+
+    // ポップアップメッセージを表示
+    void popupMessage(LGFX_Sprite* sprite, String msg) {
+        //todo
+        sprite->fillRect(10, 10, 108, 44, TFT_WHITE);
+        sprite->drawLine(10, 10, 120, 10, TFT_BLACK);
+        sprite->drawLine(10, 10, 10,  54, TFT_BLACK);
+        sprite->drawLine(118, 54, 10, 54, TFT_BLACK);
+        sprite->drawLine(118, 54, 118, 10, TFT_BLACK);
+        sprite->setTextColor(TFT_BLACK);
+        // sprite->drawString(l1, 13, 13);//中心へ
+        // sprite->drawString(l2, 13, 23);
+        // sprite->drawString(l3, 13, 33);
+        // sprite->drawString(l4, 13, 43);
+        sprite->setTextColor(TFT_WHITE);
+    }
 };

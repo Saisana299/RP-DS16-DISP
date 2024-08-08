@@ -39,6 +39,7 @@ struct Preset {
 
 class IUIHandler {
 public:
+    String popup_message = "";
     virtual ~IUIHandler() = default;
     virtual void refreshUI() = 0;
     virtual void handleButtonUp(bool longPush = false) = 0;

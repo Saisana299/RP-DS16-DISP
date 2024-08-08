@@ -20,7 +20,7 @@ private:
     // midi関連
     volatile uint8_t flag = MIDI_IDLE;
     volatile char midiFile[51] = ""; // 50まで /rp-ds16/midi/ も含む
-    
+
     SdFs SD;
     MD_MIDIFile SMF;
 
@@ -29,10 +29,10 @@ private:
     // Core1で実行
     static void midiCallback(midi_event *pev) {
         if ((pev->data[0] >= 0x80) && (pev->data[0] <= 0xe0)) {
-            Serial2.write(pev->data[0] | pev->channel);
-            Serial2.write(&pev->data[1], pev->size - 1);
+            Serial1.write(pev->data[0] | pev->channel);
+            Serial1.write(&pev->data[1], pev->size - 1);
         } else {
-            Serial2.write(pev->data, pev->size);
+            Serial1.write(pev->data, pev->size);
         }
     }
 
@@ -90,8 +90,9 @@ public:
     }
 
     void pauseMidi() {
-        sendMidiMode(false);
         flag = MIDI_PAUSE;
+        while(isLocking);
+        sendMidiMode(false);
     }
 
     void resumeMidi() {
@@ -100,8 +101,9 @@ public:
     }
 
     void stopMidi() {
-        sendMidiMode(false);
         flag = MIDI_STOP;
+        while(isLocking);
+        sendMidiMode(false);
     }
 
     void loopMidi(bool v) {

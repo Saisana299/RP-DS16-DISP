@@ -9,6 +9,7 @@ private:
     // ディスプレイ関連
     uint8_t* displayStatus;
     uint8_t* displayCursor;
+    uint8_t* selectedSynth;
 
     uint8_t *filter_mode;
     float *lpf_freq, *lpf_q, *hpf_freq, *hpf_q;
@@ -24,22 +25,23 @@ private:
         pSprite->setTextColor(TFT_WHITE);
     }
 
+    // フィルターは全シンセに適用する
     void updateFilter() {
         if(*filter_mode == 0x00) {
-            pSynth->setLowPassFilter(0xff, 0x00);
-            pSynth->setHighPassFilter(0xff, 0x00);
+            pSynth->setLowPassFilter(*selectedSynth, 0x00);
+            pSynth->setHighPassFilter(*selectedSynth, 0x00);
         }
         else if(*filter_mode == 0x01) {
-            pSynth->setLowPassFilter(0xff, 0x01, *lpf_freq, *lpf_q);
-            pSynth->setHighPassFilter(0xff, 0x00);
+            pSynth->setLowPassFilter(*selectedSynth, 0x01, *lpf_freq, *lpf_q);
+            pSynth->setHighPassFilter(*selectedSynth, 0x00);
         }
         else if(*filter_mode == 0x02) {
-            pSynth->setLowPassFilter(0xff, 0x00);
-            pSynth->setHighPassFilter(0xff, 0x01, *hpf_freq, *hpf_q);
+            pSynth->setLowPassFilter(*selectedSynth, 0x00);
+            pSynth->setHighPassFilter(*selectedSynth, 0x01, *hpf_freq, *hpf_q);
         }
         else if(*filter_mode == 0x03) {
-            pSynth->setLowPassFilter(0xff, 0x01, *lpf_freq, *lpf_q);
-            pSynth->setHighPassFilter(0xff, 0x01, *hpf_freq, *hpf_q);
+            pSynth->setLowPassFilter(*selectedSynth, 0x01, *lpf_freq, *lpf_q);
+            pSynth->setHighPassFilter(*selectedSynth, 0x01, *hpf_freq, *hpf_q);
         }
     }
 
@@ -47,7 +49,7 @@ public:
     UIFilter(
         LGFX_Sprite* pSprite, SynthManager* pSynth,
         uint8_t* displayStatus, uint8_t* displayCursor, uint8_t* filter_mode,
-        float* lpf_freq, float* lpf_q, float* hpf_freq, float* hpf_q)
+        float* lpf_freq, float* lpf_q, float* hpf_freq, float* hpf_q, uint8_t* selectedSynth)
     {
         this->pSprite = pSprite;
         this->pSynth = pSynth;
@@ -58,6 +60,7 @@ public:
         this->lpf_q = lpf_q;
         this->hpf_freq = hpf_freq;
         this->hpf_q = hpf_q;
+        this->selectedSynth = selectedSynth;
     }
 
     /** @brief 画面更新 */

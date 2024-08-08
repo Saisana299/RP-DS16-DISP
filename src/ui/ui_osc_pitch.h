@@ -9,6 +9,7 @@ private:
     // ディスプレイ関連
     uint8_t* displayStatus;
     uint8_t* displayCursor;
+    uint8_t* selectedSynth;
 
     int8_t* osc1_oct;
     int8_t* osc2_oct;
@@ -39,7 +40,7 @@ public:
         int8_t* osc1_oct, int8_t* osc2_oct,
         int8_t* osc1_semi, int8_t* osc2_semi,
         int8_t* osc1_cent, int8_t* osc2_cent,
-        int8_t* osc_sub_oct, int8_t* osc_sub_semi, int8_t* osc_sub_cent)
+        int8_t* osc_sub_oct, int8_t* osc_sub_semi, int8_t* osc_sub_cent, uint8_t* selectedSynth)
     {
         this->pSprite = pSprite;
         this->pSynth = pSynth;
@@ -55,6 +56,7 @@ public:
         this->osc_sub_oct = osc_sub_oct;
         this->osc_sub_semi = osc_sub_semi;
         this->osc_sub_cent = osc_sub_cent;
+        this->selectedSynth = selectedSynth;
     }
 
     /** @brief 画面更新 */
@@ -131,63 +133,63 @@ public:
             case 0x01:
                 if(*selectedOsc == 0x01){
                     if(*osc1_oct - 1 >= -4) {
-                        *osc1_oct -= 1; 
+                        *osc1_oct -= 1;
                     }
-                    if(!longPush) pSynth->setOscOctave(0xff, 0x01, *osc1_oct);
+                    if(!longPush) pSynth->setOscOctave(*selectedSynth, 0x01, *osc1_oct);
                 }
                 else if(*selectedOsc == 0x02){
                     if(*osc2_oct - 1 >= -4) {
-                        *osc2_oct -= 1; 
+                        *osc2_oct -= 1;
                     }
-                    if(!longPush) pSynth->setOscOctave(0xff, 0x02, *osc2_oct);
+                    if(!longPush) pSynth->setOscOctave(*selectedSynth, 0x02, *osc2_oct);
                 }
                 else if(*selectedOsc == 0x03){
                     if(*osc_sub_oct - 1 >= -4) {
-                        *osc_sub_oct -= 1; 
+                        *osc_sub_oct -= 1;
                     }
-                    if(!longPush) pSynth->setOscOctave(0xff, 0x03, *osc_sub_oct);
+                    if(!longPush) pSynth->setOscOctave(*selectedSynth, 0x03, *osc_sub_oct);
                 }
                 break;
 
             case 0x02:
                 if(*selectedOsc == 0x01){
                     if(*osc1_semi - 1 >= -12) {
-                        *osc1_semi -= 1; 
+                        *osc1_semi -= 1;
                     }
-                    if(!longPush) pSynth->setOscSemitone(0xff, 0x01, *osc1_semi);
+                    if(!longPush) pSynth->setOscSemitone(*selectedSynth, 0x01, *osc1_semi);
                 }
                 else if(*selectedOsc == 0x02){
                     if(*osc2_semi - 1 >= -12) {
-                        *osc2_semi -= 1; 
+                        *osc2_semi -= 1;
                     }
-                    if(!longPush) pSynth->setOscSemitone(0xff, 0x02, *osc2_semi);
+                    if(!longPush) pSynth->setOscSemitone(*selectedSynth, 0x02, *osc2_semi);
                 }
                 else if(*selectedOsc == 0x03){
                     if(*osc_sub_semi - 1 >= -12) {
-                        *osc_sub_semi -= 1; 
+                        *osc_sub_semi -= 1;
                     }
-                    if(!longPush) pSynth->setOscSemitone(0xff, 0x03, *osc_sub_semi);
+                    if(!longPush) pSynth->setOscSemitone(*selectedSynth, 0x03, *osc_sub_semi);
                 }
                 break;
 
             case 0x03:
                 if(*selectedOsc == 0x01){
                     if(*osc1_cent - 1 >= -100) {
-                        *osc1_cent -= 1; 
+                        *osc1_cent -= 1;
                     }
-                    if(!longPush) pSynth->setOscCent(0xff, 0x01, *osc1_cent);
+                    if(!longPush) pSynth->setOscCent(*selectedSynth, 0x01, *osc1_cent);
                 }
                 else if(*selectedOsc == 0x02){
                     if(*osc2_cent - 1 >= -100) {
-                        *osc2_cent -= 1; 
+                        *osc2_cent -= 1;
                     }
-                    if(!longPush) pSynth->setOscCent(0xff, 0x02, *osc2_cent);
+                    if(!longPush) pSynth->setOscCent(*selectedSynth, 0x02, *osc2_cent);
                 }
                 else if(*selectedOsc == 0x03){
                     if(*osc_sub_cent - 1 >= -100) {
-                        *osc_sub_cent -= 1; 
+                        *osc_sub_cent -= 1;
                     }
-                    if(!longPush) pSynth->setOscCent(0xff, 0x03, *osc_sub_cent);
+                    if(!longPush) pSynth->setOscCent(*selectedSynth, 0x03, *osc_sub_cent);
                 }
                 break;
         }
@@ -199,63 +201,63 @@ public:
             case 0x01:
                 if(*selectedOsc == 0x01) {
                     if(*osc1_oct + 1 <= 4) {
-                        *osc1_oct += 1; 
+                        *osc1_oct += 1;
                     }
-                    if(!longPush) pSynth->setOscOctave(0xff, 0x01, *osc1_oct);
+                    if(!longPush) pSynth->setOscOctave(*selectedSynth, 0x01, *osc1_oct);
                 }
                 else if(*selectedOsc == 0x02) {
                     if(*osc2_oct + 1 <= 4) {
-                        *osc2_oct += 1; 
+                        *osc2_oct += 1;
                     }
-                    if(!longPush) pSynth->setOscOctave(0xff, 0x02, *osc2_oct);
+                    if(!longPush) pSynth->setOscOctave(*selectedSynth, 0x02, *osc2_oct);
                 }
                 else if(*selectedOsc == 0x03) {
                     if(*osc_sub_oct + 1 <= 4) {
-                        *osc_sub_oct += 1; 
+                        *osc_sub_oct += 1;
                     }
-                    if(!longPush) pSynth->setOscOctave(0xff, 0x03, *osc_sub_oct);
+                    if(!longPush) pSynth->setOscOctave(*selectedSynth, 0x03, *osc_sub_oct);
                 }
                 break;
 
             case 0x02:
                 if(*selectedOsc == 0x01) {
                     if(*osc1_semi + 1 <= 12) {
-                        *osc1_semi += 1; 
+                        *osc1_semi += 1;
                     }
-                    if(!longPush) pSynth->setOscSemitone(0xff, 0x01, *osc1_semi);
+                    if(!longPush) pSynth->setOscSemitone(*selectedSynth, 0x01, *osc1_semi);
                 }
                 else if(*selectedOsc == 0x02) {
                     if(*osc2_semi + 1 <= 12) {
-                        *osc2_semi += 1; 
+                        *osc2_semi += 1;
                     }
-                    if(!longPush) pSynth->setOscSemitone(0xff, 0x02, *osc2_semi);
+                    if(!longPush) pSynth->setOscSemitone(*selectedSynth, 0x02, *osc2_semi);
                 }
                 else if(*selectedOsc == 0x03) {
                     if(*osc_sub_semi + 1 <= 12) {
-                        *osc_sub_semi += 1; 
+                        *osc_sub_semi += 1;
                     }
-                    if(!longPush) pSynth->setOscSemitone(0xff, 0x03, *osc_sub_semi);
+                    if(!longPush) pSynth->setOscSemitone(*selectedSynth, 0x03, *osc_sub_semi);
                 }
                 break;
 
             case 0x03:
                 if(*selectedOsc == 0x01) {
                     if(*osc1_cent + 1 <= 100) {
-                        *osc1_cent += 1; 
+                        *osc1_cent += 1;
                     }
-                    if(!longPush) pSynth->setOscCent(0xff, 0x01, *osc1_cent);
+                    if(!longPush) pSynth->setOscCent(*selectedSynth, 0x01, *osc1_cent);
                 }
                 else if(*selectedOsc == 0x02) {
                     if(*osc2_cent + 1 <= 100) {
-                        *osc2_cent += 1; 
+                        *osc2_cent += 1;
                     }
-                    if(!longPush) pSynth->setOscCent(0xff, 0x02, *osc2_cent);
+                    if(!longPush) pSynth->setOscCent(*selectedSynth, 0x02, *osc2_cent);
                 }
                 else if(*selectedOsc == 0x03) {
                     if(*osc_sub_cent + 1 <= 100) {
-                        *osc_sub_cent += 1; 
+                        *osc_sub_cent += 1;
                     }
-                    if(!longPush) pSynth->setOscCent(0xff, 0x03, *osc_sub_cent);
+                    if(!longPush) pSynth->setOscCent(*selectedSynth, 0x03, *osc_sub_cent);
                 }
                 break;
         }

@@ -9,6 +9,7 @@ private:
     // ディスプレイ関連
     uint8_t* displayStatus;
     uint8_t* displayCursor;
+    uint8_t* selectedSynth;
 
     String* default_wavetables;
     Preset* user_wavetables;
@@ -59,7 +60,7 @@ private:
             if(wave_id != 0xff) sum += voice;
             if (*selectedWave != 0xff) sum += *osc1_voice;
             if(*selectedWave2 != 0xff) sum += *osc2_voice;
-            
+
             return sum <= MAX_VOICE;
         }
 
@@ -73,7 +74,7 @@ public:
         uint8_t* osc1_voice, uint8_t* osc2_voice,
         uint8_t* selectedOsc, uint8_t* selectedWave, uint8_t* selectedWave2, uint8_t* selectedWaveSub,
         String* default_wavetables, Preset* user_wavetables,
-        bool* isFirst)
+        bool* isFirst, uint8_t* selectedSynth)
     {
         this->pSprite = pSprite;
         this->pSynth = pSynth;
@@ -87,6 +88,8 @@ public:
         this->selectedWaveSub = selectedWaveSub;
         this->default_wavetables = default_wavetables;
         this->user_wavetables = user_wavetables;
+
+        this->selectedSynth = selectedSynth;
 
         this->isFirst = isFirst;
 
@@ -104,7 +107,7 @@ public:
                 osc1_wave_id = *selectedWave;
             }
             else osc1_wave_id = 0xfe;
-            
+
             if(*selectedWave2 < FACTORY_WAVETABLES || *selectedWave2 == 0xff) {
                 osc2_wave_id = *selectedWave2;
             }
@@ -114,7 +117,7 @@ public:
                 osc_sub_wave_id = *selectedWaveSub;
             }
             else osc_sub_wave_id = 0xfe;
-            
+
             *isFirst = false;
         }
 
@@ -147,7 +150,7 @@ public:
             }
         }
         else {
-            char idstr[5]; 
+            char idstr[5];
             String fu = "F";
             String wave_name;
 
@@ -189,7 +192,7 @@ public:
             if(*selectedWave == 0xff) pSprite->drawString("Wave is null", 2, 56);
 
             else if(*selectedWave < FACTORY_WAVETABLES)
-                pSprite->drawString(String((*selectedWave) + 1) + ":" + default_wavetables[*selectedWave], 2, 56);
+                pSprite->drawString("Now=" + String((*selectedWave) + 1) + ":" + default_wavetables[*selectedWave], 2, 56);
 
             else pSprite->drawString("User Wavetable", 2, 56);
         }
@@ -198,7 +201,7 @@ public:
             if(*selectedWave2 == 0xff) pSprite->drawString("Wave is null", 2, 56);
 
             else if(*selectedWave2 < FACTORY_WAVETABLES)
-                pSprite->drawString(String((*selectedWave2)+1) + ":" + default_wavetables[*selectedWave2], 2, 56);
+                pSprite->drawString("Now=" + String((*selectedWave2)+1) + ":" + default_wavetables[*selectedWave2], 2, 56);
 
             else pSprite->drawString("User Wavetable", 2, 56);
         }
@@ -207,7 +210,7 @@ public:
             if(*selectedWaveSub == 0xff) pSprite->drawString("Wave is null", 2, 56);
 
             else if(*selectedWaveSub < FACTORY_WAVETABLES)
-                pSprite->drawString(String((*selectedWaveSub)+1) + ":" + default_wavetables[*selectedWaveSub], 2, 56);
+                pSprite->drawString("Now=" + String((*selectedWaveSub)+1) + ":" + default_wavetables[*selectedWaveSub], 2, 56);
 
             else pSprite->drawString("User Wavetable", 2, 56);
         }
@@ -244,7 +247,7 @@ public:
                 if(!longPush) {
                     if(wave_id < FACTORY_WAVETABLES || wave_id == 0xff) {
                         if(canSetVoice(*selectedOsc, 1, wave_id)) {
-                            pSynth->setShape(0xff, *selectedOsc, wave_id);
+                            pSynth->setShape(*selectedSynth, *selectedOsc, wave_id);
                             if(*selectedOsc == 0x01) {
                                 *selectedWave = wave_id;
                                 if(wave_id == 0xff) *osc1_voice = 1;
@@ -286,7 +289,7 @@ public:
                 if(!longPush) {
                     if(wave_id < FACTORY_WAVETABLES || wave_id == 0xff) {
                         if(canSetVoice(*selectedOsc, 1, wave_id)) {
-                            pSynth->setShape(0xff, *selectedOsc, wave_id);
+                            pSynth->setShape(*selectedSynth, *selectedOsc, wave_id);
                             if(*selectedOsc == 0x01) {
                                 *selectedWave = wave_id;
                                 if(wave_id == 0xff) *osc1_voice = 1;
@@ -312,7 +315,7 @@ public:
     /** @brief キャンセルボタンが押された場合 */
     void handleButtonCancel(bool longPush = false) override {
         if (longPush) return;
-        *displayCursor = 0x04;
+        *displayCursor = 0x06;
         *displayStatus = DISPST_OSC;
     }
 };

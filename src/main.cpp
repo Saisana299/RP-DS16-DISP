@@ -13,6 +13,14 @@
 #include <MD_MIDIFile.h>
 #include <midi_manager.h>
 
+// todo: osc->mod
+// todo: osc->pan
+
+// todo: プリセット保存機能
+// todo: midiブラウザ
+// todo: wavetableブラウザ
+// todo: rlemブラウザ
+
 // 共通変数
 LGFXRP2040 display;
 static LGFX_Sprite sprite(&display);
@@ -37,6 +45,11 @@ void setup() {
 
     ctrl.init();
     file.init();
+
+    // MIDIPin
+    Serial1.setTX(0);
+    Serial1.setRX(1);
+    Serial1.begin(115200);
 
     // DebugPin
     Serial2.setTX(8);

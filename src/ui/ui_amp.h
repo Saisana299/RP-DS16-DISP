@@ -10,6 +10,7 @@ private:
     // ディスプレイ関連
     uint8_t* displayStatus;
     uint8_t* displayCursor;
+    uint8_t* selectedSynth;
 
     LGFX_Sprite* pSprite;
     SynthManager* pSynth;
@@ -25,13 +26,14 @@ private:
     }
 
 public:
-    UIAmp( LGFX_Sprite* pSprite, SynthManager* pSynth, uint8_t* displayStatus, uint8_t* displayCursor, int16_t* level, uint8_t* pan) {
+    UIAmp( LGFX_Sprite* pSprite, SynthManager* pSynth, uint8_t* displayStatus, uint8_t* displayCursor, int16_t* level, uint8_t* pan, uint8_t* selectedSynth) {
         this->displayStatus = displayStatus;
         this->displayCursor = displayCursor;
         this->pSprite = pSprite;
         this->pSynth = pSynth;
         this->level = level;
         this->pan = pan;
+        this->selectedSynth = selectedSynth;
     }
 
     /** @brief 画面更新 */
@@ -83,11 +85,11 @@ public:
     void handleButtonLeft(bool longPush = false) override {
         if(*displayCursor == 0x03) {
             if(*level - 10 >= 0) *level -= 10;
-            if(!longPush) pSynth->setAmpLevel(0xff, *level);
+            if(!longPush) pSynth->setAmpLevel(*selectedSynth, *level);
         }
         else if(*displayCursor == 0x04) {
             if(*pan - 1 >= 0) *pan -= 1;
-            if(!longPush) pSynth->setAmpPan(0xff, *pan);
+            if(!longPush) pSynth->setAmpPan(*selectedSynth, *pan);
         }
     }
 
@@ -95,11 +97,11 @@ public:
     void handleButtonRight(bool longPush = false) override {
         if(*displayCursor == 0x03) {
             if(*level + 10 <= 1000) *level += 10;
-            if(!longPush) pSynth->setAmpLevel(0xff, *level);
+            if(!longPush) pSynth->setAmpLevel(*selectedSynth, *level);
         }
         else if(*displayCursor == 0x04) {
             if(*pan + 1 <= 100) *pan += 1;
-            if(!longPush) pSynth->setAmpPan(0xff, *pan);
+            if(!longPush) pSynth->setAmpPan(*selectedSynth, *pan);
         }
     }
 

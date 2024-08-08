@@ -9,6 +9,7 @@ private:
     // ディスプレイ関連
     uint8_t* displayStatus;
     uint8_t* displayCursor;
+    uint8_t* selectedSynth;
 
     LGFX_Sprite* pSprite;
     SynthManager* pSynth;
@@ -26,14 +27,14 @@ private:
     }
 
     void updateDelay() {
-        pSynth->setDelay(0xff, *delay_status, *delay_time, *delay_level, *delay_feedback);
+        pSynth->setDelay(*selectedSynth, *delay_status, *delay_time, *delay_level, *delay_feedback);
     }
 
 public:
     UIEffectDelay(
         LGFX_Sprite* pSprite, SynthManager* pSynth,
         uint8_t* displayStatus, uint8_t* displayCursor,
-        int16_t* delay_time, int16_t* delay_level, int16_t* delay_feedback, uint8_t* delay_status)
+        int16_t* delay_time, int16_t* delay_level, int16_t* delay_feedback, uint8_t* delay_status, uint8_t* selectedSynth)
     {
         this->pSprite = pSprite;
         this->pSynth = pSynth;
@@ -43,6 +44,7 @@ public:
         this->delay_level = delay_level;
         this->delay_feedback = delay_feedback;
         this->delay_status = delay_status;
+        this->selectedSynth = selectedSynth;
     }
 
     /** @brief 画面更新 */

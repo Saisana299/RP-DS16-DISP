@@ -35,6 +35,7 @@ private:
     FileManager* pFile;
 
     bool* isGlide;
+    uint8_t* selectedSynth;
 
     void cursorText(String text, uint8_t x, uint8_t y, uint8_t ex_width = 0, uint8_t ex_height = 0) {
         pSprite->fillRect(x-1, y-1, pSprite->textWidth(text)+1 + ex_width, pSprite->fontHeight()+1 + ex_height, TFT_WHITE);
@@ -108,7 +109,7 @@ public:
         uint8_t* displayStatus, uint8_t* displayCursor,
         uint8_t* synthMode, uint8_t* selectedPreset, uint8_t* selectedPreset2,
         uint8_t* osc1_voice, uint8_t* osc2_voice, uint8_t* selectedWave, uint8_t* selectedWave2,
-        String* default_presets, String* modes, Preset* user_presets, int16_t* wave_table_buff, bool* isGlide)
+        String* default_presets, String* modes, Preset* user_presets, int16_t* wave_table_buff, bool* isGlide, uint8_t* selectedSynth)
     {
         this->pSprite = pSprite;
         this->pSynth = pSynth;
@@ -127,13 +128,17 @@ public:
         this->user_presets = user_presets;
         this->wave_table_buff = wave_table_buff;
         this->isGlide = isGlide;
+        this->selectedSynth = selectedSynth;
     }
 
     /** @brief 画面更新 */
     void refreshUI() override {
+        // シンセ選択状態リセット
+        *selectedSynth = 0x00;
+
         uint8_t preset_x = pSprite->textWidth(" ");
         uint8_t preset_y = pSprite->height() / 2 - pSprite->fontHeight() / 2;
-        char idstr[5]; 
+        char idstr[5];
         char idstr2[5];
         String fu1 = "F";
         String fu2 = "F";
@@ -291,7 +296,7 @@ public:
             case 0x02:
                 if (longPush) return;
                 *synthMode = (*synthMode == SYNTH_POLY) ? SYNTH_MULTI : (*synthMode - 1);
-                pSynth->setGlideMode(0xff, false);
+                pSynth->setGlideMode(0xff, false); // monophonic, glideは必ず全てのシンセに送信する
                 *isGlide = false;
                 pSynth->setSynthMode(*synthMode);
                 if(*synthMode == SYNTH_MONO){
@@ -325,7 +330,7 @@ public:
             case 0x02:
                 if (longPush) return;
                 *synthMode = (*synthMode == SYNTH_MULTI) ? SYNTH_POLY : (*synthMode + 1);
-                pSynth->setGlideMode(0xff, false);
+                pSynth->setGlideMode(0xff, false); // monophonic, glideは必ず全てのシンセに送信する
                 *isGlide = false;
                 pSynth->setSynthMode(*synthMode);
                 if(*synthMode == SYNTH_MONO){
@@ -352,11 +357,18 @@ public:
         if(longPush) return;
         switch (*displayCursor) {
             case 0x02:
-                pSynth->resetSynth(0xff);
+                pSynth->resetSynth(0xff); // 全てリセット(MIDI PANIC)
                 break;
             case 0x01:
                 *displayCursor = 0x01;
                 *displayStatus = DISPST_PRESET_EDIT;
+                // dual又はmultiモードはシンセ1を選択それ以外はブロードキャスト
+                if(*synthMode == SYNTH_DUAL || *synthMode == SYNTH_MULTI) {
+                    *selectedSynth = 0x01;
+                }
+                else {
+                    *selectedSynth = 0xff;
+                }
                 break;
             case 0x00:
                 *displayCursor = 0x01;

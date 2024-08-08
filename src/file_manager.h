@@ -99,7 +99,7 @@ public:
         FsFile dir = SD.open(path);
         FsFile file = dir.openNextFile();
         for (int32_t i = 0; i < count + offset; i++) {
-            if(i - offset >= 0)    
+            if(i - offset >= 0)
                 files[i - offset] = file;
             file = dir.openNextFile();
         }
@@ -142,7 +142,7 @@ public:
         SD.mkdir("/rp-ds16/midi"); // .mid
         SD.mkdir("/rp-ds16/rlem"); // .rlem
         SD.mkdir("/rp-ds16/wavetable"); // .json
-        
+
         unlockSD();
         return true;
     }

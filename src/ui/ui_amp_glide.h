@@ -11,6 +11,7 @@ private:
     uint8_t* displayStatus;
     uint8_t* displayCursor;
 
+    LGFXRP2040* pDisplay;
     LGFX_Sprite* pSprite;
     SynthManager* pSynth;
 
@@ -26,7 +27,8 @@ private:
     }
 
 public:
-    UIAmpGlide( LGFX_Sprite* pSprite, SynthManager* pSynth, uint8_t* displayStatus, uint8_t* displayCursor, uint8_t* synthMode, bool* isGlide, uint16_t* glide_time) {
+    UIAmpGlide(LGFXRP2040* pDisplay, LGFX_Sprite* pSprite, SynthManager* pSynth, uint8_t* displayStatus, uint8_t* displayCursor, uint8_t* synthMode, bool* isGlide, uint16_t* glide_time) {
+        this->pDisplay = pDisplay;
         this->displayStatus = displayStatus;
         this->displayCursor = displayCursor;
         this->pSprite = pSprite;
@@ -38,6 +40,7 @@ public:
 
     /** @brief 画面更新 */
     void refreshUI() override {
+
         // タイトル
         pSprite->drawString("> Glide Settings", 2, 2);
 
@@ -61,6 +64,11 @@ public:
         else if(*displayCursor == 0x02) {
             cursorText("Time", 2, 26);
         }
+
+        if(popup_message != "") {
+            pDisplay->popupMessage(pSprite, popup_message);
+            popup_message = "";
+        }
     }
 
     /** @brief 上ボタンが押された場合 */
@@ -83,12 +91,15 @@ public:
         if(*displayCursor == 0x01) {
             if(*isGlide) {
                 *isGlide = false;
-                pSynth->setGlideMode(0xff, false);
+                pSynth->setGlideMode(0xff, false); // glideは必ず全てのシンセに送信する
             }
             else {
                 if(*synthMode == SYNTH_MONO) {
                     *isGlide = true;
                     pSynth->setGlideMode(0xff, true, *glide_time);
+                }else{
+                    //todo: refresh後に表示
+                    popup_message = "test\ntest";
                 }
             }
         }
@@ -106,7 +117,7 @@ public:
         if(*displayCursor == 0x01) {
             if(*isGlide) {
                 *isGlide = false;
-                pSynth->setGlideMode(0xff, false);
+                pSynth->setGlideMode(0xff, false); // glideは必ず全てのシンセに送信する
             }
             else {
                 if(*synthMode == SYNTH_MONO) {
