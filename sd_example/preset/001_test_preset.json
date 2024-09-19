@@ -14,7 +14,7 @@
 	"osc1": {
 		"wavetable": {
 			"type": "custom",
-			"path": "test_table.json"
+			"path": "001_test_table.json"
 		},
 		"unison": {
 			"voice": 1,

@@ -15,7 +15,10 @@ private:
     MidiManager* pMidi;
     FileManager* pFile;
 
-    Preset* midi_files;
+    Settings* pSettings;
+
+    // todo: 展示用
+    bool played = false;
 
     void cursorText(String text, uint8_t x, uint8_t y, uint8_t ex_width = 0, uint8_t ex_height = 0) {
         pSprite->fillRect(x-1, y-1, pSprite->textWidth(text)+1 + ex_width, pSprite->fontHeight()+1 + ex_height, TFT_WHITE);
@@ -27,7 +30,7 @@ private:
 public:
     UIMidiPlayer(
         LGFX_Sprite* pSprite, CtrlManager* pCtrl, uint8_t* displayStatus,
-        uint8_t* displayCursor, MidiManager* pMidi, FileManager* pFile, Preset* midi_files)
+        uint8_t* displayCursor, MidiManager* pMidi, FileManager* pFile, Settings* pSettings)
     {
         this->displayStatus = displayStatus;
         this->displayCursor = displayCursor;
@@ -35,7 +38,7 @@ public:
         this->pCtrl = pCtrl;
         this->pMidi = pMidi;
         this->pFile = pFile;
-        this->midi_files = midi_files;
+        this->pSettings = pSettings;
     }
 
     /** @brief 画面更新 */
@@ -45,6 +48,13 @@ public:
 
         // 横線
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
+
+        // todo: 展示用
+        if(played) {
+            pSprite->drawString("now playing", 2, 16);
+        } else {
+            pSprite->drawString("stopped", 2, 16);
+        }
     }
 
     /** @brief 上ボタンが押された場合 */
@@ -70,7 +80,16 @@ public:
     /** @brief 決定ボタンが押された場合 */
     void handleButtonEnter(bool longPush = false) override {
         if(longPush) return;
-        pMidi->playMidi("/rp-ds16/midi/test2.mid");
+        //todo :展示用
+        if(!played) {
+            played = true;
+            pMidi->playMidi("/rp-ds16/midi/demo.mid");
+            pMidi->loopMidi(true);
+        } else {
+            pMidi->loopMidi(false);
+            pMidi->stopMidi();
+            played = false;
+        }
     }
 
     /** @brief キャンセルボタンが押された場合 */

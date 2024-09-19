@@ -17,13 +17,7 @@ private:
     LGFX_Sprite* pSprite;
     SynthManager* pSynth;
 
-    int16_t* osc1_level;
-    int16_t* osc2_level;
-    int16_t* osc_sub_level;
-
-    bool* isFirst;
-
-    uint8_t* mod_status;
+    Settings* pSettings;
 
     void cursorText(String text, uint8_t x, uint8_t y, uint8_t ex_width = 0, uint8_t ex_height = 0) {
         pSprite->fillRect(x-1, y-1, pSprite->textWidth(text)+1 + ex_width, pSprite->fontHeight()+1 + ex_height, TFT_WHITE);
@@ -34,20 +28,15 @@ private:
 
 public:
     UIOsc( LGFX_Sprite* pSprite, SynthManager* pSynth,
-    uint8_t* displayStatus, uint8_t* displayCursor, uint8_t* selectedOsc,
-    int16_t* osc1_level, int16_t* osc2_level, int16_t* osc_sub_level, bool* isFirst, uint8_t* mod_status, uint8_t* selectedSynth)
+    uint8_t* displayStatus, uint8_t* displayCursor, uint8_t* selectedOsc, uint8_t* selectedSynth, Settings* pSettings)
     {
         this->displayStatus = displayStatus;
         this->displayCursor = displayCursor;
         this->pSprite = pSprite;
         this->pSynth = pSynth;
         this->selectedOsc = selectedOsc;
-        this->osc1_level = osc1_level;
-        this->osc2_level = osc2_level;
-        this->osc_sub_level = osc_sub_level;
-        this->isFirst = isFirst;
-        this->mod_status = mod_status;
         this->selectedSynth = selectedSynth;
+        this->pSettings = pSettings;
     }
 
     /** @brief 画面更新 */
@@ -67,15 +56,15 @@ public:
             char lv_chr[5];
             if(*selectedOsc == 0x01) {
                 pSprite->drawString("> OSC1 Settings", 2, 2);
-                sprintf(lv_chr, "%.1f", (float)*osc1_level / 10.0f);
+                sprintf(lv_chr, "%.1f", (float)pSettings->osc1_level / 10.0f);
             }
             else if(*selectedOsc == 0x02) {
                 pSprite->drawString("> OSC2 Settings", 2, 2);
-                sprintf(lv_chr, "%.1f", (float)*osc2_level / 10.0f);
+                sprintf(lv_chr, "%.1f", (float)pSettings->osc2_level / 10.0f);
             }
             else if(*selectedOsc == 0x03) {
                 pSprite->drawString("> Sub Settings", 2, 2);
-                sprintf(lv_chr, "%.1f", (float)*osc_sub_level / 10.0f);
+                sprintf(lv_chr, "%.1f", (float)pSettings->osc_sub_level / 10.0f);
             }
             pSprite->drawString("Wavetable", 2, 16);
             if(*selectedOsc != 0x03) pSprite->drawString("Unison", 2, 26);
@@ -142,16 +131,16 @@ public:
     void handleButtonLeft(bool longPush = false) override {
         if(*displayCursor == 0x09) {
             if(*selectedOsc == 0x01) {
-                if(*osc1_level - 10 >= 0) *osc1_level -= 10;
-                if(!longPush) pSynth->setOscLevel(*selectedSynth, 0x01, *osc1_level);
+                if(pSettings->osc1_level - 10 >= 0) pSettings->osc1_level -= 10;
+                if(!longPush) pSynth->setOscLevel(*selectedSynth, 0x01, pSettings->osc1_level);
             }
             else if(*selectedOsc == 0x02) {
-                if(*osc2_level - 10 >= 0) *osc2_level -= 10;
-                if(!longPush) pSynth->setOscLevel(*selectedSynth, 0x02, *osc2_level);
+                if(pSettings->osc2_level - 10 >= 0) pSettings->osc2_level -= 10;
+                if(!longPush) pSynth->setOscLevel(*selectedSynth, 0x02, pSettings->osc2_level);
             }
             else if(*selectedOsc == 0x03) {
-                if(*osc_sub_level - 10 >= 0) *osc_sub_level -= 10;
-                if(!longPush) pSynth->setOscLevel(*selectedSynth, 0x03, *osc_sub_level);
+                if(pSettings->osc_sub_level - 10 >= 0) pSettings->osc_sub_level -= 10;
+                if(!longPush) pSynth->setOscLevel(*selectedSynth, 0x03, pSettings->osc_sub_level);
             }
         }
     }
@@ -160,16 +149,16 @@ public:
     void handleButtonRight(bool longPush = false) override {
         if(*displayCursor == 0x09) {
             if(*selectedOsc == 0x01) {
-                if(*osc1_level + 10 <= 1000) *osc1_level += 10;
-                if(!longPush) pSynth->setOscLevel(*selectedSynth, 0x01, *osc1_level);
+                if(pSettings->osc1_level + 10 <= 1000) pSettings->osc1_level += 10;
+                if(!longPush) pSynth->setOscLevel(*selectedSynth, 0x01, pSettings->osc1_level);
             }
             else if(*selectedOsc == 0x02) {
-                if(*osc2_level + 10 <= 1000) *osc2_level += 10;
-                if(!longPush) pSynth->setOscLevel(*selectedSynth, 0x02, *osc2_level);
+                if(pSettings->osc2_level + 10 <= 1000) pSettings->osc2_level += 10;
+                if(!longPush) pSynth->setOscLevel(*selectedSynth, 0x02, pSettings->osc2_level);
             }
             else if(*selectedOsc == 0x03) {
-                if(*osc_sub_level + 10 <= 1000) *osc_sub_level += 10;
-                if(!longPush) pSynth->setOscLevel(*selectedSynth, 0x03, *osc_sub_level);
+                if(pSettings->osc_sub_level + 10 <= 1000) pSettings->osc_sub_level += 10;
+                if(!longPush) pSynth->setOscLevel(*selectedSynth, 0x03, pSettings->osc_sub_level);
             }
         }
     }
@@ -193,13 +182,14 @@ public:
             case 0x04:
                 break;
             case 0x05:
-                *mod_status = 0x01;
-                pSynth->setMod(*selectedSynth, 0x01);
+                pSettings->mod_status = 0x01;
+                // todo: 準備中
+                // pSynth->setMod(*selectedSynth, 0x01);
                 break;
             case 0x06:
                 *displayCursor = 0x01;
                 *displayStatus = DISPST_OSC_WAVE;
-                *isFirst = true;
+                pSettings->isFirst = true;
                 break;
             case 0x07:
                 if(*selectedOsc != 0x03) {

@@ -10,31 +10,13 @@ private:
     uint8_t* displayStatus;
     uint8_t* displayCursor;
 
-    // シンセ関連
-    uint8_t* synthMode;
-    uint8_t* selectedPreset;
-    uint8_t* selectedPreset2;
-
-    uint8_t* osc1_voice;
-    uint8_t* osc2_voice;
-    uint8_t* selectedWave;
-    uint8_t* selectedWave2;
-
-    String* default_presets;
-    String* modes;
-
-    // ユーザープリセット
-    Preset* user_presets;
-
-    // プリセット用バッファ
-    int16_t* wave_table_buff;
-
     LGFX_Sprite* pSprite;
 
     SynthManager* pSynth;
     FileManager* pFile;
 
-    bool* isGlide;
+    Settings* pSettings;
+
     uint8_t* selectedSynth;
 
     void cursorText(String text, uint8_t x, uint8_t y, uint8_t ex_width = 0, uint8_t ex_height = 0) {
@@ -44,62 +26,178 @@ private:
         pSprite->setTextColor(TFT_WHITE);
     }
 
+    // todo: synth manager に移動する。
     void setPreset(uint8_t id, uint8_t synth) {
+        // defaultプリセットはosc=0x01固定
         if(id < FACTORY_PRESETS) {
-            // defaultプリセットはosc=0x01固定
             pSynth->setShape(synth, 0x01, id);
-            *selectedWave = id;
-            if(id == 0xff) *osc1_voice = 1;
+            pSettings->selectedWave = id;
+            if(id == 0xff) pSettings->osc1_voice = 1;
         }
 
+        // ユーザープリセット
         else {
             JsonDocument doc;
-            pFile->getJson(&doc, user_presets[id - FACTORY_PRESETS].path);
-            String osc1_type = doc["osc1"]["wavetable"]["type"];
-            String osc2_type = doc["osc2"]["wavetable"]["type"];
-            String sub_type = doc["sub"]["wavetable"]["type"];
+            pFile->getJson(&doc, pSettings->user_presets[id - FACTORY_PRESETS].path);
 
-            // osc1
-            if(osc1_type == "custom") {
-                String wave = doc["osc1"]["wavetable"]["path"];
-                pFile->getJson(&doc, "/rp-ds16/wavetable/" + wave);
-                JsonArray waveTableArray = doc["wave_table"].as<JsonArray>();
-                copyArray(waveTableArray, wave_table_buff, waveTableArray.size());
-                pSynth->setShape(synth, 0x01, id, wave_table_buff);
-                *selectedWave = FACTORY_PRESETS + 1;
+            // 全ての項目を初期値に設定する
+            // todo
+            pSynth->setShape(synth, 0x01, 0xff);
+            pSynth->setShape(synth, 0x02, 0xff);
 
-            } else if(osc1_type == "default") {
-                uint8_t osc1_id = doc["osc1"]["wavetable"]["path"];
-                pSynth->setShape(synth, 0x01, osc1_id);
-                *selectedWave = osc1_id;
-                if(osc1_id == 0xff) *osc1_voice = 1;
-            } else {
-                pSynth->setShape(synth, 0x01, 0xff);
+            // 項目 osc1 が存在するか
+            if(doc.containsKey("osc1")) {
+                JsonObject osc1 = doc["osc1"].as<JsonObject>();
+
+                // 項目 osc1.wavetable が存在するか
+                if(osc1.containsKey("wavetable")) {
+                    JsonObject osc1_wavetable = osc1["wavetable"].as<JsonObject>();
+
+                    // 項目 osc1.wavetable.type が存在するか
+                    if(osc1_wavetable.containsKey("type")) {
+
+                        // String型か
+                        String osc1_type;
+                        if(osc1_wavetable["type"].is<String>()) {
+                            osc1_type = osc1_wavetable["type"].as<String>();
+                        } else {
+                            osc1_type = "disable";
+                        }
+
+                        // ユーザーのwavetableの場合
+                        if(osc1_type == "custom") {
+                            // 項目 osc1.wavetable.path が存在するか
+                            if(osc1_wavetable.containsKey("path")) {
+
+                                // String型か
+                                if(osc1_wavetable["path"].is<String>()) {
+                                    String wave = osc1_wavetable["path"];
+
+                                    // todo: エラーハンドリング
+                                    JsonDocument wt_doc;
+                                    pFile->getJson(&wt_doc, "/rp-ds16/wavetable/" + wave);
+                                    JsonArray waveTableArray = wt_doc["wave_table"].as<JsonArray>();
+                                    copyArray(waveTableArray, pSettings->wave_table_buff, waveTableArray.size());
+
+                                    pSynth->setShape(synth, 0x01, id, pSettings->wave_table_buff);
+                                    pSettings->selectedWave = FACTORY_PRESETS + 1;
+                                }
+                            }
+
+                        // デフォルトのwavetableの場合
+                        } else if(osc1_type == "default") {
+                            // 項目 osc1.wavetable.path が存在するか
+                            if(osc1_wavetable.containsKey("path")) {
+
+                                // uint8_t型か
+                                if(osc1_wavetable["path"].is<uint8_t>()) {
+                                    uint8_t osc1_id = osc1_wavetable["path"];
+
+                                    pSynth->setShape(synth, 0x01, osc1_id);
+                                    pSettings->selectedWave = osc1_id;
+                                    if(osc1_id == 0xff) pSettings->osc1_voice = 1;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 項目 osc1.unison が存在するか
+                if(osc1.containsKey("unison")) {
+                    uint8_t osc1_unison_voice = doc["osc1"]["unison"]["voice"];
+                    uint8_t osc1_unison_detune = doc["osc1"]["unison"]["detune"];
+                    uint8_t osc1_unison_spread = doc["osc1"]["unison"]["spread"];
+                }
+
+                // 項目 osc1.pitch が存在するか
+                if(osc1.containsKey("pitch")) {
+                    int8_t osc1_pitch_octave = doc["osc1"]["pitch"]["octave"];
+                    int8_t osc1_pitch_semitone = doc["osc1"]["pitch"]["semitone"];
+                    int8_t osc1_pitch_cent = doc["osc1"]["pitch"]["cent"];
+                }
+
+                // 項目 osc1.level が存在するか
+                if(osc1.containsKey("level")) {
+                    int16_t osc1_level = doc["osc1"]["level"];
+                }
+
+                // 項目 osc1.pan が存在するか
+                if(osc1.containsKey("pan")) {
+                    // todo
+                }
             }
 
-            // osc2
+            // OSC2 Wavetable
+            String osc2_type = doc["osc2"]["wavetable"]["type"];
             if(osc2_type == "custom") {
                 String wave = doc["osc2"]["wavetable"]["path"];
-                pFile->getJson(&doc, "/rp-ds16/wavetable/" + wave);
-                JsonArray waveTableArray = doc["wave_table"].as<JsonArray>();
-                copyArray(waveTableArray, wave_table_buff, waveTableArray.size());
-                pSynth->setShape(synth, 0x02, id, wave_table_buff);
-                *selectedWave2 = FACTORY_PRESETS + 1;
+
+                JsonDocument wt_doc;
+                pFile->getJson(&wt_doc, "/rp-ds16/wavetable/" + wave);
+                JsonArray waveTableArray = wt_doc["wave_table"].as<JsonArray>();
+                copyArray(waveTableArray, pSettings->wave_table_buff, waveTableArray.size());
+
+                pSynth->setShape(synth, 0x02, id, pSettings->wave_table_buff);
+                pSettings->selectedWave2 = FACTORY_PRESETS + 1;
 
             } else if(osc2_type == "default") {
                 uint8_t osc2_id = doc["osc2"]["wavetable"]["path"];
                 pSynth->setShape(synth, 0x02, osc2_id);
-                *selectedWave2 = osc2_id;
-                if(osc2_id == 0xff) *osc2_voice = 1;
-            } else {
-                pSynth->setShape(synth, 0x02, 0xff);
+                pSettings->selectedWave2 = osc2_id;
+                if(osc2_id == 0xff) pSettings->osc2_voice = 1;
             }
 
-            // sub osc
+            // OSC2 Unison*
+            uint8_t osc2_unison_voice = doc["osc2"]["unison"]["voice"];
+            uint8_t osc2_unison_detune = doc["osc2"]["unison"]["detune"];
+            uint8_t osc2_unison_spread = doc["osc2"]["unison"]["spread"];
 
-            // Amp
+            // OSC2 Pitch*
+            int8_t osc2_pitch_octave = doc["osc2"]["pitch"]["octave"];
+            int8_t osc2_pitch_semitone = doc["osc2"]["pitch"]["semitone"];
+            int8_t osc2_pitch_cent = doc["osc2"]["pitch"]["cent"];
 
+            // OSC2 Level*
+            int16_t osc2_level = doc["osc2"]["level"];
+
+            // OSC2 Pan
             // todo
+
+            // SUBOSC Wavetable
+            String sub_type = doc["sub"]["wavetable"]["type"];
+
+            // SUBOSC Pitch*
+            int8_t sub_pitch_octave = doc["sub"]["pitch"]["octave"];
+            int8_t sub_pitch_semitone = doc["sub"]["pitch"]["semitone"];
+            int8_t sub_pitch_cent = doc["sub"]["pitch"]["cent"];
+
+            // SUBOSC Level*
+            int16_t sub_level = doc["sub"]["level"];
+
+            // SUBOSC Pan
+            // todo
+
+            // Noise
+            // todo
+
+            // Modulation*
+
+            // Amplifier Envelope*
+
+            // Amplifier Glide
+            // todo
+
+            // Amplifier Level
+            // todo
+
+            // Amplifier Pan
+            // todo
+
+            // Filter*
+
+            // Delay*
+
+            // todo: それぞれのプリセット値を反映する
         }
     }
 
@@ -107,32 +205,31 @@ public:
     UIPresets(
         LGFX_Sprite* pSprite, SynthManager* pSynth, FileManager* pFile,
         uint8_t* displayStatus, uint8_t* displayCursor,
-        uint8_t* synthMode, uint8_t* selectedPreset, uint8_t* selectedPreset2,
-        uint8_t* osc1_voice, uint8_t* osc2_voice, uint8_t* selectedWave, uint8_t* selectedWave2,
-        String* default_presets, String* modes, Preset* user_presets, int16_t* wave_table_buff, bool* isGlide, uint8_t* selectedSynth)
+        uint8_t* selectedSynth, Settings* pSettings)
     {
         this->pSprite = pSprite;
         this->pSynth = pSynth;
         this->pFile = pFile;
         this->displayStatus = displayStatus;
         this->displayCursor = displayCursor;
-        this->synthMode = synthMode;
-        this->selectedPreset = selectedPreset;
-        this->selectedPreset2 = selectedPreset2;
-        this->osc1_voice = osc1_voice;
-        this->osc2_voice = osc2_voice;
-        this->selectedWave = selectedWave;
-        this->selectedWave2 = selectedWave2;
-        this->default_presets = default_presets;
-        this->modes = modes;
-        this->user_presets = user_presets;
-        this->wave_table_buff = wave_table_buff;
-        this->isGlide = isGlide;
         this->selectedSynth = selectedSynth;
+        this->pSettings = pSettings;
     }
+
+    // todo: 展示用プリセット読み込み
+    bool loaded = false;
+    // ここまで
 
     /** @brief 画面更新 */
     void refreshUI() override {
+        // todo: 展示用プリセット読み込み
+        if(!loaded) {
+            pSettings->selectedPreset = 5;
+            setPreset(pSettings->selectedPreset, 0xff);
+            loaded = true;
+        }
+        // ここまで
+
         // シンセ選択状態リセット
         *selectedSynth = 0x00;
 
@@ -144,26 +241,26 @@ public:
         String fu2 = "F";
 
         String preset_name1, preset_name2;
-        if(*selectedPreset < FACTORY_PRESETS) {
-            sprintf(idstr, "%03d ", *selectedPreset+1);
-            preset_name1 = default_presets[*selectedPreset];
+        if(pSettings->selectedPreset < FACTORY_PRESETS) {
+            sprintf(idstr, "%03d ", pSettings->selectedPreset+1);
+            preset_name1 = pSettings->default_presets[pSettings->selectedPreset];
         }
         else {
             fu1 = "U";
-            sprintf(idstr, "%03d ", *selectedPreset+1 - FACTORY_PRESETS);
-            preset_name1 = user_presets[*selectedPreset - FACTORY_PRESETS].name;
+            sprintf(idstr, "%03d ", pSettings->selectedPreset+1 - FACTORY_PRESETS);
+            preset_name1 = pSettings->user_presets[pSettings->selectedPreset - FACTORY_PRESETS].name;
         }
-        if(*selectedPreset2 < FACTORY_PRESETS) {
-            sprintf(idstr2, "%03d ", *selectedPreset2+1);
-            preset_name2 = default_presets[*selectedPreset2];
+        if(pSettings->selectedPreset2 < FACTORY_PRESETS) {
+            sprintf(idstr2, "%03d ", pSettings->selectedPreset2+1);
+            preset_name2 = pSettings->default_presets[pSettings->selectedPreset2];
         }
         else {
             fu2 = "U";
-            sprintf(idstr2, "%03d ", *selectedPreset2+1 - FACTORY_PRESETS);
-            preset_name2 = user_presets[*selectedPreset2 - FACTORY_PRESETS].name;
+            sprintf(idstr2, "%03d ", pSettings->selectedPreset2+1 - FACTORY_PRESETS);
+            preset_name2 = pSettings->user_presets[pSettings->selectedPreset2 - FACTORY_PRESETS].name;
         }
 
-        if(*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) {
+        if(pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) {
             pSprite->drawString(fu1 + idstr + preset_name1, preset_x, preset_y - 7);
             pSprite->drawString(fu2 + idstr2 + preset_name2, preset_x, preset_y + 7);
         }
@@ -172,15 +269,15 @@ public:
         }
 
         // MIDIチャンネル
-        if(*synthMode == SYNTH_MULTI || *synthMode == SYNTH_MONO){
+        if(pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_MONO){
             pSprite->drawString("MIDI=1&2", 2, 2);
         }else{
             pSprite->drawString("MIDI=1", 2, 2);
         }
 
         // シンセモード
-        uint8_t synth_x = pSprite->textWidth(modes[*synthMode]);
-        pSprite->drawString(modes[*synthMode], 128 - 2 - synth_x, 2);
+        uint8_t synth_x = pSprite->textWidth(pSettings->modes[pSettings->synthMode]);
+        pSprite->drawString(pSettings->modes[pSettings->synthMode], 128 - 2 - synth_x, 2);
 
         // 横線
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
@@ -197,38 +294,38 @@ public:
             char idstr[6];
 
             String fu = "F";
-            if(*selectedPreset < FACTORY_PRESETS) {
-                sprintf(idstr, "%03d", *selectedPreset+1);
+            if(pSettings->selectedPreset < FACTORY_PRESETS) {
+                sprintf(idstr, "%03d", pSettings->selectedPreset+1);
             }
             else {
                 fu = "U";
-                sprintf(idstr, "%03d", *selectedPreset+1 - FACTORY_PRESETS);
+                sprintf(idstr, "%03d", pSettings->selectedPreset+1 - FACTORY_PRESETS);
             }
 
-            if(*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL)
+            if(pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL)
                 cursorText(" " + fu1 + idstr, 0, y - 7);
             else
                 cursorText(" " + fu1 + idstr, 0, y);
         }
         else if(*displayCursor == 0x02) {
-            uint8_t synth_x = pSprite->textWidth(modes[*synthMode]);
-            cursorText(modes[*synthMode], 128 - 2 - synth_x, 2);
+            uint8_t synth_x = pSprite->textWidth(pSettings->modes[pSettings->synthMode]);
+            cursorText(pSettings->modes[pSettings->synthMode], 128 - 2 - synth_x, 2);
         }
         else if(*displayCursor == 0x03) {
             // blank
         }
         else if(*displayCursor == 0x04) {
-            if(*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) {
+            if(pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) {
                 uint8_t y = pSprite->height() / 2 - pSprite->fontHeight() / 2;
                 char idstr2[5];
 
                 String fu2 = "F";
-                if(*selectedPreset2 < FACTORY_PRESETS) {
-                    sprintf(idstr2, "%03d", *selectedPreset2+1);
+                if(pSettings->selectedPreset2 < FACTORY_PRESETS) {
+                    sprintf(idstr2, "%03d", pSettings->selectedPreset2+1);
                 }
                 else {
                     fu2 = "U";
-                    sprintf(idstr2, "%03d", *selectedPreset2+1 - FACTORY_PRESETS);
+                    sprintf(idstr2, "%03d", pSettings->selectedPreset2+1 - FACTORY_PRESETS);
                 }
 
                 cursorText(" " + fu2 + idstr2, 0, y + 7);
@@ -256,7 +353,7 @@ public:
                 *displayCursor = 0x01;
                 break;
             case 0x05:
-                *displayCursor = (*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) ? 0x04 : 0x01;
+                *displayCursor = (pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) ? 0x04 : 0x01;
                 break;
         }
     }
@@ -270,7 +367,7 @@ public:
                 *displayCursor = 0x01;
                 break;
             case 0x01:
-                *displayCursor = (*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) ? 0x04 : 0x05;
+                *displayCursor = (pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) ? 0x04 : 0x05;
                 break;
             case 0x03:
                 *displayCursor = 0x02;
@@ -288,31 +385,31 @@ public:
     void handleButtonLeft(bool longPush = false) override {
         switch (*displayCursor) {
             case 0x01:
-                *selectedPreset = (*selectedPreset != 0x00) ? (*selectedPreset - 1) : 128 + FACTORY_PRESETS - 1;
+                pSettings->selectedPreset = (pSettings->selectedPreset != 0x00) ? (pSettings->selectedPreset - 1) : 128 + FACTORY_PRESETS - 1;
                 if(!longPush) {
-                    setPreset(*selectedPreset, (*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
+                    setPreset(pSettings->selectedPreset, (pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
                 }
                 break;
             case 0x02:
                 if (longPush) return;
-                *synthMode = (*synthMode == SYNTH_POLY) ? SYNTH_MULTI : (*synthMode - 1);
+                pSettings->synthMode = (pSettings->synthMode == SYNTH_POLY) ? SYNTH_MULTI : (pSettings->synthMode - 1);
                 pSynth->setGlideMode(0xff, false); // monophonic, glideは必ず全てのシンセに送信する
-                *isGlide = false;
-                pSynth->setSynthMode(*synthMode);
-                if(*synthMode == SYNTH_MONO){
+                pSettings->isGlide = false;
+                pSynth->setSynthMode(pSettings->synthMode);
+                if(pSettings->synthMode == SYNTH_MONO){
                     pSynth->setMonophonic(0xff, true);
                 } else {
                     pSynth->setMonophonic(0xff, false);
                 }
-                setPreset(*selectedPreset, (*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
-                if(*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) {
-                    setPreset(*selectedPreset2, 0x02);
+                setPreset(pSettings->selectedPreset, (pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
+                if(pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) {
+                    setPreset(pSettings->selectedPreset2, 0x02);
                 }
                 break;
             case 0x04:
-                *selectedPreset2 = (*selectedPreset2 != 0x00) ? (*selectedPreset2 - 1) : 128 + FACTORY_PRESETS - 1;
+                pSettings->selectedPreset2 = (pSettings->selectedPreset2 != 0x00) ? (pSettings->selectedPreset2 - 1) : 128 + FACTORY_PRESETS - 1;
                 if(!longPush) {
-                    setPreset(*selectedPreset2, 0x02);
+                    setPreset(pSettings->selectedPreset2, 0x02);
                 }
                 break;
         }
@@ -322,31 +419,31 @@ public:
     void handleButtonRight(bool longPush = false) override {
         switch (*displayCursor) {
             case 0x01:
-                *selectedPreset = (*selectedPreset != 128 + FACTORY_PRESETS - 1) ? (*selectedPreset + 1) : 0x00;
+                pSettings->selectedPreset = (pSettings->selectedPreset != 128 + FACTORY_PRESETS - 1) ? (pSettings->selectedPreset + 1) : 0x00;
                 if(!longPush) {
-                    setPreset(*selectedPreset, (*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
+                    setPreset(pSettings->selectedPreset, (pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
                 }
                 break;
             case 0x02:
                 if (longPush) return;
-                *synthMode = (*synthMode == SYNTH_MULTI) ? SYNTH_POLY : (*synthMode + 1);
+                pSettings->synthMode = (pSettings->synthMode == SYNTH_MULTI) ? SYNTH_POLY : (pSettings->synthMode + 1);
                 pSynth->setGlideMode(0xff, false); // monophonic, glideは必ず全てのシンセに送信する
-                *isGlide = false;
-                pSynth->setSynthMode(*synthMode);
-                if(*synthMode == SYNTH_MONO){
+                pSettings->isGlide = false;
+                pSynth->setSynthMode(pSettings->synthMode);
+                if(pSettings->synthMode == SYNTH_MONO){
                     pSynth->setMonophonic(0xff, true);
                 } else {
                     pSynth->setMonophonic(0xff, false);
                 }
-                setPreset(*selectedPreset, (*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
-                if(*synthMode == SYNTH_MULTI || *synthMode == SYNTH_DUAL) {
-                    setPreset(*selectedPreset2, 0x02);
+                setPreset(pSettings->selectedPreset, (pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
+                if(pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) {
+                    setPreset(pSettings->selectedPreset2, 0x02);
                 }
                 break;
             case 0x04:
-                *selectedPreset2 = (*selectedPreset2 != 128 + FACTORY_PRESETS - 1) ? (*selectedPreset2 + 1) : 0x00;
+                pSettings->selectedPreset2 = (pSettings->selectedPreset2 != 128 + FACTORY_PRESETS - 1) ? (pSettings->selectedPreset2 + 1) : 0x00;
                 if(!longPush) {
-                    setPreset(*selectedPreset2, 0x02);
+                    setPreset(pSettings->selectedPreset2, 0x02);
                 }
                 break;
         }
@@ -363,12 +460,18 @@ public:
                 *displayCursor = 0x01;
                 *displayStatus = DISPST_PRESET_EDIT;
                 // dual又はmultiモードはシンセ1を選択それ以外はブロードキャスト
-                if(*synthMode == SYNTH_DUAL || *synthMode == SYNTH_MULTI) {
+                if(pSettings->synthMode == SYNTH_DUAL || pSettings->synthMode == SYNTH_MULTI) {
                     *selectedSynth = 0x01;
                 }
                 else {
                     *selectedSynth = 0xff;
                 }
+                break;
+            case 0x04:
+                *displayCursor = 0x01;
+                *displayStatus = DISPST_PRESET_EDIT;
+                // dual又はmultiモード限定のためシンセ2を選択
+                *selectedSynth = 0x02;
                 break;
             case 0x00:
                 *displayCursor = 0x01;

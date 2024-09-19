@@ -15,9 +15,7 @@ private:
     LGFX_Sprite* pSprite;
     SynthManager* pSynth;
 
-    uint8_t* synthMode;
-    bool* isGlide;
-    uint16_t* glide_time;
+    Settings* pSettings;
 
     void cursorText(String text, uint8_t x, uint8_t y, uint8_t ex_width = 0, uint8_t ex_height = 0) {
         pSprite->fillRect(x-1, y-1, pSprite->textWidth(text)+1 + ex_width, pSprite->fontHeight()+1 + ex_height, TFT_WHITE);
@@ -27,15 +25,13 @@ private:
     }
 
 public:
-    UIAmpGlide(LGFXRP2040* pDisplay, LGFX_Sprite* pSprite, SynthManager* pSynth, uint8_t* displayStatus, uint8_t* displayCursor, uint8_t* synthMode, bool* isGlide, uint16_t* glide_time) {
+    UIAmpGlide(LGFXRP2040* pDisplay, LGFX_Sprite* pSprite, SynthManager* pSynth, uint8_t* displayStatus, uint8_t* displayCursor, Settings* pSettings) {
         this->pDisplay = pDisplay;
         this->displayStatus = displayStatus;
         this->displayCursor = displayCursor;
         this->pSprite = pSprite;
         this->pSynth = pSynth;
-        this->synthMode = synthMode;
-        this->isGlide = isGlide;
-        this->glide_time = glide_time;
+        this->pSettings = pSettings;
     }
 
     /** @brief 画面更新 */
@@ -47,9 +43,9 @@ public:
         // 横線
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
 
-        char gt_chr[5]; sprintf(gt_chr, "%d", *glide_time);
+        char gt_chr[5]; sprintf(gt_chr, "%d", pSettings->glide_time);
 
-        if(*isGlide) {
+        if(pSettings->isGlide) {
             pSprite->drawString("Glide: Enable", 2, 16);
         } else {
             pSprite->drawString("Glide: Disable", 2, 16);
@@ -89,24 +85,23 @@ public:
     void handleButtonLeft(bool longPush = false) override {
         if(longPush) return;
         if(*displayCursor == 0x01) {
-            if(*isGlide) {
-                *isGlide = false;
+            if(pSettings->isGlide) {
+                pSettings->isGlide = false;
                 pSynth->setGlideMode(0xff, false); // glideは必ず全てのシンセに送信する
             }
             else {
-                if(*synthMode == SYNTH_MONO) {
-                    *isGlide = true;
-                    pSynth->setGlideMode(0xff, true, *glide_time);
+                if(pSettings->synthMode == SYNTH_MONO) {
+                    pSettings->isGlide = true;
+                    pSynth->setGlideMode(0xff, true, pSettings->glide_time);
                 }else{
-                    //todo: refresh後に表示
-                    popup_message = "test\ntest";
+                    popup_message = "Only MONO mode";
                 }
             }
         }
         else if(*displayCursor == 0x02) {
-            if(*glide_time - 10 >= 1) *glide_time -= 10;
-            if(*isGlide) {
-                pSynth->setGlideMode(0xff, true, *glide_time);
+            if(pSettings->glide_time - 10 >= 1) pSettings->glide_time -= 10;
+            if(pSettings->isGlide) {
+                pSynth->setGlideMode(0xff, true, pSettings->glide_time);
             }
         }
     }
@@ -115,21 +110,23 @@ public:
     void handleButtonRight(bool longPush = false) override {
         if(longPush) return;
         if(*displayCursor == 0x01) {
-            if(*isGlide) {
-                *isGlide = false;
+            if(pSettings->isGlide) {
+                pSettings->isGlide = false;
                 pSynth->setGlideMode(0xff, false); // glideは必ず全てのシンセに送信する
             }
             else {
-                if(*synthMode == SYNTH_MONO) {
-                    *isGlide = true;
+                if(pSettings->synthMode == SYNTH_MONO) {
+                    pSettings->isGlide = true;
                     pSynth->setGlideMode(0xff, true);
+                }else{
+                    popup_message = "Only MONO mode";
                 }
             }
         }
         else if(*displayCursor == 0x02) {
-            if(*glide_time + 10 <= 3000) *glide_time += 10;
-            if(*isGlide) {
-                pSynth->setGlideMode(0xff, true, *glide_time);
+            if(pSettings->glide_time + 10 <= 3000) pSettings->glide_time += 10;
+            if(pSettings->isGlide) {
+                pSynth->setGlideMode(0xff, true, pSettings->glide_time);
             }
         }
     }

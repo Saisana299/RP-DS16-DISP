@@ -14,10 +14,7 @@ private:
     LGFX_Sprite* pSprite;
     SynthManager* pSynth;
 
-    int16_t* delay_time;
-    int16_t* delay_level;
-    int16_t* delay_feedback;
-    uint8_t* delay_status;
+    Settings* pSettings;
 
     void cursorText(String text, uint8_t x, uint8_t y, uint8_t ex_width = 0, uint8_t ex_height = 0) {
         pSprite->fillRect(x-1, y-1, pSprite->textWidth(text)+1 + ex_width, pSprite->fontHeight()+1 + ex_height, TFT_WHITE);
@@ -27,24 +24,21 @@ private:
     }
 
     void updateDelay() {
-        pSynth->setDelay(*selectedSynth, *delay_status, *delay_time, *delay_level, *delay_feedback);
+        pSynth->setDelay(*selectedSynth, pSettings->delay_status, pSettings->delay_time, pSettings->delay_level, pSettings->delay_feedback);
     }
 
 public:
     UIEffectDelay(
         LGFX_Sprite* pSprite, SynthManager* pSynth,
         uint8_t* displayStatus, uint8_t* displayCursor,
-        int16_t* delay_time, int16_t* delay_level, int16_t* delay_feedback, uint8_t* delay_status, uint8_t* selectedSynth)
+        uint8_t* selectedSynth, Settings* pSettings)
     {
         this->pSprite = pSprite;
         this->pSynth = pSynth;
         this->displayStatus = displayStatus;
         this->displayCursor = displayCursor;
-        this->delay_time = delay_time;
-        this->delay_level = delay_level;
-        this->delay_feedback = delay_feedback;
-        this->delay_status = delay_status;
         this->selectedSynth = selectedSynth;
+        this->pSettings = pSettings;
     }
 
     /** @brief 画面更新 */
@@ -57,11 +51,11 @@ public:
 
         // Delay
         String mode = "Disable";
-        if(*delay_status == 0x01) mode = "Enable";
+        if(pSettings->delay_status == 0x01) mode = "Enable";
 
-        char tm_chr[5]; sprintf(tm_chr, "%d", *delay_time);
-        char lv_chr[6]; sprintf(lv_chr, "%.1f", (float)*delay_level / 10.0f);
-        char fb_chr[6]; sprintf(fb_chr, "%.1f", (float)*delay_feedback / 10.0f);
+        char tm_chr[5]; sprintf(tm_chr, "%d", pSettings->delay_time);
+        char lv_chr[6]; sprintf(lv_chr, "%.1f", (float)pSettings->delay_level / 10.0f);
+        char fb_chr[6]; sprintf(fb_chr, "%.1f", (float)pSettings->delay_feedback / 10.0f);
         pSprite->drawString("Mode    : " + mode, 2, 16);
         pSprite->drawString("Time    : " + String(tm_chr) + "ms", 2, 26);
         pSprite->drawString("Level   : " + String(lv_chr) + "%", 2, 36);
@@ -108,16 +102,16 @@ public:
     void handleButtonLeft(bool longPush = false) override {
         switch (*displayCursor) {
             case 0x01:
-                if(*delay_status == 0x00) *delay_status = 0x01;
-                else *delay_status = 0x00;
+                if(pSettings->delay_status == 0x00) pSettings->delay_status = 0x01;
+                else pSettings->delay_status = 0x00;
                 if(!longPush) {
                     updateDelay();
                 }
                 break;
 
             case 0x02:
-                if(*delay_time - 1 > 10) {
-                    *delay_time -= 1; 
+                if(pSettings->delay_time - 1 > 10) {
+                    pSettings->delay_time -= 1;
                 }
                 if(!longPush) {
                     updateDelay();
@@ -125,8 +119,8 @@ public:
                 break;
 
             case 0x03:
-                if(*delay_level - 1 > 0) {
-                    *delay_level -= 1; 
+                if(pSettings->delay_level - 1 > 0) {
+                    pSettings->delay_level -= 1;
                 }
                 if(!longPush) {
                     updateDelay();
@@ -134,8 +128,8 @@ public:
                 break;
 
             case 0x04:
-                if(*delay_feedback - 1 > 0) {
-                    *delay_feedback -= 1; 
+                if(pSettings->delay_feedback - 1 > 0) {
+                    pSettings->delay_feedback -= 1;
                 }
                 if(!longPush) {
                     updateDelay();
@@ -148,16 +142,16 @@ public:
     void handleButtonRight(bool longPush = false) override {
         switch (*displayCursor) {
             case 0x01:
-                if(*delay_status == 0x01) *delay_status = 0x00;
-                else *delay_status = 0x01;
+                if(pSettings->delay_status == 0x01) pSettings->delay_status = 0x00;
+                else pSettings->delay_status = 0x01;
                 if(!longPush) {
                     updateDelay();
                 }
                 break;
 
             case 0x02:
-                if(*delay_time + 1 <= 300) {
-                    *delay_time += 1; 
+                if(pSettings->delay_time + 1 <= 300) {
+                    pSettings->delay_time += 1;
                 }
                 if(!longPush) {
                     updateDelay();
@@ -165,8 +159,8 @@ public:
                 break;
 
             case 0x03:
-                if(*delay_level + 1 <= 1000) {
-                    *delay_level += 1; 
+                if(pSettings->delay_level + 1 <= 1000) {
+                    pSettings->delay_level += 1;
                 }
                 if(!longPush) {
                     updateDelay();
@@ -174,8 +168,8 @@ public:
                 break;
 
             case 0x04:
-                if(*delay_feedback + 1 <= 900) {
-                    *delay_feedback += 1; 
+                if(pSettings->delay_feedback + 1 <= 900) {
+                    pSettings->delay_feedback += 1;
                 }
                 if(!longPush) {
                     updateDelay();

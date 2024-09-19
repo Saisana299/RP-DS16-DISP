@@ -15,8 +15,7 @@ private:
     LGFX_Sprite* pSprite;
     SynthManager* pSynth;
 
-    int16_t* level;
-    uint8_t* pan;
+    Settings* pSettings;
 
     void cursorText(String text, uint8_t x, uint8_t y, uint8_t ex_width = 0, uint8_t ex_height = 0) {
         pSprite->fillRect(x-1, y-1, pSprite->textWidth(text)+1 + ex_width, pSprite->fontHeight()+1 + ex_height, TFT_WHITE);
@@ -26,14 +25,13 @@ private:
     }
 
 public:
-    UIAmp( LGFX_Sprite* pSprite, SynthManager* pSynth, uint8_t* displayStatus, uint8_t* displayCursor, int16_t* level, uint8_t* pan, uint8_t* selectedSynth) {
+    UIAmp( LGFX_Sprite* pSprite, SynthManager* pSynth, uint8_t* displayStatus, uint8_t* displayCursor, uint8_t* selectedSynth, Settings* pSettings ) {
         this->displayStatus = displayStatus;
         this->displayCursor = displayCursor;
         this->pSprite = pSprite;
         this->pSynth = pSynth;
-        this->level = level;
-        this->pan = pan;
         this->selectedSynth = selectedSynth;
+        this->pSettings = pSettings;
     }
 
     /** @brief 画面更新 */
@@ -44,8 +42,8 @@ public:
         // 横線
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
 
-        char lv_chr[5]; sprintf(lv_chr, "%.1f", (float)*level / 10.0f);
-        char pn_chr[5]; sprintf(pn_chr, "%d", *pan);
+        char lv_chr[5]; sprintf(lv_chr, "%.1f", (float)pSettings->amp_gain / 10.0f);
+        char pn_chr[5]; sprintf(pn_chr, "%d", pSettings->pan);
 
         pSprite->drawString("Level Envelope", 2, 16);
         pSprite->drawString("Glide", 2, 26);
@@ -84,24 +82,24 @@ public:
     /** @brief 左ボタンが押された場合 */
     void handleButtonLeft(bool longPush = false) override {
         if(*displayCursor == 0x03) {
-            if(*level - 10 >= 0) *level -= 10;
-            if(!longPush) pSynth->setAmpLevel(*selectedSynth, *level);
+            if(pSettings->amp_gain - 10 >= 0) pSettings->amp_gain -= 10;
+            if(!longPush) pSynth->setAmpLevel(*selectedSynth, pSettings->amp_gain);
         }
         else if(*displayCursor == 0x04) {
-            if(*pan - 1 >= 0) *pan -= 1;
-            if(!longPush) pSynth->setAmpPan(*selectedSynth, *pan);
+            if(pSettings->pan - 1 >= 0) pSettings->pan -= 1;
+            if(!longPush) pSynth->setAmpPan(*selectedSynth, pSettings->pan);
         }
     }
 
     /** @brief 右ボタンが押された場合 */
     void handleButtonRight(bool longPush = false) override {
         if(*displayCursor == 0x03) {
-            if(*level + 10 <= 1000) *level += 10;
-            if(!longPush) pSynth->setAmpLevel(*selectedSynth, *level);
+            if(pSettings->amp_gain + 10 <= 1000) pSettings->amp_gain += 10;
+            if(!longPush) pSynth->setAmpLevel(*selectedSynth, pSettings->amp_gain);
         }
         else if(*displayCursor == 0x04) {
-            if(*pan + 1 <= 100) *pan += 1;
-            if(!longPush) pSynth->setAmpPan(*selectedSynth, *pan);
+            if(pSettings->pan + 1 <= 100) pSettings->pan += 1;
+            if(!longPush) pSynth->setAmpPan(*selectedSynth, pSettings->pan);
         }
     }
 

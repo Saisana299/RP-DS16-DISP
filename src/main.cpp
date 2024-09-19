@@ -12,9 +12,18 @@
 #include <wokwi.h>
 #include <MD_MIDIFile.h>
 #include <midi_manager.h>
+#include <settings.h>
 
 // todo: osc->mod
 // todo: osc->pan
+
+// todo: シンセごとの設定管理
+// todo: プリセットで保存できる項目の洗い出し
+
+// todo: 臨時のプリセット変更行あり
+// todo: modとmidiplayerを一時的に無効化中
+
+// todo: 現在の設定全てにアクセスできるように、設定値を保存するクラスを用意する。
 
 // todo: プリセット保存機能
 // todo: midiブラウザ
@@ -25,13 +34,15 @@
 LGFXRP2040 display;
 static LGFX_Sprite sprite(&display);
 
+Settings conf;
+
 // 各種制御クラス
 CtrlManager* CtrlManager::instance = nullptr;
 CtrlManager  ctrl(&display, &sprite);
 SynthManager synth(&display, &sprite, &ctrl);
 MidiManager  midi(&ctrl);
 FileManager  file(&display, &midi);
-UIManager    ui(&display, &sprite, &ctrl, &synth, &file, &midi);
+UIManager    ui(&display, &sprite, &ctrl, &synth, &file, &midi, &conf);
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);

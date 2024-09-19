@@ -102,6 +102,7 @@ public:
         sprite->drawLine(118, 54, 10, 54, TFT_BLACK);
         sprite->drawLine(118, 54, 118, 10, TFT_BLACK);
         sprite->setTextColor(TFT_BLACK);
+        sprite->drawString(msg, 15, 15);
         // sprite->drawString(l1, 13, 13);//中心へ
         // sprite->drawString(l2, 13, 23);
         // sprite->drawString(l3, 13, 33);

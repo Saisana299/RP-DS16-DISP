@@ -11,13 +11,9 @@ private:
     uint8_t* displayCursor;
     uint8_t* selectedSynth;
 
-    int16_t* attack;
-    int16_t* decay;
-    int16_t* sustain;
-    int16_t* release;
-
     LGFX_Sprite* pSprite;
     SynthManager* pSynth;
+    Settings* pSettings;
 
     void cursorText(String text, uint8_t x, uint8_t y, uint8_t ex_width = 0, uint8_t ex_height = 0) {
         pSprite->fillRect(x-1, y-1, pSprite->textWidth(text)+1 + ex_width, pSprite->fontHeight()+1 + ex_height, TFT_WHITE);
@@ -29,17 +25,13 @@ private:
 public:
     UIAmpAdsr(
         uint8_t* displayStatus, uint8_t* displayCursor,
-        int16_t* attack, int16_t* decay, int16_t* sustain, int16_t* release,
-        LGFX_Sprite* pSprite, SynthManager* pSynth, uint8_t* selectedSynth)
+        LGFX_Sprite* pSprite, SynthManager* pSynth, uint8_t* selectedSynth, Settings* pSettings)
     {
         this->displayStatus = displayStatus;
         this->displayCursor = displayCursor;
-        this->attack = attack;
-        this->decay = decay;
-        this->sustain = sustain;
-        this->release = release;
         this->pSprite = pSprite;
         this->pSynth = pSynth;
+        this->pSettings = pSettings;
         this->selectedSynth = selectedSynth;
     }
 
@@ -56,10 +48,10 @@ public:
         char d_sym = ':'; if (*displayCursor == 0x06) d_sym = '>';
         char s_sym = ':'; if (*displayCursor == 0x07) s_sym = '>';
         char r_sym = ':'; if (*displayCursor == 0x08) r_sym = '>';
-        char a_chr[6]; sprintf(a_chr, "%d", *attack);
-        char d_chr[6]; sprintf(d_chr, "%d", *decay);
-        char s_chr[7]; sprintf(s_chr, "%.1f", *sustain / 10.0f);
-        char r_chr[6]; sprintf(r_chr, "%d", *release);
+        char a_chr[6]; sprintf(a_chr, "%d", pSettings->attack);
+        char d_chr[6]; sprintf(d_chr, "%d", pSettings->decay);
+        char s_chr[7]; sprintf(s_chr, "%.1f", pSettings->sustain / 10.0f);
+        char r_chr[6]; sprintf(r_chr, "%d", pSettings->release);
         pSprite->drawString("Attack " + String(a_sym) + " " + String(a_chr) + "ms", 2, 16);
         pSprite->drawString("Decay  " + String(d_sym) + " " + String(d_chr) + "ms", 2, 26);
         pSprite->drawString("Sustain" + String(s_sym) + " " + String(s_chr) + "%" , 2, 36);
@@ -86,23 +78,23 @@ public:
         switch (*displayCursor) {
             // 100倍
             case 0x05:
-                if (*attack + 100 <= 32000) {
-                    *attack += 100; pSynth->setAttack(*selectedSynth, *attack);
+                if (pSettings->attack + 100 <= 32000) {
+                    pSettings->attack += 100; pSynth->setAttack(*selectedSynth, pSettings->attack);
                 }
                 break;
             case 0x06:
-                if (*decay + 100 <= 32000) {
-                    *decay += 100; pSynth->setDecay(*selectedSynth, *decay);
+                if (pSettings->decay + 100 <= 32000) {
+                    pSettings->decay += 100; pSynth->setDecay(*selectedSynth, pSettings->decay);
                 }
                 break;
             case 0x07:
-                if (*sustain + 100 <= 1000) {
-                    *sustain += 100; pSynth->setSustain(*selectedSynth, *sustain);
+                if (pSettings->sustain + 100 <= 1000) {
+                    pSettings->sustain += 100; pSynth->setSustain(*selectedSynth, pSettings->sustain);
                 }
                 break;
             case 0x08:
-                if (*release + 100 <= 32000) {
-                    *release += 100; pSynth->setRelease(*selectedSynth, *release);
+                if (pSettings->release + 100 <= 32000) {
+                    pSettings->release += 100; pSynth->setRelease(*selectedSynth, pSettings->release);
                 }
                 break;
             // 通常
@@ -118,23 +110,23 @@ public:
         switch (*displayCursor) {
             // 100倍
             case 0x05:
-                if (*attack - 100 >= 0) {
-                    *attack -= 100; pSynth->setAttack(*selectedSynth, *attack);
+                if (pSettings->attack - 100 >= 0) {
+                    pSettings->attack -= 100; pSynth->setAttack(*selectedSynth, pSettings->attack);
                 }
                 break;
             case 0x06:
-                if (*decay - 100 >= 0) {
-                    *decay -= 100; pSynth->setDecay(*selectedSynth, *decay);
+                if (pSettings->decay - 100 >= 0) {
+                    pSettings->decay -= 100; pSynth->setDecay(*selectedSynth, pSettings->decay);
                 }
                 break;
             case 0x07:
-                if (*sustain - 100 >= 0) {
-                    *sustain -= 100; pSynth->setSustain(*selectedSynth, *sustain);
+                if (pSettings->sustain - 100 >= 0) {
+                    pSettings->sustain -= 100; pSynth->setSustain(*selectedSynth, pSettings->sustain);
                 }
                 break;
             case 0x08:
-                if (*release - 100 >= 0) {
-                    *release -= 100; pSynth->setRelease(*selectedSynth, *release);
+                if (pSettings->release - 100 >= 0) {
+                    pSettings->release -= 100; pSynth->setRelease(*selectedSynth, pSettings->release);
                 }
                 break;
             // 通常
@@ -149,61 +141,61 @@ public:
         switch (*displayCursor) {
             // 通常
             case 0x01:
-                if (*attack - 1 >= 0) {
-                    *attack -= 1;
+                if (pSettings->attack - 1 >= 0) {
+                    pSettings->attack -= 1;
                 }
-                if(!longPush) pSynth->setAttack(*selectedSynth, *attack);
+                if(!longPush) pSynth->setAttack(*selectedSynth, pSettings->attack);
 
                 break;
             case 0x02:
-                if (*decay - 1 >= 0) {
-                    *decay -= 1;
+                if (pSettings->decay - 1 >= 0) {
+                    pSettings->decay -= 1;
                 }
-                if(!longPush) pSynth->setDecay(*selectedSynth, *decay);
+                if(!longPush) pSynth->setDecay(*selectedSynth, pSettings->decay);
 
                 break;
             case 0x03:
-                if (*sustain - 1 >= 0) {
-                    *sustain -= 1;
+                if (pSettings->sustain - 1 >= 0) {
+                    pSettings->sustain -= 1;
                 }
-                if(!longPush) pSynth->setSustain(*selectedSynth, *sustain);
+                if(!longPush) pSynth->setSustain(*selectedSynth, pSettings->sustain);
 
                 break;
             case 0x04:
-                if (*release - 1 >= 0) {
-                    *release -= 1;
+                if (pSettings->release - 1 >= 0) {
+                    pSettings->release -= 1;
                 }
-                if(!longPush) pSynth->setRelease(*selectedSynth, *release);
+                if(!longPush) pSynth->setRelease(*selectedSynth, pSettings->release);
 
                 break;
 
             // 10倍
             case 0x05:
-                if (*attack - 10 >= 0) {
-                    *attack -= 10;
+                if (pSettings->attack - 10 >= 0) {
+                    pSettings->attack -= 10;
                 }
-                if(!longPush) pSynth->setAttack(*selectedSynth, *attack);
+                if(!longPush) pSynth->setAttack(*selectedSynth, pSettings->attack);
 
                 break;
             case 0x06:
-                if (*decay - 10 >= 0) {
-                    *decay -= 10;
+                if (pSettings->decay - 10 >= 0) {
+                    pSettings->decay -= 10;
                 }
-                if(!longPush) pSynth->setDecay(*selectedSynth, *decay);
+                if(!longPush) pSynth->setDecay(*selectedSynth, pSettings->decay);
 
                 break;
             case 0x07:
-                if (*sustain - 10 >= 0) {
-                    *sustain -= 10;
+                if (pSettings->sustain - 10 >= 0) {
+                    pSettings->sustain -= 10;
                 }
-                if(!longPush) pSynth->setSustain(*selectedSynth, *sustain);
+                if(!longPush) pSynth->setSustain(*selectedSynth, pSettings->sustain);
 
                 break;
             case 0x08:
-                if (*release - 10 >= 0) {
-                    *release -= 10;
+                if (pSettings->release - 10 >= 0) {
+                    pSettings->release -= 10;
                 }
-                if(!longPush) pSynth->setRelease(*selectedSynth, *release);
+                if(!longPush) pSynth->setRelease(*selectedSynth, pSettings->release);
 
                 break;
         }
@@ -214,61 +206,61 @@ public:
         switch (*displayCursor) {
             // 通常
             case 0x01:
-                if (*attack + 1 <= 32000) {
-                    *attack += 1;
+                if (pSettings->attack + 1 <= 32000) {
+                    pSettings->attack += 1;
                 }
-                if(!longPush) pSynth->setAttack(*selectedSynth, *attack);
+                if(!longPush) pSynth->setAttack(*selectedSynth, pSettings->attack);
 
                 break;
             case 0x02:
-                if (*decay + 1 <= 32000) {
-                    *decay += 1;
+                if (pSettings->decay + 1 <= 32000) {
+                    pSettings->decay += 1;
                 }
-                if(!longPush) pSynth->setDecay(*selectedSynth, *decay);
+                if(!longPush) pSynth->setDecay(*selectedSynth, pSettings->decay);
 
                 break;
             case 0x03:
-                if (*sustain + 1 <= 1000) {
-                    *sustain += 1;
+                if (pSettings->sustain + 1 <= 1000) {
+                    pSettings->sustain += 1;
                 }
-                if(!longPush) pSynth->setSustain(*selectedSynth, *sustain);
+                if(!longPush) pSynth->setSustain(*selectedSynth, pSettings->sustain);
 
                 break;
             case 0x04:
-                if (*release + 1 <= 32000) {
-                    *release += 1;
+                if (pSettings->release + 1 <= 32000) {
+                    pSettings->release += 1;
                 }
-                if(!longPush) pSynth->setRelease(*selectedSynth, *release);
+                if(!longPush) pSynth->setRelease(*selectedSynth, pSettings->release);
 
                 break;
 
             // 10倍
             case 0x05:
-                if (*attack + 10 <= 32000) {
-                    *attack += 10;
+                if (pSettings->attack + 10 <= 32000) {
+                    pSettings->attack += 10;
                 }
-                if(!longPush) pSynth->setAttack(*selectedSynth, *attack);
+                if(!longPush) pSynth->setAttack(*selectedSynth, pSettings->attack);
 
                 break;
             case 0x06:
-                if (*decay + 10 <= 32000) {
-                    *decay += 10;
+                if (pSettings->decay + 10 <= 32000) {
+                    pSettings->decay += 10;
                 }
-                if(!longPush) pSynth->setDecay(*selectedSynth, *decay);
+                if(!longPush) pSynth->setDecay(*selectedSynth, pSettings->decay);
 
                 break;
             case 0x07:
-                if (*sustain + 10 <= 1000) {
-                    *sustain += 10;
+                if (pSettings->sustain + 10 <= 1000) {
+                    pSettings->sustain += 10;
                 }
-                if(!longPush) pSynth->setSustain(*selectedSynth, *sustain);
+                if(!longPush) pSynth->setSustain(*selectedSynth, pSettings->sustain);
 
                 break;
             case 0x08:
-                if (*release + 10 <= 32000) {
-                    *release += 10;
+                if (pSettings->release + 10 <= 32000) {
+                    pSettings->release += 10;
                 }
-                if(!longPush) pSynth->setRelease(*selectedSynth, *release);
+                if(!longPush) pSynth->setRelease(*selectedSynth, pSettings->release);
 
                 break;
         }

@@ -2,6 +2,7 @@
 #include <synth_manager.h>
 #include <file_manager.h>
 #include <midi_manager.h>
+#include <settings.h>
 #include <ArduinoJson.h>
 #include <graphics.h>
 #include <wokwi.h>
@@ -19,7 +20,6 @@
 #include <ui_midi_player.h>
 #include <ui_amp.h>
 #include <ui_filter.h>
-#include <ui_osc_wave.h>
 #include <ui_osc_pitch.h>
 #include <ui_effect.h>
 #include <ui_effect_delay.h>
@@ -56,11 +56,6 @@
     #define PUSH_LONG   5
 #endif
 
-#define FILTER_NONE 0x00
-#define FILTER_LPF  0x01
-#define FILTER_HPF  0x02
-#define FILTER_LHF  0x03
-
 class UIManager {
 private:
     TwoWire& ctrl = Wire1;
@@ -75,84 +70,6 @@ private:
     uint8_t displayStatus = DISPST_IDLE;
     uint8_t displayCursor = 0x00;
     uint8_t selectedSynth = 0x00;
-
-    // シンセ関連 DUAL又はMULTIの場合、プリセット編集は0x01のみに限る
-    uint8_t synthMode = SYNTH_POLY;
-    uint8_t selectedPreset = 0x00;
-    uint8_t selectedPreset2 = 0x00;
-
-    uint8_t selectedWave = 0x00;
-    uint8_t selectedWave2 = 0xff;
-    uint8_t selectedWaveSub = 0xff;
-
-    int16_t amp_gain = 1000;
-    uint8_t pan = 50;
-
-    int16_t attack = 1;
-    int16_t decay = 1000;
-    int16_t sustain = 1000; // max=1000
-    int16_t release = 10;
-
-    uint8_t osc1_voice = 1;
-    uint8_t osc2_voice = 1;
-    uint8_t osc1_detune = 20;
-    uint8_t osc2_detune = 20;
-    uint8_t osc1_spread = 0;
-    uint8_t osc2_spread = 0;
-    int8_t osc1_oct = 0;
-    int8_t osc2_oct = 0;
-    int8_t osc1_semi = 0;
-    int8_t osc2_semi = 0;
-    int8_t osc1_cent = 0;
-    int8_t osc2_cent = 0;
-    int16_t osc1_level = 1000;
-    int16_t osc2_level = 1000;
-
-    int8_t osc_sub_oct = 0;
-    int8_t osc_sub_semi = 0;
-    int8_t osc_sub_cent = 0;
-    int16_t osc_sub_level = 1000;
-
-    uint8_t filter_mode = FILTER_NONE;
-    float lpf_freq = 1000.0f;
-    float lpf_q = 1.0f/sqrt(2.0f);
-    float hpf_freq = 500.0f;
-    float hpf_q = 1.0f/sqrt(2.0f);
-
-    int16_t delay_time = 250;
-    int16_t delay_level = 300;
-    int16_t delay_feedback = 500;
-    uint8_t delay_status = 0x00;
-
-    uint8_t mod_status = 0x00;
-
-    bool isGlide = false;
-    uint16_t glide_time = 15;
-
-    bool isFirst = false;
-
-    String default_presets[FACTORY_PRESETS] = {
-        "Basic Sine", "Basic Triangle", "Basic Saw", "Basic Square"
-    };
-    String default_wavetables[FACTORY_WAVETABLES] = {
-        "sine", "triangle", "saw", "square"
-    };
-    String modes[4] = {
-        "POLY MODE", "MONO MODE", "DUAL MODE", "MULTI MODE"
-    };
-
-    // ユーザーファイル
-    Preset user_presets[USER_PRESET_LIMIT];
-    bool isUserPresetLoaded = false;
-    Preset user_wavetables[USER_PRESET_LIMIT];
-    bool isUserWaveLoaded = false;
-    Preset midi_files[USER_PRESET_LIMIT];
-    bool isMidiLoaded = false;
-    Preset rlem_files[USER_PRESET_LIMIT];
-    bool isRlemLoaded = false;
-
-    // プリセット用バッファ
-    int16_t wave_table_buff[2048];
 
     // UI用保存変数
     int fileman_index = 0;
@@ -178,94 +95,117 @@ private:
     FileManager* pFile;
     MidiManager* pMidi;
 
+    Settings* pSettings;
+
     IUIHandler* ui_handler[18];
 
 public:
-    UIManager(LGFXRP2040* addr1, LGFX_Sprite* addr2, CtrlManager* addr3, SynthManager* addr4, FileManager* addr5, MidiManager* addr6) {
+    UIManager(LGFXRP2040* addr1, LGFX_Sprite* addr2, CtrlManager* addr3, SynthManager* addr4, FileManager* addr5, MidiManager* addr6, Settings* addr7) {
         pDisplay = addr1;
         pSprite = addr2;
         pCtrl = addr3;
         pSynth = addr4;
         pFile = addr5;
         pMidi = addr6;
+        pSettings = addr7;
 
         ui_handler[DISPST_DEBUG] = new UIDebug(pSprite);
 
         ui_handler[DISPST_FILEMAN] = new UIFileMan(
-            pDisplay, pSprite, pFile, &displayStatus, &displayCursor,
-            &fileman_index, &currentDir, files, file_buff,
+            pDisplay, pSprite, pFile,
+            &displayStatus, &displayCursor,
+            &fileman_index, &currentDir,
+            files, file_buff,
             &isEndOfFile, &fileManRefresh
         );
 
-        ui_handler[DISPST_MENU] = new UIMenu(pSprite, &displayStatus, &displayCursor);
+        ui_handler[DISPST_MENU] = new UIMenu(
+            pSprite,
+            &displayStatus, &displayCursor
+        );
 
         ui_handler[DISPST_AMP_ADSR] = new UIAmpAdsr(
             &displayStatus, &displayCursor,
-            &attack, &decay, &sustain, &release,
-            pSprite, pSynth, &selectedSynth
+            pSprite, pSynth, &selectedSynth,
+            pSettings
         );
 
         ui_handler[DISPST_OSC_UNISON] = new UIOscUnison(
             pSprite, pSynth, &displayStatus, &displayCursor,
-            &osc1_voice, &osc2_voice, &osc1_detune, &osc2_detune,
-            &selectedOsc, &selectedWave, &selectedWave2, &selectedWaveSub ,&osc1_spread, &osc2_spread, &selectedSynth
+            &selectedOsc, &selectedSynth, pSettings
         );
 
         ui_handler[DISPST_OSC_PITCH] = new UIOscPitch(
-            pSprite, pSynth, &displayStatus, &displayCursor, &selectedOsc,
-            &osc1_oct, &osc2_oct, &osc1_semi, &osc2_semi, &osc1_cent, &osc2_cent,
-            &osc_sub_oct, &osc_sub_semi, &osc_sub_cent, &selectedSynth
+            pSprite, pSynth,
+            &displayStatus, &displayCursor,
+            &selectedOsc,
+            &selectedSynth, pSettings
         );
 
         ui_handler[DISPST_OSC_WAVE] = new UIOscWave(
-            pSprite, pSynth, &displayStatus, &displayCursor,
-            &osc1_voice, &osc2_voice,
-            &selectedOsc, &selectedWave, &selectedWave2, &selectedWaveSub, default_wavetables, user_wavetables, &isFirst, &selectedSynth
+            pSprite, pSynth,
+            &displayStatus, &displayCursor,
+            &selectedOsc, &selectedSynth, pSettings
         );
 
         ui_handler[DISPST_OSC] = new UIOsc(
-            pSprite, pSynth, &displayStatus, &displayCursor, &selectedOsc, &osc1_level, &osc2_level, &osc_sub_level, &isFirst, &mod_status, &selectedSynth
+            pSprite, pSynth,
+            &displayStatus, &displayCursor,
+            &selectedOsc,
+            &selectedSynth,
+            pSettings
         );
 
         ui_handler[DISPST_PRESET_EDIT] = new UIPresetEdit(
-            pSprite, &displayStatus, &displayCursor
+            pSprite,
+            &displayStatus, &displayCursor
         );
 
         ui_handler[DISPST_EFFECT] = new UIEffect(
-            pSprite, &displayStatus, &displayCursor
+            pSprite,
+            &displayStatus, &displayCursor
         );
 
         ui_handler[DISPST_DELAY] = new UIEffectDelay(
-            pSprite, pSynth, &displayStatus, &displayCursor,
-            &delay_time, &delay_level, &delay_feedback, &delay_status, &selectedSynth
+            pSprite, pSynth,
+            &displayStatus, &displayCursor,
+            &selectedSynth, pSettings
         );
 
         ui_handler[DISPST_AMP] = new UIAmp(
-            pSprite, pSynth, &displayStatus, &displayCursor, &amp_gain, &pan, &selectedSynth
+            pSprite, pSynth,
+            &displayStatus, &displayCursor,
+            &selectedSynth, pSettings
         );
 
         ui_handler[DISPST_AMP_GLIDE] = new UIAmpGlide(
-            pDisplay, pSprite, pSynth, &displayStatus, &displayCursor, &synthMode, &isGlide, &glide_time
+            pDisplay, pSprite, pSynth,
+            &displayStatus, &displayCursor,
+            pSettings
         );
 
         ui_handler[DISPST_PRESETS] = new UIPresets(
-            pSprite, pSynth, pFile, &displayStatus, &displayCursor,
-            &synthMode, &selectedPreset, &selectedPreset2,
-            &osc1_voice, &osc2_voice, &selectedWave, &selectedWave2,
-            default_presets, modes, user_presets, wave_table_buff, &isGlide, &selectedSynth
+            pSprite, pSynth, pFile,
+            &displayStatus, &displayCursor,
+            &selectedSynth, pSettings
         );
 
         ui_handler[DISPST_TITLE] = new UITitle(
-            pSprite, pCtrl, &displayStatus, &long_count_to_enter_debug_mode
+            pSprite, pCtrl,
+            &displayStatus,
+            &long_count_to_enter_debug_mode
         );
 
         ui_handler[DISPST_MIDI_PLAYER] = new UIMidiPlayer(
-            pSprite, pCtrl, &displayStatus, &displayCursor, pMidi, pFile, midi_files
+            pSprite, pCtrl,
+            &displayStatus, &displayCursor,
+            pMidi, pFile, pSettings
         );
 
         ui_handler[DISPST_FILTER] = new UIFilter(
-            pSprite, pSynth, &displayStatus, &displayCursor,
-            &filter_mode, &lpf_freq, &lpf_q, &hpf_freq, &hpf_q, &selectedSynth
+            pSprite, pSynth,
+            &displayStatus, &displayCursor,
+            &selectedSynth, pSettings
         );
     }
 
@@ -308,7 +248,7 @@ public:
             msg = "PRESET LOADING...";
             dir_path = "/rp-ds16/preset";
             key = "preset_name";
-            preset = user_presets;
+            preset = pSettings->user_presets;
             ext = ".json";
             size = USER_PRESET_LIMIT;
         }
@@ -317,7 +257,7 @@ public:
             msg = "WAVETABLE LOADING...";
             dir_path = "/rp-ds16/wavetable";
             key = "wave_name";
-            preset = user_wavetables;
+            preset = pSettings->user_wavetables;
             ext = ".json";
             size = USER_PRESET_LIMIT;
         }
@@ -326,7 +266,7 @@ public:
             msg = "MIDI LOADING...";
             dir_path = "/rp-ds16/midi";
             key = "";
-            preset = midi_files;
+            preset = pSettings->midi_files;
             ext = ".mid";
             size = USER_PRESET_LIMIT;
         }
@@ -356,7 +296,7 @@ public:
                     else if(strcmp(file_name, "---") == 0) isContinue = true;
                     else if(strlen(file_name) > 30) isContinue = true;
                     else if(file_buff[j].isDirectory()) isContinue = true;
-                    
+
                     if(isContinue) {
                         file_buff[j].close();
                         continue;
@@ -401,26 +341,26 @@ public:
     void goTitle() {
         displayStatus = DISPST_TITLE;
     }
-    
+
     /** @brief UIを更新 */
     void refreshUI() {
         if(displayStatus == DISPST_TITLE) return;
         else if(displayStatus == DISPST_PRESETS) {
-            if(!isUserPresetLoaded) {
+            if(!pSettings->isUserPresetLoaded) {
                 loadUserFiles("preset");
-                isUserPresetLoaded = true;
+                pSettings->isUserPresetLoaded = true;
             }
         }
         else if(displayStatus == DISPST_OSC_WAVE) {
-            if(!isUserWaveLoaded) {
+            if(!pSettings->isUserWaveLoaded) {
                 loadUserFiles("wavetable");
-                isUserWaveLoaded = true;
+                pSettings->isUserWaveLoaded = true;
             }
         }
         else if(displayStatus == DISPST_MIDI_PLAYER) {
-            if(!isMidiLoaded) {
+            if(!pSettings->isMidiLoaded) {
                 loadUserFiles("midi");
-                isMidiLoaded = true;
+                pSettings->isMidiLoaded = true;
             }
         }
 
@@ -446,7 +386,7 @@ public:
         ui_handler[displayStatus]->handleButtonUp(longPush);
         refreshUI();
     }
-                       
+
     /** @brief 下が押された場合の処理 */
     void handleButtonDown(bool longPush = false) {
         ui_handler[displayStatus]->handleButtonDown(longPush);
@@ -470,7 +410,7 @@ public:
         ui_handler[displayStatus]->handleButtonEnter(longPush);
         refreshUI();
     }
-                        
+
     /** @brief キャンセルが押された場合の処理 */
     void handleButtonCancel(bool longPush = false) {
         ui_handler[displayStatus]->handleButtonCancel(longPush);
@@ -494,7 +434,7 @@ public:
                 case BTN_LONG_LEFT: handleButtonLeft(true); break;
                 case BTN_LONG_RIGHT: handleButtonRight(true); break;
                 case BTN_LONG_ENTER: handleButtonEnter(true); break;
-                case BTN_LONG_CANCEL: handleButtonCancel(true); break;     
+                case BTN_LONG_CANCEL: handleButtonCancel(true); break;
             }
             // ボタン処理が完了したので、フラグをリセット
             buttonPressed = false;
@@ -508,7 +448,7 @@ public:
                 if (pushCount[i] <= PUSH_SHORT) pushCount[i]++;
                 else {
                     if (longPushed[i] && pushCount[i] >= PUSH_LONG) {
-                        pressedButton = 
+                        pressedButton =
                             (i == 0) ? BTN_LONG_UP :
                             (i == 2) ? BTN_LONG_DOWN :
                             (i == 1) ? BTN_LONG_LEFT :
@@ -531,7 +471,7 @@ public:
             // ボタンを離しているときの判定
             else {
                 if(longPushed[i] || (pushCount[i] >= PUSH_SHORT && intervalCount >= PUSH_LONG)) {
-                    pressedButton = 
+                    pressedButton =
                         (i == 0) ? BTN_UP :
                         (i == 2) ? BTN_DOWN :
                         (i == 1) ? BTN_LEFT :
