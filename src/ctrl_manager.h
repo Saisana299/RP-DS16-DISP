@@ -77,9 +77,22 @@ public:
             *received = RES_OK;
             return;
         #endif
-        
+
         digitalWrite(LED_BUILTIN, HIGH);
         toggleCtrl(true);
+
+        //通信許可待ち
+        int request_i = 0;
+        while (!ctrl.available()) {
+            ctrl.requestFrom(CTRL_I2C_ADDR, 1);
+            delay(10);
+            ++request_i;
+            if(request_i > 200) {
+                *received = RES_ERROR;
+                return;
+            }
+        }
+
         ctrl.beginTransmission(CTRL_I2C_ADDR);
         ctrl.write(data, size);
         ctrl.endTransmission();

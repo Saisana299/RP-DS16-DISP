@@ -50,7 +50,9 @@ public:
             pSprite->drawString("OSC2", 2, 26);
             pSprite->drawString("Sub", 2, 36);
             pSprite->drawString("Noise", 2, 46);
-            pSprite->drawString("Mod: ---", 2, 56);
+            String mod_status = "Disable";
+            if(pSettings->mod_status == 0x01) mod_status = "Ring";
+            pSprite->drawString("Mod: " + mod_status, 2, 56);
         }
         else {
             char lv_chr[5];
@@ -182,9 +184,12 @@ public:
             case 0x04:
                 break;
             case 0x05:
-                pSettings->mod_status = 0x01;
-                // todo: 準備中
-                // pSynth->setMod(*selectedSynth, 0x01);
+                if(pSettings->mod_status == 0x00) {
+                    pSettings->mod_status = 0x01;
+                }else{
+                    pSettings->mod_status = 0x00;
+                }
+                pSynth->setMod(*selectedSynth, pSettings->mod_status);
                 break;
             case 0x06:
                 *displayCursor = 0x01;

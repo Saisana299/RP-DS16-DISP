@@ -14,16 +14,12 @@
 #include <midi_manager.h>
 #include <settings.h>
 
-// todo: osc->mod
 // todo: osc->pan
 
 // todo: シンセごとの設定管理
 // todo: プリセットで保存できる項目の洗い出し
 
 // todo: 臨時のプリセット変更行あり
-// todo: modとmidiplayerを一時的に無効化中
-
-// todo: 現在の設定全てにアクセスできるように、設定値を保存するクラスを用意する。
 
 // todo: プリセット保存機能
 // todo: midiブラウザ
