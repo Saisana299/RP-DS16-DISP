@@ -18,7 +18,6 @@ private:
     Settings* pSettings;
 
     // todo: 展示用
-    bool played = false;
     uint8_t demo_n = 0x00;
 
     void cursorText(String text, uint8_t x, uint8_t y, uint8_t ex_width = 0, uint8_t ex_height = 0) {
@@ -51,12 +50,14 @@ public:
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
 
         // todo: 展示用
-        if(played) {
+        if(pSettings->midi_playing) {
             pSprite->drawString("now playing", 2, 16);
             char num[2]; sprintf(num, "%d", demo_n + 1);
             pSprite->drawString("> demo" + String(num) + ".mid", 2, 26);
+            pSprite->drawString("Press Enter to Stop", 2, 46);
         } else {
             pSprite->drawString("stopped", 2, 16);
+            pSprite->drawString("Press Enter to Play", 2, 46);
         }
     }
 
@@ -74,12 +75,13 @@ public:
     void handleButtonLeft(bool longPush = false) override {
         if(longPush) return;
         //todo: 展示用
-        if(demo_n > 0x00) {
-            --demo_n;
-            pMidi->loopMidi(false);
-            pMidi->stopMidi();
-            char num[2]; sprintf(num, "%d", demo_n+1);
-            pMidi->playMidi("/rp-ds16/midi/demo" + String(num) + ".mid");
+        if(pSettings->midi_playing) {
+            if(demo_n > 0x00) {
+                --demo_n;
+                pMidi->stopMidi();
+                char num[2]; sprintf(num, "%d", demo_n+1);
+                pMidi->playMidi("/rp-ds16/midi/demo" + String(num) + ".mid");
+            }
         }
     }
 
@@ -87,12 +89,13 @@ public:
     void handleButtonRight(bool longPush = false) override {
         if(longPush) return;
         //todo: 展示用
-        if(demo_n < 0x04) {
-            ++demo_n;
-            pMidi->loopMidi(false);
-            pMidi->stopMidi();
-            char num[2]; sprintf(num, "%d", demo_n+1);
-            pMidi->playMidi("/rp-ds16/midi/demo" + String(num) + ".mid");
+        if(pSettings->midi_playing) {
+            if(demo_n < 0x01) {
+                ++demo_n;
+                pMidi->stopMidi();
+                char num[2]; sprintf(num, "%d", demo_n+1);
+                pMidi->playMidi("/rp-ds16/midi/demo" + String(num) + ".mid");
+            }
         }
     }
 
@@ -100,14 +103,15 @@ public:
     void handleButtonEnter(bool longPush = false) override {
         if(longPush) return;
         //todo :展示用
-        if(!played) {
-            played = true;
-            pMidi->playMidi("/rp-ds16/midi/demo.mid");
+        if(!pSettings->midi_playing) {
+            pSettings->midi_playing = true;
+            char num[2]; sprintf(num, "%d", demo_n+1);
+            pMidi->playMidi("/rp-ds16/midi/demo" + String(num) + ".mid");
             pMidi->loopMidi(true);
         } else {
             pMidi->loopMidi(false);
             pMidi->stopMidi();
-            played = false;
+            pSettings->midi_playing = false;
         }
     }
 

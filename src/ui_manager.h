@@ -236,8 +236,11 @@ public:
     }
 
     void loadUserFiles(String type) {
-        // MIDI Player が動いている場合終了させる
-        if(pMidi->getStatus() != MIDI_IDLE) pMidi->stopMidi();
+        // MIDI Player が動いている場合停止させる
+        if(pMidi->getStatus() != MIDI_IDLE) {
+            pMidi->stopMidi();
+            pSettings->midi_playing = false;
+        }
 
         // ユーザーファイルを読み込む
         uint8_t size;

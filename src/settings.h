@@ -90,6 +90,59 @@ public:
 
     // プリセット用バッファ
     int16_t wave_table_buff[2048];
+
+    bool midi_playing = false;
+
+    void resetParam() {
+
+        selectedWave = 0xff;
+        selectedWave2 = 0xff;
+        selectedWaveSub = 0xff;
+
+        amp_gain = 1000;
+        pan = 50;
+
+        attack = 1;
+        decay = 1000;
+        sustain = 1000;
+        release = 10;
+
+        osc1_voice = 1;
+        osc2_voice = 1;
+        osc1_detune = 20;
+        osc2_detune = 20;
+        osc1_spread = 0;
+        osc2_spread = 0;
+        osc1_oct = 0;
+        osc2_oct = 0;
+        osc1_semi = 0;
+        osc2_semi = 0;
+        osc1_cent = 0;
+        osc2_cent = 0;
+        osc1_level = 1000;
+        osc2_level = 1000;
+
+        osc_sub_oct = 0;
+        osc_sub_semi = 0;
+        osc_sub_cent = 0;
+        osc_sub_level = 1000;
+
+        filter_mode = 0x00;
+        lpf_freq = 1000.0f;
+        lpf_q = 1.0f/sqrt(2.0f);
+        hpf_freq = 500.0f;
+        hpf_q = 1.0f/sqrt(2.0f);
+
+        delay_time = 250;
+        delay_level = 300;
+        delay_feedback = 500;
+        delay_status = 0x00;
+
+        mod_status = 0x00;
+
+        isGlide = false;
+        glide_time = 15;
+    }
 };
 
 #endif // SETTINGS_H

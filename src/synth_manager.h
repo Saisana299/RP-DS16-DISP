@@ -1,4 +1,7 @@
 #include <ctrl_manager.h>
+#include <settings.h>
+#include <file_manager.h>
+#include <midi_manager.h>
 
 #ifndef SYNTHMANAGER_H
 #define SYNTHMANAGER_H
@@ -8,6 +11,9 @@ private:
     LGFXRP2040* pDisplay;
     LGFX_Sprite* pSprite;
     CtrlManager* pCtrl;
+    Settings* pSettings;
+    FileManager* pFile;
+    MidiManager* pMidi;
     uint8_t cshape_buff[4096];
 
     // カスタムシェイプを設定
@@ -65,10 +71,13 @@ private:
     }
 
 public:
-    SynthManager(LGFXRP2040* addr1, LGFX_Sprite* addr2, CtrlManager* addr3) {
+    SynthManager(LGFXRP2040* addr1, LGFX_Sprite* addr2, CtrlManager* addr3, Settings* addr4, FileManager* addr5, MidiManager* addr6) {
         pDisplay = addr1;
         pSprite = addr2;
         pCtrl = addr3;
+        pSettings = addr4;
+        pFile = addr5;
+        pMidi = addr6;
     }
 
     /**
@@ -100,11 +109,20 @@ public:
 
     /**
      * @brief シンセのノートをリセットします (MIDI Panic)
-     * 
      * @param synth 対象のシンセ
      */
     void resetSynth(uint8_t synth) {
         uint8_t data[] = {CTRL_RESET_SYNTH, synth};
+        uint8_t received[1];
+        pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
+    }
+
+    /**
+     * @brief シンセのパラメータをリセットします
+     * @param synth 対象のシンセ
+     */
+    void resetSynthParam(uint8_t synth) {
+        uint8_t data[] = {SYNTH_RESET_PARAM, synth};
         uint8_t received[1];
         pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
     }
@@ -379,6 +397,699 @@ public:
             };
             uint8_t received[1];
             pCtrl->ctrlTransmission(data, sizeof(data), received, 1);
+        }
+    }
+
+    /**
+     * @brief Set the Preset object
+     * 
+     * @param id 
+     * @param synth 
+     */
+    void setPreset(uint8_t id, uint8_t synth) {
+
+        // MIDI Player が動いている場合停止させる
+        if(pMidi->getStatus() != MIDI_IDLE) {
+            pMidi->stopMidi();
+            pSettings->midi_playing = false;
+        }
+
+        // 全ての項目を初期値に設定する
+        resetSynthParam(synth);
+        pSettings->resetParam();
+
+        // defaultプリセットはosc=0x01固定
+        if(id < FACTORY_PRESETS) {
+            setShape(synth, 0x01, id);
+            pSettings->selectedWave = id;
+            if(id == 0xff) pSettings->osc1_voice = 1;
+        }
+
+        // ユーザープリセット
+        else {
+            JsonDocument doc;
+            bool result = pFile->getJson(&doc, pSettings->user_presets[id - FACTORY_PRESETS].path);
+            if(!result) return;
+
+            //   ___           _ _ _       _               _
+            //  / _ \ ___  ___(_) | | __ _| |_ ___  _ __  / |
+            // | | | / __|/ __| | | |/ _` | __/ _ \| '__| | |
+            // | |_| \__ \ (__| | | | (_| | || (_) | |    | |
+            //  \___/|___/\___|_|_|_|\__,_|\__\___/|_|    |_|
+
+            // 項目 osc1 が存在するか
+            if(doc.containsKey("osc1")) {
+                JsonObject osc1 = doc["osc1"].as<JsonObject>();
+
+                // 項目 osc1.wavetable が存在するか
+                if(osc1.containsKey("wavetable")) {
+                    JsonObject osc1_wavetable = osc1["wavetable"].as<JsonObject>();
+
+                    // 項目 osc1.wavetable.type が存在するか
+                    if(osc1_wavetable.containsKey("type")) {
+
+                        // String型か
+                        String osc1_type;
+                        if(osc1_wavetable["type"].is<String>()) {
+                            osc1_type = osc1_wavetable["type"].as<String>();
+                        }
+
+                        // ユーザーのwavetableの場合
+                        if(osc1_type == "custom") {
+                            // 項目 osc1.wavetable.path が存在するか
+                            if(osc1_wavetable.containsKey("path")) {
+
+                                // String型か
+                                if(osc1_wavetable["path"].is<String>()) {
+                                    String wave = osc1_wavetable["path"];
+
+                                    JsonDocument wt_doc;
+                                    bool result = pFile->getJson(&wt_doc, "/rp-ds16/wavetable/" + wave);
+                                    if(!result) return;
+
+                                    // 項目 wave_table が存在するか
+                                    if(!wt_doc.containsKey("wave_table")) return;
+                                    JsonArray waveTableArray = wt_doc["wave_table"].as<JsonArray>();
+                                    copyArray(waveTableArray, pSettings->wave_table_buff, waveTableArray.size());
+
+                                    setShape(synth, 0x01, id, pSettings->wave_table_buff);
+                                    pSettings->selectedWave = FACTORY_PRESETS + 1;
+                                }
+                            }
+
+                        // デフォルトのwavetableの場合
+                        } else if(osc1_type == "default") {
+                            // 項目 osc1.wavetable.path が存在するか
+                            if(osc1_wavetable.containsKey("path")) {
+
+                                // uint8_t型か
+                                if(osc1_wavetable["path"].is<uint8_t>()) {
+                                    uint8_t osc1_id = osc1_wavetable["path"];
+
+                                    setShape(synth, 0x01, osc1_id);
+                                    pSettings->selectedWave = osc1_id;
+                                    if(osc1_id == 0xff) pSettings->osc1_voice = 1;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 項目 osc1.unison が存在するか
+                if(osc1.containsKey("unison")) {
+                    JsonObject osc1_unison = osc1["unison"].as<JsonObject>();
+                    // 項目 osc1.unison.voice が存在するか
+                    if(osc1_unison.containsKey("voice")) {
+                        // uint8_t型か
+                        if(osc1_unison["voice"].is<uint8_t>()) {
+                            uint8_t osc1_unison_voice = osc1_unison["voice"];
+                            setVoice(synth, osc1_unison_voice, 0x01);
+                            pSettings->osc1_voice = osc1_unison_voice;
+                        }
+                    }
+                    // 項目 osc1.unison.detune が存在するか
+                    if(osc1_unison.containsKey("detune")) {
+                        // uint8_t型か
+                        if(osc1_unison["detune"].is<uint8_t>()) {
+                            uint8_t osc1_unison_detune = osc1_unison["detune"];
+                            setDetune(synth, osc1_unison_detune, 0x01);
+                            pSettings->osc1_detune = osc1_unison_detune;
+                        }
+                    }
+                    // 項目 osc1.unison.spread が存在するか
+                    if(osc1_unison.containsKey("spread")) {
+                        // uint8_t型か
+                        if(osc1_unison["spread"].is<uint8_t>()) {
+                            uint8_t osc1_unison_spread = osc1_unison["spread"];
+                            setSpread(synth, osc1_unison_spread, 0x01);
+                            pSettings->osc1_spread = osc1_unison_spread;
+                        }
+                    }
+                }
+
+                // 項目 osc1.pitch が存在するか
+                if(osc1.containsKey("pitch")) {
+                    JsonObject osc1_pitch = osc1["pitch"].as<JsonObject>();
+                    // 項目 osc1.pitch.octave が存在するか
+                    if(osc1_pitch.containsKey("octave")) {
+                        // int8_t型か
+                        if(osc1_pitch["octave"].is<int8_t>()) {
+                            int8_t osc1_pitch_octave = osc1_pitch["octave"];
+                            setOscOctave(synth, 0x01, osc1_pitch_octave);
+                            pSettings->osc1_oct = osc1_pitch_octave;
+                        }
+                    }
+                    // 項目 osc1.pitch.semitone が存在するか
+                    if(osc1_pitch.containsKey("semitone")) {
+                        // int8_t型か
+                        if(osc1_pitch["semitone"].is<int8_t>()) {
+                            int8_t osc1_pitch_semitone = osc1_pitch["semitone"];
+                            setOscSemitone(synth, 0x01, osc1_pitch_semitone);
+                            pSettings->osc1_semi = osc1_pitch_semitone;
+                        }
+                    }
+                    // 項目 osc1.pitch.cent が存在するか
+                    if(osc1_pitch.containsKey("cent")) {
+                        // int8_t型か
+                        if(osc1_pitch["cent"].is<int8_t>()) {
+                            int8_t osc1_pitch_cent = osc1_pitch["cent"];
+                            setOscCent(synth, 0x01, osc1_pitch_cent);
+                            pSettings->osc1_cent = osc1_pitch_cent;
+                        }
+                    }
+                }
+
+                // 項目 osc1.level が存在するか
+                if(osc1.containsKey("level")) {
+                    // int16_t型か
+                    if(osc1["level"].is<int16_t>()) {
+                        int16_t osc1_level = osc1["level"];
+                        setOscLevel(synth, 0x01, osc1_level);
+                        pSettings->osc1_level = osc1_level;
+                    }
+                }
+
+                // 項目 osc1.pan が存在するか
+                if(osc1.containsKey("pan")) {
+                    // todo
+                }
+            }
+
+            //   ___           _ _ _       _               ____
+            //  / _ \ ___  ___(_) | | __ _| |_ ___  _ __  |___ \
+            // | | | / __|/ __| | | |/ _` | __/ _ \| '__|   __) |
+            // | |_| \__ \ (__| | | | (_| | || (_) | |     / __/
+            //  \___/|___/\___|_|_|_|\__,_|\__\___/|_|    |_____|
+
+            // 項目 osc2 が存在するか
+            if(doc.containsKey("osc2")) {
+                JsonObject osc2 = doc["osc2"].as<JsonObject>();
+
+                // 項目 osc2.wavetable が存在するか
+                if(osc2.containsKey("wavetable")) {
+                    JsonObject osc2_wavetable = osc2["wavetable"].as<JsonObject>();
+
+                    // 項目 osc2.wavetable.type が存在するか
+                    if(osc2_wavetable.containsKey("type")) {
+
+                        // String型か
+                        String osc2_type;
+                        if(osc2_wavetable["type"].is<String>()) {
+                            osc2_type = osc2_wavetable["type"].as<String>();
+                        }
+
+                        // ユーザーのwavetableの場合
+                        if(osc2_type == "custom") {
+                            // 項目 osc2.wavetable.path が存在するか
+                            if(osc2_wavetable.containsKey("path")) {
+
+                                // String型か
+                                if(osc2_wavetable["path"].is<String>()) {
+                                    String wave = osc2_wavetable["path"];
+
+                                    JsonDocument wt_doc;
+                                    bool result = pFile->getJson(&wt_doc, "/rp-ds16/wavetable/" + wave);
+                                    if(!result) return;
+
+                                    // 項目 wave_table が存在するか
+                                    if(!wt_doc.containsKey("wave_table")) return;
+                                    JsonArray waveTableArray = wt_doc["wave_table"].as<JsonArray>();
+                                    copyArray(waveTableArray, pSettings->wave_table_buff, waveTableArray.size());
+
+                                    setShape(synth, 0x02, id, pSettings->wave_table_buff);
+                                    pSettings->selectedWave2 = FACTORY_PRESETS + 1;
+                                }
+                            }
+
+                        // デフォルトのwavetableの場合
+                        } else if(osc2_type == "default") {
+                            // 項目 osc2.wavetable.path が存在するか
+                            if(osc2_wavetable.containsKey("path")) {
+
+                                // uint8_t型か
+                                if(osc2_wavetable["path"].is<uint8_t>()) {
+                                    uint8_t osc2_id = osc2_wavetable["path"];
+
+                                    setShape(synth, 0x02, osc2_id);
+                                    pSettings->selectedWave2 = osc2_id;
+                                    if(osc2_id == 0xff) pSettings->osc2_voice = 1;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 項目 osc2.unison が存在するか
+                if(osc2.containsKey("unison")) {
+                    JsonObject osc2_unison = osc2["unison"].as<JsonObject>();
+                    // 項目 osc2.unison.voice が存在するか
+                    if(osc2_unison.containsKey("voice")) {
+                        // uint8_t型か
+                        if(osc2_unison["voice"].is<uint8_t>()) {
+                            uint8_t osc2_unison_voice = osc2_unison["voice"];
+                            setVoice(synth, osc2_unison_voice, 0x02);
+                            pSettings->osc2_voice = osc2_unison_voice;
+                        }
+                    }
+                    // 項目 osc2.unison.detune が存在するか
+                    if(osc2_unison.containsKey("detune")) {
+                        // uint8_t型か
+                        if(osc2_unison["detune"].is<uint8_t>()) {
+                            uint8_t osc2_unison_detune = osc2_unison["detune"];
+                            setDetune(synth, osc2_unison_detune, 0x02);
+                            pSettings->osc2_detune = osc2_unison_detune;
+                        }
+                    }
+                    // 項目 osc2.unison.spread が存在するか
+                    if(osc2_unison.containsKey("spread")) {
+                        // uint8_t型か
+                        if(osc2_unison["spread"].is<uint8_t>()) {
+                            uint8_t osc2_unison_spread = osc2_unison["spread"];
+                            setSpread(synth, osc2_unison_spread, 0x02);
+                            pSettings->osc2_spread = osc2_unison_spread;
+                        }
+                    }
+                }
+
+                // 項目 osc2.pitch が存在するか
+                if(osc2.containsKey("pitch")) {
+                    JsonObject osc2_pitch = osc2["pitch"].as<JsonObject>();
+                    // 項目 osc2.pitch.octave が存在するか
+                    if(osc2_pitch.containsKey("octave")) {
+                        // int8_t型か
+                        if(osc2_pitch["octave"].is<int8_t>()) {
+                            int8_t osc2_pitch_octave = osc2_pitch["octave"];
+                            setOscOctave(synth, 0x02, osc2_pitch_octave);
+                            pSettings->osc2_oct = osc2_pitch_octave;
+                        }
+                    }
+                    // 項目 osc2.pitch.semitone が存在するか
+                    if(osc2_pitch.containsKey("semitone")) {
+                        // int8_t型か
+                        if(osc2_pitch["semitone"].is<int8_t>()) {
+                            int8_t osc2_pitch_semitone = osc2_pitch["semitone"];
+                            setOscSemitone(synth, 0x02, osc2_pitch_semitone);
+                            pSettings->osc2_semi = osc2_pitch_semitone;
+                        }
+                    }
+                    // 項目 osc2.pitch.cent が存在するか
+                    if(osc2_pitch.containsKey("cent")) {
+                        // int8_t型か
+                        if(osc2_pitch["cent"].is<int8_t>()) {
+                            int8_t osc2_pitch_cent = osc2_pitch["cent"];
+                             setOscCent(synth, 0x02, osc2_pitch_cent);
+                             pSettings->osc2_cent = osc2_pitch_cent;
+                        }
+                    }
+                }
+
+                // 項目 osc2.level が存在するか
+                if(osc2.containsKey("level")){
+                    // int16_t型か
+                    if(osc2["level"].is<int16_t>()) {
+                        int16_t osc2_level = osc2["level"];
+                        setOscLevel(synth, 0x02, osc2_level);
+                        pSettings->osc2_level = osc2_level;
+                    }
+                }
+
+                // 項目 osc2.pan が存在するか
+                if(osc2.containsKey("pan")) {
+                    // todo
+                }
+            }
+
+            //  ____        _        ___
+            // / ___| _   _| |__    / _ \ ___  ___
+            // \___ \| | | | '_ \  | | | / __|/ __|
+            //  ___) | |_| | |_) | | |_| \__ \ (__
+            // |____/ \__,_|_.__/   \___/|___/\___|
+
+            // 項目 sub が存在するか
+            if(doc.containsKey("sub")) {
+                JsonObject sub = doc["sub"].as<JsonObject>();
+
+                // 項目 sub.wavetable が存在するか
+                if(sub.containsKey("wavetable")) {
+                    JsonObject sub_wavetable = sub["wavetable"].as<JsonObject>();
+
+                    // 項目 sub.wabetable.type が存在するか
+                    if(sub_wavetable.containsKey("type")) {
+
+                        // String型か
+                        String sub_type;
+                        if(sub_wavetable["type"].is<String>()) {
+                            sub_type = sub_wavetable["type"].as<String>();
+                        }
+
+                        // ユーザーのwavetableの場合
+                        if(sub_type == "custom") {
+                            // 項目 sub.wavetable.path が存在するか
+                            if(sub_wavetable.containsKey("path")) {
+
+                                // String型か
+                                if(sub_wavetable["path"].is<String>()) {
+                                    String wave = sub_wavetable["path"];
+
+                                    JsonDocument wt_doc;
+                                    bool result = pFile->getJson(&wt_doc, "/rp-ds16/wavetable/" + wave);
+                                    if(!result) return;
+
+                                    // 項目 wave_table が存在するか
+                                    if(!wt_doc.containsKey("wave_table")) return;
+                                    JsonArray waveTableArray = wt_doc["wave_table"].as<JsonArray>();
+                                    copyArray(waveTableArray, pSettings->wave_table_buff, waveTableArray.size());
+
+                                    setShape(synth, 0x03, id, pSettings->wave_table_buff);
+                                    pSettings->selectedWaveSub = FACTORY_PRESETS + 1;
+                                }
+                            }
+
+                        // デフォルトのwavetableの場合
+                        } else if(sub_type == "default") {
+                            // 項目 sub.wavetable.path が存在するか
+                            if(sub_wavetable.containsKey("path")) {
+
+                                // uint8_t型か
+                                if(sub_wavetable["path"].is<uint8_t>()) {
+                                    uint8_t oscsub_id = sub_wavetable["path"];
+                                    setShape(synth, 0x03, oscsub_id);
+                                    pSettings->selectedWaveSub = oscsub_id;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 項目 sub.pitch が存在するか
+                if(sub.containsKey("pitch")) {
+                    JsonObject sub_pitch = sub["pitch"].as<JsonObject>();
+                    // 項目 sub.pitch.octave が存在するか
+                    if(sub_pitch.containsKey("octave")) {
+                        // int8_t型か
+                        if(sub_pitch["octave"].is<int8_t>()) {
+                            int8_t sub_pitch_octave = sub_pitch["octave"];
+                            setOscOctave(synth, 0x03, sub_pitch_octave);
+                            pSettings->osc_sub_oct = sub_pitch_octave;
+                        }
+                    }
+                    // 項目 sub.pitch.semitone が存在するか
+                    if(sub_pitch.containsKey("semitone")) {
+                        // int8_t型か
+                        if(sub_pitch["semitone"].is<int8_t>()) {
+                            int8_t sub_pitch_semitone = sub_pitch["semitone"];
+                            setOscSemitone(synth, 0x03, sub_pitch_semitone);
+                            pSettings->osc_sub_semi = sub_pitch_semitone;
+                        }
+                    }
+                    // 項目 sub.pitch.cent が存在するか
+                    if(sub_pitch.containsKey("cent")) {
+                        // int8_t型か
+                        if(sub_pitch["cent"].is<int8_t>()) {
+                            int8_t sub_pitch_cent = sub_pitch["cent"];
+                            setOscCent(synth, 0x03, sub_pitch_cent);
+                            pSettings->osc_sub_cent = sub_pitch_cent;
+                        }
+                    }
+                }
+
+                // 項目 sub.level が存在するか
+                if(sub.containsKey("level")) {
+                    // int16_t型か
+                    if(sub["level"].is<int16_t>()) {
+                        int16_t sub_level = sub["level"];
+                        setOscLevel(synth, 0x03, sub_level);
+                        pSettings->osc_sub_level = sub_level;
+                    }
+                }
+
+                // 項目 sub.pan が存在するか
+                if(sub.containsKey("pan")) {
+                    // todo
+                }
+            }
+
+            //  _   _       _
+            // | \ | | ___ (_)___  ___
+            // |  \| |/ _ \| / __|/ _ \
+            // | |\  | (_) | \__ \  __/
+            // |_| \_|\___/|_|___/\___|
+
+            // 項目 noise が存在するか
+            if(doc.containsKey("noise")) {
+                // todo
+            }
+
+            //  __  __           _       _       _   _
+            // |  \/  | ___   __| |_   _| | __ _| |_(_) ___  _ __
+            // | |\/| |/ _ \ / _` | | | | |/ _` | __| |/ _ \| '_ \
+            // | |  | | (_) | (_| | |_| | | (_| | |_| | (_) | | | |
+            // |_|  |_|\___/ \__,_|\__,_|_|\__,_|\__|_|\___/|_| |_|
+
+            // 項目 modulation が存在するか
+            if(doc.containsKey("modulation")) {
+                // String型か
+                if(doc["modulation"].is<String>()) {
+                    String modulation = doc["modulation"];
+                    if(modulation == "enable") {
+                        setMod(synth, 0x01);
+                        pSettings->mod_status = 0x01;
+                    }
+                }
+            }
+
+            //     _                    _ _  __ _
+            //    / \   _ __ ___  _ __ | (_)/ _(_) ___ _ __
+            //   / _ \ | '_ ` _ \| '_ \| | | |_| |/ _ \ '__|
+            //  / ___ \| | | | | | |_) | | |  _| |  __/ |
+            // /_/   \_\_| |_| |_| .__/|_|_|_| |_|\___|_|
+            //                   |_|
+
+            // 項目 amp が存在するか
+            if(doc.containsKey("amp")) {
+                JsonObject amp = doc["amp"].as<JsonObject>();
+
+                // 項目 envelope が存在するか
+                if(amp.containsKey("envelope")) {
+                    JsonObject envelope = amp["envelope"].as<JsonObject>();
+
+                    // 項目 attack が存在するか
+                    if(envelope.containsKey("attack")) {
+                        // int16_t型か
+                        if(envelope["attack"].is<int16_t>()) {
+                            int16_t attack = envelope["attack"];
+                            setAttack(synth, attack);
+                            pSettings->attack = attack;
+                        }
+                    }
+
+                    // 項目 decay が存在するか
+                    if(envelope.containsKey("decay")) {
+                        // int16_t型か
+                        if(envelope["decay"].is<int16_t>()) {
+                            int16_t decay = envelope["decay"];
+                            setDecay(synth, decay);
+                            pSettings->decay = decay;
+                        }
+                    }
+
+                    // 項目 sustain が存在するか
+                    if(envelope.containsKey("sustain")) {
+                        // int16_t型か
+                        if(envelope["sustain"].is<int16_t>()) {
+                            int16_t sustain = envelope["sustain"];
+                            setSustain(synth, sustain);
+                            pSettings->sustain = sustain;
+                        }
+                    }
+
+                    // 項目 release が存在するか
+                    if(envelope.containsKey("release")) {
+                        // int16_t型か
+                        if(envelope["release"].is<int16_t>()) {
+                            int16_t release = envelope["release"];
+                            setRelease(synth, release);
+                            pSettings->release = release;
+                        }
+                    }
+                }
+
+                // 項目 glide が存在するか
+                if(amp.containsKey("glide")) {
+                    // todo
+                }
+
+                // 項目 level が存在するか
+                if(amp.containsKey("level")) {
+                    // todo
+                }
+
+                // 項目 pan が存在するか
+                if(amp.containsKey("pan")) {
+                    // todo
+                }
+            }
+
+            //  _____ _ _ _
+            // |  ___(_) | |_ ___ _ __
+            // | |_  | | | __/ _ \ '__|
+            // |  _| | | | ||  __/ |
+            // |_|   |_|_|\__\___|_|
+
+            // 項目 filter が存在するか
+            if(doc.containsKey("filter")) {
+                JsonObject filter = doc["filter"].as<JsonObject>();
+
+                // 項目 mode が存在するか
+                if(filter.containsKey("mode")) {
+                    // String型か
+                    if(filter["mode"].is<String>()) {
+                        String filter_mode = filter["mode"];
+                        if(filter_mode == "lpf") {
+                            // 項目 lpf が存在するか
+                            if(filter.containsKey("lpf")) {
+                                JsonObject lpf = filter["lpf"].as<JsonObject>();
+                                // 項目 freq と q が存在するか
+                                if(lpf.containsKey("freq") && lpf.containsKey("q")) {
+                                    // float型
+                                    if(lpf["freq"].is<float>() && lpf["q"].is<float>()) {
+                                        float lpf_freq = lpf["freq"];
+                                        float lpf_q = lpf["q"];
+                                        setLowPassFilter(synth, 0x01, lpf_freq, lpf_q);
+                                        pSettings->filter_mode = 0x01;
+                                        pSettings->lpf_freq = lpf_freq;
+                                        pSettings->lpf_q = lpf_q;
+                                    }
+                                }
+                                else {
+                                    setLowPassFilter(synth, 0x01);
+                                    pSettings->filter_mode = 0x01;
+                                    pSettings->lpf_freq = 1000.0f;
+                                    pSettings->lpf_q = 1.0f/sqrt(2.0f);
+                                }
+                            }
+                            else {
+                                setLowPassFilter(synth, 0x01);
+                                pSettings->filter_mode = 0x01;
+                                pSettings->lpf_freq = 1000.0f;
+                                pSettings->lpf_q = 1.0f/sqrt(2.0f);
+                            }
+                        }
+                        else if(filter_mode == "hpf") {
+                            // 項目 hpf が存在するか
+                            if(filter.containsKey("hpf")) {
+                                JsonObject hpf = filter["hpf"].as<JsonObject>();
+                                // 項目 freq と q が存在するか
+                                if(hpf.containsKey("freq") && hpf.containsKey("q")) {
+                                    // float型
+                                    if(hpf["freq"].is<float>() && hpf["q"].is<float>()) {
+                                        float hpf_freq = hpf["freq"];
+                                        float hpf_q = hpf["q"];
+                                        setHighPassFilter(synth, 0x01, hpf_freq, hpf_q);
+                                        pSettings->filter_mode = 0x02;
+                                        pSettings->hpf_freq = hpf_freq;
+                                        pSettings->hpf_q = hpf_q;
+                                    }
+                                }
+                                else {
+                                    setHighPassFilter(synth, 0x01);
+                                    pSettings->filter_mode = 0x02;
+                                    pSettings->hpf_freq = 1000.0f;
+                                    pSettings->hpf_q = 1.0f/sqrt(2.0f);
+                                }
+                            }
+                            else {
+                                setHighPassFilter(synth, 0x01);
+                                pSettings->filter_mode = 0x02;
+                                pSettings->hpf_freq = 1000.0f;
+                                pSettings->hpf_q = 1.0f/sqrt(2.0f);
+                            }
+                        }
+                        else if(filter_mode == "lpf+hpf") {
+                            // 項目 lpf と hpf が存在するか
+                            if(filter.containsKey("lpf") && filter.containsKey("hpf")) {
+                                JsonObject lpf = filter["lpf"].as<JsonObject>();
+                                JsonObject hpf = filter["hpf"].as<JsonObject>();
+                                // 項目 freq と q が存在するか
+                                if(lpf.containsKey("freq") && lpf.containsKey("q") && hpf.containsKey("freq") && hpf.containsKey("q")) {
+                                    // float型
+                                    if(lpf["freq"].is<float>() && lpf["q"].is<float>() && hpf["freq"].is<float>() && hpf["q"].is<float>()) {
+                                        float lpf_freq = lpf["freq"];
+                                        float lpf_q = lpf["q"];
+                                        float hpf_freq = hpf["freq"];
+                                        float hpf_q = hpf["q"];
+                                        setLowPassFilter(synth, 0x01, lpf_freq, lpf_q);
+                                        setHighPassFilter(synth, 0x01, hpf_freq, hpf_q);
+                                        pSettings->filter_mode = 0x03;
+                                        pSettings->lpf_freq = lpf_freq;
+                                        pSettings->lpf_q = lpf_q;
+                                        pSettings->hpf_freq = hpf_freq;
+                                        pSettings->hpf_q = hpf_q;
+                                    }
+                                }
+                                else {
+                                    setLowPassFilter(synth, 0x01);
+                                    setHighPassFilter(synth, 0x01);
+                                    pSettings->filter_mode = 0x03;
+                                    pSettings->lpf_freq = 1000.0f;
+                                    pSettings->lpf_q = 1.0f/sqrt(2.0f);
+                                    pSettings->hpf_freq = 1000.0f;
+                                    pSettings->hpf_q = 1.0f/sqrt(2.0f);
+                                }
+                            }
+                            else {
+                                setLowPassFilter(synth, 0x01);
+                                setHighPassFilter(synth, 0x01);
+                                pSettings->filter_mode = 0x03;
+                                pSettings->lpf_freq = 1000.0f;
+                                pSettings->lpf_q = 1.0f/sqrt(2.0f);
+                                pSettings->hpf_freq = 1000.0f;
+                                pSettings->hpf_q = 1.0f/sqrt(2.0f);
+                            }
+                        }
+                    }
+                }
+            }
+
+            //  ____       _
+            // |  _ \  ___| | __ _ _   _
+            // | | | |/ _ \ |/ _` | | | |
+            // | |_| |  __/ | (_| | |_| |
+            // |____/ \___|_|\__,_|\__, |
+            //                     |___/
+
+            // 項目 delay が存在するか
+            if(doc.containsKey("delay")) {
+                JsonObject delay = doc["delay"].as<JsonObject>();
+
+                // 項目 mode が存在するか
+                if(delay.containsKey("mode")) {
+                    String delay_mode = delay["mode"];
+                    if(delay_mode == "enable") {
+                        // 項目 time level feedback が存在するか
+                        if(delay.containsKey("time") && delay.containsKey("level") && delay.containsKey("feedback")) {
+                            // int16_t型
+                            if(delay["time"].is<int16_t>() && delay["level"].is<int16_t>() && delay["feedback"].is<int16_t>()) {
+                                int16_t delay_time = delay["time"];
+                                int16_t delay_level = delay["level"];
+                                int16_t delay_feedback = delay["feedback"];
+                                setDelay(synth, 0x01, delay_time, delay_level, delay_feedback);
+                                pSettings->delay_status = 0x01;
+                                pSettings->delay_time = delay_time;
+                                pSettings->delay_level = delay_level;
+                                pSettings->delay_feedback = delay_feedback;
+                            }
+                        }
+                        else {
+                            setDelay(synth, 0x01);
+                            pSettings->delay_status = 0x01;
+                            pSettings->delay_time = 250;
+                            pSettings->delay_level = 300;
+                            pSettings->delay_feedback = 500;
+                        }
+                    }
+                }
+            }
         }
     }
 };

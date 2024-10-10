@@ -26,248 +26,6 @@ private:
         pSprite->setTextColor(TFT_WHITE);
     }
 
-    // todo: synth manager に移動する。
-    void setPreset(uint8_t id, uint8_t synth) {
-
-        // 全ての項目を初期値に設定する
-        // todo
-
-        // defaultプリセットはosc=0x01固定
-        if(id < FACTORY_PRESETS) {
-            pSynth->setShape(synth, 0x01, id);
-            pSettings->selectedWave = id;
-            if(id == 0xff) pSettings->osc1_voice = 1;
-        }
-
-        // ユーザープリセット
-        else {
-            JsonDocument doc;
-            pFile->getJson(&doc, pSettings->user_presets[id - FACTORY_PRESETS].path);
-
-            // 項目 osc1 が存在するか
-            if(doc.containsKey("osc1")) {
-                JsonObject osc1 = doc["osc1"].as<JsonObject>();
-
-                // 項目 osc1.wavetable が存在するか
-                if(osc1.containsKey("wavetable")) {
-                    JsonObject osc1_wavetable = osc1["wavetable"].as<JsonObject>();
-
-                    // 項目 osc1.wavetable.type が存在するか
-                    if(osc1_wavetable.containsKey("type")) {
-
-                        // String型か
-                        String osc1_type;
-                        if(osc1_wavetable["type"].is<String>()) {
-                            osc1_type = osc1_wavetable["type"].as<String>();
-                        } else {
-                            osc1_type = "disable";
-                        }
-
-                        // ユーザーのwavetableの場合
-                        if(osc1_type == "custom") {
-                            // 項目 osc1.wavetable.path が存在するか
-                            if(osc1_wavetable.containsKey("path")) {
-
-                                // String型か
-                                if(osc1_wavetable["path"].is<String>()) {
-                                    String wave = osc1_wavetable["path"];
-
-                                    // todo: エラーハンドリング
-                                    JsonDocument wt_doc;
-                                    pFile->getJson(&wt_doc, "/rp-ds16/wavetable/" + wave);
-                                    JsonArray waveTableArray = wt_doc["wave_table"].as<JsonArray>();
-                                    copyArray(waveTableArray, pSettings->wave_table_buff, waveTableArray.size());
-
-                                    pSynth->setShape(synth, 0x01, id, pSettings->wave_table_buff);
-                                    pSettings->selectedWave = FACTORY_PRESETS + 1;
-                                }
-                            }
-
-                        // デフォルトのwavetableの場合
-                        } else if(osc1_type == "default") {
-                            // 項目 osc1.wavetable.path が存在するか
-                            if(osc1_wavetable.containsKey("path")) {
-
-                                // uint8_t型か
-                                if(osc1_wavetable["path"].is<uint8_t>()) {
-                                    uint8_t osc1_id = osc1_wavetable["path"];
-
-                                    pSynth->setShape(synth, 0x01, osc1_id);
-                                    pSettings->selectedWave = osc1_id;
-                                    if(osc1_id == 0xff) pSettings->osc1_voice = 1;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 項目 osc1.unison が存在するか
-                if(osc1.containsKey("unison")) {
-                    uint8_t osc1_unison_voice = doc["osc1"]["unison"]["voice"];
-                    uint8_t osc1_unison_detune = doc["osc1"]["unison"]["detune"];
-                    uint8_t osc1_unison_spread = doc["osc1"]["unison"]["spread"];
-                    pSynth->setVoice(synth, osc1_unison_voice, 0x01);
-                    pSynth->setDetune(synth, osc1_unison_detune, 0x01);
-                    pSynth->setSpread(synth, osc1_unison_spread, 0x01);
-                }
-
-                // 項目 osc1.pitch が存在するか
-                if(osc1.containsKey("pitch")) {
-                    int8_t osc1_pitch_octave = doc["osc1"]["pitch"]["octave"];
-                    int8_t osc1_pitch_semitone = doc["osc1"]["pitch"]["semitone"];
-                    int8_t osc1_pitch_cent = doc["osc1"]["pitch"]["cent"];
-                    pSynth->setOscOctave(synth, 0x01, osc1_pitch_octave);
-                    pSynth->setOscSemitone(synth, 0x01, osc1_pitch_semitone);
-                    pSynth->setOscCent(synth, 0x01, osc1_pitch_cent);
-                }
-
-                // 項目 osc1.level が存在するか
-                if(osc1.containsKey("level")) {
-                    int16_t osc1_level = doc["osc1"]["level"];
-                    pSynth->setOscLevel(synth, 0x01, osc1_level);
-                }
-
-                // 項目 osc1.pan が存在するか
-                if(osc1.containsKey("pan")) {
-                    // todo
-                }
-            }
-
-            // OSC2 Wavetable
-            String osc2_type = doc["osc2"]["wavetable"]["type"];
-            if(osc2_type == "custom") {
-                String wave = doc["osc2"]["wavetable"]["path"];
-
-                JsonDocument wt_doc;
-                pFile->getJson(&wt_doc, "/rp-ds16/wavetable/" + wave);
-                JsonArray waveTableArray = wt_doc["wave_table"].as<JsonArray>();
-                copyArray(waveTableArray, pSettings->wave_table_buff, waveTableArray.size());
-
-                pSynth->setShape(synth, 0x02, id, pSettings->wave_table_buff);
-                pSettings->selectedWave2 = FACTORY_PRESETS + 1;
-
-            } else if(osc2_type == "default") {
-                uint8_t osc2_id = doc["osc2"]["wavetable"]["path"];
-                pSynth->setShape(synth, 0x02, osc2_id);
-                pSettings->selectedWave2 = osc2_id;
-                if(osc2_id == 0xff) pSettings->osc2_voice = 1;
-            }
-
-            // OSC2 Unison*
-            uint8_t osc2_unison_voice = doc["osc2"]["unison"]["voice"];
-            uint8_t osc2_unison_detune = doc["osc2"]["unison"]["detune"];
-            uint8_t osc2_unison_spread = doc["osc2"]["unison"]["spread"];
-            // pSynth->setVoice(synth, osc2_unison_voice, 0x02);
-            // pSynth->setDetune(synth, osc2_unison_detune, 0x02);
-            // pSynth->setSpread(synth, osc2_unison_spread, 0x02);
-
-            // OSC2 Pitch*
-            int8_t osc2_pitch_octave = doc["osc2"]["pitch"]["octave"];
-            int8_t osc2_pitch_semitone = doc["osc2"]["pitch"]["semitone"];
-            int8_t osc2_pitch_cent = doc["osc2"]["pitch"]["cent"];
-            // pSynth->setOscOctave(synth, 0x02, osc2_pitch_octave);
-            // pSynth->setOscSemitone(synth, 0x02, osc2_pitch_semitone);
-            // pSynth->setOscCent(synth, 0x02, osc2_pitch_cent);
-
-            // OSC2 Level*
-            int16_t osc2_level = doc["osc2"]["level"];
-            // pSynth->setOscLevel(synth, 0x02, osc2_level);
-
-            // OSC2 Pan
-            // todo
-
-            // SUBOSC Wavetable
-            String sub_type = doc["sub"]["wavetable"]["type"];
-            if(sub_type == "custom") {
-                // String wave = doc["sub"]["wavetable"]["path"];
-
-                // JsonDocument wt_doc;
-                // pFile->getJson(&wt_doc, "/rp-ds16/wavetable/" + wave);
-                // JsonArray waveTableArray = wt_doc["wave_table"].as<JsonArray>();
-                // copyArray(waveTableArray, pSettings->wave_table_buff, waveTableArray.size());
-
-                // pSynth->setShape(synth, 0x03, id, pSettings->wave_table_buff);
-                // pSettings->selectedWaveSub = FACTORY_PRESETS + 1;
-
-            } else if(sub_type == "default") {
-                // uint8_t oscsub_id = doc["sub"]["wavetable"]["path"];
-                // pSynth->setShape(synth, 0x03, oscsub_id);
-                // pSettings->selectedWaveSub = oscsub_id;
-            }
-
-            // SUBOSC Pitch*
-            int8_t sub_pitch_octave = doc["sub"]["pitch"]["octave"];
-            int8_t sub_pitch_semitone = doc["sub"]["pitch"]["semitone"];
-            int8_t sub_pitch_cent = doc["sub"]["pitch"]["cent"];
-            // pSynth->setOscOctave(synth, 0x03, sub_pitch_octave);
-            // pSynth->setOscSemitone(synth, 0x03, sub_pitch_semitone);
-            // pSynth->setOscCent(synth, 0x03, sub_pitch_cent);
-
-            // SUBOSC Level*
-            int16_t sub_level = doc["sub"]["level"];
-            // pSynth->setOscLevel(synth, 0x03, sub_level);
-
-            // SUBOSC Pan
-            // todo
-
-            // Noise
-            // todo
-
-            // Modulation*
-            String modulation = doc["modulation"];
-            if(modulation == "enable") {
-                // pSynth->setMod(synth, 0x01);
-            }
-
-            // Amplifier Envelope*
-            int16_t attack = doc["amp"]["envelope"]["attack"];
-            int16_t decay = doc["amp"]["envelope"]["decay"];
-            int16_t sustain = doc["amp"]["envelope"]["sustain"];
-            int16_t release = doc["amp"]["envelope"]["release"];
-            // pSynth->setAttack(synth, attack);
-            // pSynth->setAttack(synth, decay);
-            // pSynth->setAttack(synth, sustain);
-            // pSynth->setAttack(synth, release);
-
-            // Amplifier Glide
-            // todo
-
-            // Amplifier Level
-            // todo
-
-            // Amplifier Pan
-            // todo
-
-            // Filter*
-            String filter_mode = doc["filter"]["mode"];
-            float lpf_freq = doc["filter"]["lpf"]["freq"];
-            float lpf_q = doc["filter"]["lpf"]["q"];
-            float hpf_freq = doc["filter"]["hpf"]["freq"];
-            float hpf_q = doc["filter"]["hpf"]["q"];
-            if(filter_mode == "lpf") {
-                // pSynth->setLowPassFilter(synth, 0x01, lpf_freq, lpf_q);
-            }
-            else if(filter_mode == "hpf") {
-                // pSynth->setHighPassFilter(synth, 0x01, hpf_freq, hpf_q);
-            }
-            else if(filter_mode == "lpf+hpf") {
-                // pSynth->setLowPassFilter(synth, 0x01, lpf_freq, lpf_q);
-                // pSynth->setHighPassFilter(synth, 0x01, hpf_freq, hpf_q);
-            }
-
-            // Delay*
-            String delay_mode = doc["delay"]["mode"];
-            int16_t delay_time = doc["delay"]["time"];
-            int16_t delay_level = doc["delay"]["level"];
-            int16_t delay_feedback = doc["delay"]["feedback"];
-            if(delay_mode == "enable") {
-                //pSynth->setDelay(synth, 0x01, delay_time, delay_level, delay_feedback);
-            }
-
-            // todo: それぞれのプリセット値を反映する(送信項目が多すぎてバグる)
-        }
-    }
-
 public:
     UIPresets(
         LGFX_Sprite* pSprite, SynthManager* pSynth, FileManager* pFile,
@@ -292,7 +50,7 @@ public:
         // todo: 展示用プリセット読み込み
         if(!loaded) {
             pSettings->selectedPreset = 3;
-            setPreset(pSettings->selectedPreset, 0xff);
+            pSynth->setPreset(pSettings->selectedPreset, 0xff);
             loaded = true;
         }
         // ここまで
@@ -454,7 +212,7 @@ public:
             case 0x01:
                 pSettings->selectedPreset = (pSettings->selectedPreset != 0x00) ? (pSettings->selectedPreset - 1) : 128 + FACTORY_PRESETS - 1;
                 if(!longPush) {
-                    setPreset(pSettings->selectedPreset, (pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
+                    pSynth->setPreset(pSettings->selectedPreset, (pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
                 }
                 break;
             case 0x02:
@@ -468,15 +226,15 @@ public:
                 } else {
                     pSynth->setMonophonic(0xff, false);
                 }
-                setPreset(pSettings->selectedPreset, (pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
+                pSynth->setPreset(pSettings->selectedPreset, (pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
                 if(pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) {
-                    setPreset(pSettings->selectedPreset2, 0x02);
+                    pSynth->setPreset(pSettings->selectedPreset2, 0x02);
                 }
                 break;
             case 0x04:
                 pSettings->selectedPreset2 = (pSettings->selectedPreset2 != 0x00) ? (pSettings->selectedPreset2 - 1) : 128 + FACTORY_PRESETS - 1;
                 if(!longPush) {
-                    setPreset(pSettings->selectedPreset2, 0x02);
+                    pSynth->setPreset(pSettings->selectedPreset2, 0x02);
                 }
                 break;
         }
@@ -488,7 +246,7 @@ public:
             case 0x01:
                 pSettings->selectedPreset = (pSettings->selectedPreset != 128 + FACTORY_PRESETS - 1) ? (pSettings->selectedPreset + 1) : 0x00;
                 if(!longPush) {
-                    setPreset(pSettings->selectedPreset, (pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
+                    pSynth->setPreset(pSettings->selectedPreset, (pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
                 }
                 break;
             case 0x02:
@@ -502,15 +260,15 @@ public:
                 } else {
                     pSynth->setMonophonic(0xff, false);
                 }
-                setPreset(pSettings->selectedPreset, (pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
+                pSynth->setPreset(pSettings->selectedPreset, (pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) ? 0x01 : 0xff);
                 if(pSettings->synthMode == SYNTH_MULTI || pSettings->synthMode == SYNTH_DUAL) {
-                    setPreset(pSettings->selectedPreset2, 0x02);
+                    pSynth->setPreset(pSettings->selectedPreset2, 0x02);
                 }
                 break;
             case 0x04:
                 pSettings->selectedPreset2 = (pSettings->selectedPreset2 != 128 + FACTORY_PRESETS - 1) ? (pSettings->selectedPreset2 + 1) : 0x00;
                 if(!longPush) {
-                    setPreset(pSettings->selectedPreset2, 0x02);
+                    pSynth->setPreset(pSettings->selectedPreset2, 0x02);
                 }
                 break;
         }

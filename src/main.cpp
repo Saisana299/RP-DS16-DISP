@@ -16,15 +16,15 @@
 
 // todo: osc->pan
 
-// todo: シンセごとの設定管理
-// todo: プリセットで保存できる項目の洗い出し
-
 // todo: 臨時のプリセット変更行あり
 
 // todo: プリセット保存機能
+// todo: シンセごとの設定管理
 // todo: midiブラウザ
 // todo: wavetableブラウザ
 // todo: rlemブラウザ
+
+// todo: MIDIファイル再生中にSD内にあるファイルを読み取る場合一度停止しなければならない問題を解決する
 
 // 共通変数
 LGFXRP2040 display;
@@ -35,9 +35,9 @@ Settings conf;
 // 各種制御クラス
 CtrlManager* CtrlManager::instance = nullptr;
 CtrlManager  ctrl(&display, &sprite);
-SynthManager synth(&display, &sprite, &ctrl);
 MidiManager  midi(&ctrl);
 FileManager  file(&display, &midi);
+SynthManager synth(&display, &sprite, &ctrl, &conf, &file, &midi);
 UIManager    ui(&display, &sprite, &ctrl, &synth, &file, &midi, &conf);
 
 void setup() {
@@ -82,6 +82,10 @@ void setup() {
     ui.goTitle();
 }
 
+/**
+ * @brief メインループ
+ * ボタンの入力を監視します。
+ */
 void loop() {
     while(1) {
         #if WOKWI_MODE == 1
@@ -91,6 +95,10 @@ void loop() {
     }
 }
 
+/**
+ * @brief Core1ループ
+ * MIDIファイルを再生するためのループです。
+ */
 #if WOKWI_MODE != 1
 void loop1() {
     while(1) {
