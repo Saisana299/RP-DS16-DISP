@@ -87,6 +87,9 @@ private:
     uint32_t pushCount[BUTTON_COUNT] = {0, 0, 0, 0, 0, 0};
     bool longPushed[BUTTON_COUNT] = {false, false, false, false, false, false};
 
+    // 初期化処理が完了しているか
+    bool initFinished = false;
+
     LGFXRP2040* pDisplay;
     LGFX_Sprite* pSprite;
 
@@ -235,12 +238,15 @@ public:
         }
     }
 
+    /**
+     * @brief SDカード内のユーザーファイルを読み込みます
+     * この関数は起動時に呼び出されます
+     * あとからこの関数を実行することはできません。
+     * @param type 読み込むファイルの種類
+     */
     void loadUserFiles(String type) {
-        // MIDI Player が動いている場合停止させる
-        if(pMidi->getStatus() != MIDI_IDLE) {
-            pMidi->stopMidi();
-            pSettings->midi_playing = false;
-        }
+        // 実行が完了しているか
+        if(initFinished) return;
 
         // ユーザーファイルを読み込む
         uint8_t size;
@@ -337,35 +343,16 @@ public:
 
             counter += 4;
         }
-
-        delay(1000);
     }
 
     void goTitle() {
+        initFinished = true;
         displayStatus = DISPST_TITLE;
     }
 
     /** @brief UIを更新 */
     void refreshUI() {
         if(displayStatus == DISPST_TITLE) return;
-        else if(displayStatus == DISPST_PRESETS) {
-            if(!pSettings->isUserPresetLoaded) {
-                loadUserFiles("preset");
-                pSettings->isUserPresetLoaded = true;
-            }
-        }
-        else if(displayStatus == DISPST_OSC_WAVE) {
-            if(!pSettings->isUserWaveLoaded) {
-                loadUserFiles("wavetable");
-                pSettings->isUserWaveLoaded = true;
-            }
-        }
-        else if(displayStatus == DISPST_MIDI_PLAYER) {
-            if(!pSettings->isMidiLoaded) {
-                loadUserFiles("midi");
-                pSettings->isMidiLoaded = true;
-            }
-        }
 
         pSprite->createSprite(128, 64);
 

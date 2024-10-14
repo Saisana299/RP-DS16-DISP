@@ -408,10 +408,9 @@ public:
      */
     void setPreset(uint8_t id, uint8_t synth) {
 
-        // MIDI Player が動いている場合停止させる
+        // MIDI Player が動いている場合強制一時停止させる
         if(pMidi->getStatus() != MIDI_IDLE) {
-            pMidi->stopMidi();
-            pSettings->midi_playing = false;
+            pMidi->forcedPauseMidi();
         }
 
         // 全ての項目を初期値に設定する
@@ -1090,6 +1089,11 @@ public:
                     }
                 }
             }
+        }
+
+        // MIDI Player が動いている場合再開させる
+        if(pMidi->getStatus() != MIDI_IDLE) {
+            pMidi->resumeMidi();
         }
     }
 };

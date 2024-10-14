@@ -17,7 +17,7 @@ private:
     SdFs SD;
 
     bool lockSD() {
-        if(pMidi->isLocking) pMidi->pauseMidi();
+        if(pMidi->isLocking) pMidi->forcedPauseMidi();
         uint8_t i;
         for(i = 0; i < 20; i++) {
             if(!pMidi->isLocking) break;

@@ -24,8 +24,6 @@
 // todo: wavetableブラウザ
 // todo: rlemブラウザ
 
-// todo: MIDIファイル再生中にSD内にあるファイルを読み取る場合一度停止しなければならない問題を解決する
-
 // 共通変数
 LGFXRP2040 display;
 static LGFX_Sprite sprite(&display);
@@ -72,6 +70,14 @@ void setup() {
 
     // CTRLとの接続を確認します
     if(!ctrl.checkConnection()) return;
+
+    // ユーザーファイルを全て読み込みます
+    ui.loadUserFiles("preset");
+    delay(100);
+    ui.loadUserFiles("wavetable");
+    delay(100);
+    ui.loadUserFiles("midi");
+    delay(1000);
 
     display.showImage(&sprite, TITLE_IMG);
     delay(1);

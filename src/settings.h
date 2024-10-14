@@ -80,13 +80,9 @@ public:
 
     // ユーザーファイル
     Preset user_presets[USER_PRESET_LIMIT];
-    bool isUserPresetLoaded = false;
     Preset user_wavetables[USER_PRESET_LIMIT];
-    bool isUserWaveLoaded = false;
     Preset midi_files[USER_PRESET_LIMIT];
-    bool isMidiLoaded = false;
     Preset rlem_files[USER_PRESET_LIMIT];
-    bool isRlemLoaded = false;
 
     // プリセット用バッファ
     int16_t wave_table_buff[2048];

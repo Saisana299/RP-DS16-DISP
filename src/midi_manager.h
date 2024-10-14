@@ -12,6 +12,8 @@
 #define MIDI_RESUME   0x05
 #define MIDI_LOOP_ON  0x06
 #define MIDI_LOOP_OFF 0x07
+#define MIDI_PAUSE_FORCED  0x08
+#define MIDI_RESUME_FORCED 0x09
 
 #define SDFS_CS_PIN 5
 
@@ -20,6 +22,7 @@ private:
     // midi関連
     volatile uint8_t flag = MIDI_IDLE;
     volatile char midiFile[51] = ""; // 50まで /rp-ds16/midi/ も含む
+    volatile bool forcedPause = false;
 
     SdFs SD;
     MD_MIDIFile SMF;
@@ -83,6 +86,7 @@ public:
     }
 
     void playMidi(String path) {
+        if(isLocking) return; // ロック中は再生できない
         if(path.length() > 50) return;
         strcpy((char*)midiFile, path.c_str());
         sendMidiMode(true);
@@ -95,7 +99,18 @@ public:
         sendMidiMode(false);
     }
 
+    void forcedPauseMidi() {
+        flag = MIDI_PAUSE_FORCED;
+        while(isLocking);
+        sendMidiMode(false);
+    }
+
     void resumeMidi() {
+        if(forcedPause) {
+            sendMidiMode(true);
+            flag = MIDI_RESUME_FORCED;
+            return;
+        }
         sendMidiMode(true);
         flag = MIDI_RESUME;
     }
@@ -120,6 +135,9 @@ public:
             isPlayMidi = true;
         }
         else if(flag == MIDI_PLAYING) {
+            // 読込みを一時停止している場合
+            if(forcedPause) return;
+
             if (!SMF.isEOF()) {
                 SMF.getNextEvent();
             }
@@ -138,11 +156,26 @@ public:
         else if(flag == MIDI_PAUSE) {
             SMF.pause(true);
             isLocking = false;
+            isPlayMidi = false;
+            flag = MIDI_PLAYING;
+        }
+        else if(flag == MIDI_PAUSE_FORCED) {
+            forcedPause = true;
+            isLocking = false;
+            isPlayMidi = false;
             flag = MIDI_PLAYING;
         }
         else if(flag == MIDI_RESUME) {
             SMF.pause(false);
             isLocking = true;
+            isPlayMidi = true;
+            flag = MIDI_PLAYING;
+        }
+        else if(flag == MIDI_RESUME_FORCED) {
+            // forcedPauseと逆の順番で変更
+            isLocking = true;
+            isPlayMidi = true;
+            forcedPause = false;
             flag = MIDI_PLAYING;
         }
         else if(flag == MIDI_LOOP_ON) {
