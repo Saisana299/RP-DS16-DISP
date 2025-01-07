@@ -37,8 +37,7 @@ public:
         pSprite->drawString("Oscillator", 2, 16);
         pSprite->drawString("Amplifier", 2, 26);
         pSprite->drawString("Filter", 2, 36);
-        pSprite->drawString("LFO", 2, 46);
-        pSprite->drawString("Effector", 2, 56);
+        pSprite->drawString("Effector", 2, 46);
 
         // 塗り
         if(*displayCursor == 0x01) {
@@ -51,24 +50,21 @@ public:
             cursorText("Filter", 2, 36);
         }
         else if(*displayCursor == 0x04) {
-            cursorText("LFO", 2, 46);
-        }
-        else if(*displayCursor == 0x05) {
-            cursorText("Effector", 2, 56);
+            cursorText("Effector", 2, 46);
         }
     }
 
     /** @brief 上ボタンが押された場合 */
     void handleButtonUp(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x01) *displayCursor = 0x05;
+        if(*displayCursor == 0x01) *displayCursor = 0x04;
         else (*displayCursor)--;
     }
 
     /** @brief 下ボタンが押された場合 */
     void handleButtonDown(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x05) *displayCursor = 0x01;
+        if(*displayCursor == 0x04) *displayCursor = 0x01;
         else (*displayCursor)++;
     }
 
@@ -97,8 +93,6 @@ public:
                 *displayStatus = DISPST_FILTER;
                 break;
             case 0x04:
-                break;
-            case 0x05:
                 *displayCursor = 0x01;
                 *displayStatus = DISPST_EFFECT;
                 break;

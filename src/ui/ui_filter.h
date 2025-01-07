@@ -66,39 +66,50 @@ public:
         pSprite->drawLine(0, 12, 127, 12, TFT_WHITE);
 
         // Filter
-        String mode = "Disable";
-        if(pSettings->filter_mode == 0x01) mode = "LPF";
-        else if(pSettings->filter_mode == 0x02) mode = "HPF";
-        else if(pSettings->filter_mode == 0x03) mode = "LPF+HPF";
-        char sym_2 = ':'; if (*displayCursor == 0x07) sym_2 = '>';
-        char sym_3 = ':'; if (*displayCursor == 0x08) sym_3 = '>';
-        char sym_4 = ':'; if (*displayCursor == 0x09) sym_4 = '>';
-        char sym_5 = ':'; if (*displayCursor == 0x0A) sym_5 = '>';
-        char lpff_chr[10]; sprintf(lpff_chr, "%.2f", pSettings->lpf_freq);
-        char lpfq_chr[6]; sprintf(lpfq_chr, "%.2f", pSettings->lpf_q);
-        char hpff_chr[10]; sprintf(hpff_chr, "%.2f", pSettings->hpf_freq);
-        char hpfq_chr[6]; sprintf(hpfq_chr, "%.2f", pSettings->hpf_q);
-        pSprite->drawString("Mode    : " + mode, 2, 16);
-        pSprite->drawString("LPF Freq" + String(sym_2) + " " + String(lpff_chr) + "Hz", 2, 26);
-        pSprite->drawString("LPF Q   " + String(sym_3) + " " + String(lpfq_chr), 2, 36);
-        pSprite->drawString("HPF Freq" + String(sym_4) + " " + String(hpff_chr) + "Hz", 2, 46);
-        pSprite->drawString("HPF Q   " + String(sym_5) + " " + String(hpfq_chr), 2, 56);
+        if(*displayCursor < 0x06 || *displayCursor > 0x07) {
+            String mode = "Disable";
+            if(pSettings->filter_mode == 0x01) mode = "LPF";
+            else if(pSettings->filter_mode == 0x02) mode = "HPF";
+            else if(pSettings->filter_mode == 0x03) mode = "LPF+HPF";
+            char sym_2 = ':'; if (*displayCursor == 0x09) sym_2 = '>';
+            char sym_3 = ':'; if (*displayCursor == 0x0A) sym_3 = '>';
+            char sym_4 = ':'; if (*displayCursor == 0x0B) sym_4 = '>';
+            char sym_5 = ':'; if (*displayCursor == 0x0C) sym_5 = '>';
+            char lpff_chr[10]; sprintf(lpff_chr, "%.2f", pSettings->lpf_freq);
+            char lpfq_chr[6]; sprintf(lpfq_chr, "%.2f", pSettings->lpf_q);
+            char hpff_chr[10]; sprintf(hpff_chr, "%.2f", pSettings->hpf_freq);
+            char hpfq_chr[6]; sprintf(hpfq_chr, "%.2f", pSettings->hpf_q);
+            pSprite->drawString("Mode    : " + mode, 2, 16);
+            pSprite->drawString("LPF Freq" + String(sym_2) + " " + String(lpff_chr) + "Hz", 2, 26);
+            pSprite->drawString("LPF Q   " + String(sym_3) + " " + String(lpfq_chr), 2, 36);
+            pSprite->drawString("HPF Freq" + String(sym_4) + " " + String(hpff_chr) + "Hz", 2, 46);
+            pSprite->drawString("HPF Q   " + String(sym_5) + " " + String(hpfq_chr), 2, 56);
+        } else {
+            pSprite->drawString("Envelope", 2, 16);
+            pSprite->drawString("LFO", 2, 26);
+        }
 
         // 塗り
-        if(*displayCursor == 0x01 || *displayCursor == 0x06) {
+        if(*displayCursor == 0x01 || *displayCursor == 0x08) {
             cursorText("Mode", 2, 16);
         }
-        else if(*displayCursor == 0x02 || *displayCursor == 0x07) {
+        else if(*displayCursor == 0x02 || *displayCursor == 0x09) {
             cursorText("LPF Freq", 2, 26);
         }
-        else if(*displayCursor == 0x03 || *displayCursor == 0x08) {
+        else if(*displayCursor == 0x03 || *displayCursor == 0x0A) {
             cursorText("LPF Q", 2, 36);
         }
-        else if(*displayCursor == 0x04 || *displayCursor == 0x09) {
+        else if(*displayCursor == 0x04 || *displayCursor == 0x0B) {
             cursorText("HPF Freq", 2, 46);
         }
-        else if(*displayCursor == 0x05 || *displayCursor == 0x0A) {
+        else if(*displayCursor == 0x05 || *displayCursor == 0x0C) {
             cursorText("HPF Q", 2, 56);
+        }
+        else if(*displayCursor == 0x06) {
+            cursorText("Envelope", 2, 16);
+        }
+        else if(*displayCursor == 0x07) {
+            cursorText("LFO", 2, 26);
         }
     }
 
@@ -107,7 +118,8 @@ public:
         if(longPush) return;
         switch (*displayCursor) {
             default:
-                if(*displayCursor == 0x01) *displayCursor = 0x05;
+                if(*displayCursor == 0x01) *displayCursor = 0x07;
+                else if(*displayCursor == 0x09) *displayCursor = 0x0C;
                 else (*displayCursor)--;
                 break;
         }
@@ -118,7 +130,8 @@ public:
         if(longPush) return;
         switch (*displayCursor) {
             default:
-                if(*displayCursor == 0x05) *displayCursor = 0x01;
+                if(*displayCursor == 0x07) *displayCursor = 0x01;
+                else if(*displayCursor == 0x0C) *displayCursor = 0x09;
                 else (*displayCursor)++;
                 break;
         }
@@ -226,22 +239,22 @@ public:
     void handleButtonEnter(bool longPush = false) override {
         if(longPush) return;
         switch (*displayCursor) {
-            case 0x02: *displayCursor = 0x07;
+            case 0x02: *displayCursor = 0x09;
                 break;
-            case 0x03: *displayCursor = 0x08;
+            case 0x03: *displayCursor = 0x0A;
                 break;
-            case 0x04: *displayCursor = 0x09;
+            case 0x04: *displayCursor = 0x0B;
                 break;
-            case 0x05: *displayCursor = 0x0A;
+            case 0x05: *displayCursor = 0x0C;
                 break;
 
-            case 0x07: *displayCursor = 0x02;
+            case 0x09: *displayCursor = 0x02;
                 break;
-            case 0x08: *displayCursor = 0x03;
+            case 0x0A: *displayCursor = 0x03;
                 break;
-            case 0x09: *displayCursor = 0x04;
+            case 0x0B: *displayCursor = 0x04;
                 break;
-            case 0x0A: *displayCursor = 0x05;
+            case 0x0C: *displayCursor = 0x05;
                 break;
         }
     }

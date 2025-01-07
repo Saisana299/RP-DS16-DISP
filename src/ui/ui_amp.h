@@ -49,6 +49,7 @@ public:
         pSprite->drawString("Glide", 2, 26);
         pSprite->drawString("Level: " + String(lv_chr) + "%", 2, 36);
         pSprite->drawString("Pan  : " + String(pn_chr), 2, 46);
+        pSprite->drawString("LFO", 2, 56);
 
         // 塗り
         if(*displayCursor == 0x01) {
@@ -63,19 +64,22 @@ public:
         else if(*displayCursor == 0x04) {
             cursorText("Pan", 2, 46);
         }
+        else if(*displayCursor == 0x05) {
+            cursorText("LFO", 2, 56);
+        }
     }
 
     /** @brief 上ボタンが押された場合 */
     void handleButtonUp(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x01) *displayCursor = 0x04;
+        if(*displayCursor == 0x01) *displayCursor = 0x05;
         else (*displayCursor)--;
     }
 
     /** @brief 下ボタンが押された場合 */
     void handleButtonDown(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x04) *displayCursor = 0x01;
+        if(*displayCursor == 0x05) *displayCursor = 0x01;
         else (*displayCursor)++;
     }
 

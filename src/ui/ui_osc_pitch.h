@@ -55,56 +55,60 @@ public:
             char o1o_chr[6]; sprintf(o1o_chr, "%d", pSettings->osc1_oct);
             char o1s_chr[6]; sprintf(o1s_chr, "%d", pSettings->osc1_semi);
             char o1c_chr[6]; sprintf(o1c_chr, "%d", pSettings->osc1_cent);
-            pSprite->drawString("OSC1 Octave  : " + String(o1o_chr), 2, 16);
-            pSprite->drawString("OSC1 Semitone: " + String(o1s_chr), 2, 26);
-            pSprite->drawString("OSC1 Cent    : " + String(o1c_chr), 2, 36);
+            pSprite->drawString("Octave  : " + String(o1o_chr), 2, 16);
+            pSprite->drawString("Semitone: " + String(o1s_chr), 2, 26);
+            pSprite->drawString("Cent    : " + String(o1c_chr), 2, 36);
         }
         else if(*selectedOsc == 0x02) {
             char o2o_chr[6]; sprintf(o2o_chr, "%d", pSettings->osc2_oct);
             char o2s_chr[6]; sprintf(o2s_chr, "%d", pSettings->osc2_semi);
             char o2c_chr[6]; sprintf(o2c_chr, "%d", pSettings->osc2_cent);
-            pSprite->drawString("OSC2 Octave  : " + String(o2o_chr), 2, 16);
-            pSprite->drawString("OSC2 Semitone: " + String(o2s_chr), 2, 26);
-            pSprite->drawString("OSC2 Cent    : " + String(o2c_chr), 2, 36);
+            pSprite->drawString("Octave  : " + String(o2o_chr), 2, 16);
+            pSprite->drawString("Semitone: " + String(o2s_chr), 2, 26);
+            pSprite->drawString("Cent    : " + String(o2c_chr), 2, 36);
         }
         else if(*selectedOsc == 0x03) {
             char oso_chr[6]; sprintf(oso_chr, "%d", pSettings->osc_sub_oct);
             char oss_chr[6]; sprintf(oss_chr, "%d", pSettings->osc_sub_semi);
             char osc_chr[6]; sprintf(osc_chr, "%d", pSettings->osc_sub_cent);
-            pSprite->drawString("Sub Octave  : " + String(oso_chr), 2, 16);
-            pSprite->drawString("Sub Semitone: " + String(oss_chr), 2, 26);
-            pSprite->drawString("Sub Cent    : " + String(osc_chr), 2, 36);
+            pSprite->drawString("Octave  : " + String(oso_chr), 2, 16);
+            pSprite->drawString("Semitone: " + String(oss_chr), 2, 26);
+            pSprite->drawString("Cent    : " + String(osc_chr), 2, 36);
         }
+        pSprite->drawString("Envelope", 2, 46);
+        pSprite->drawString("LFO", 2, 56);
 
         // 塗り
         if(*displayCursor == 0x01) {
-            if(*selectedOsc == 0x01) cursorText("OSC1 Octave", 2, 16);
-            else if(*selectedOsc == 0x02) cursorText("OSC2 Octave", 2, 16);
-            else if(*selectedOsc == 0x03) cursorText("Sub Octave", 2, 16);
+            if(*selectedOsc == 0x01) cursorText("Octave", 2, 16);
+            else if(*selectedOsc == 0x02) cursorText("Octave", 2, 16);
+            else if(*selectedOsc == 0x03) cursorText("Octave", 2, 16);
         }
         else if(*displayCursor == 0x02) {
-            if(*selectedOsc == 0x01) cursorText("OSC1 Semitone", 2, 26);
-            else if(*selectedOsc == 0x02) cursorText("OSC2 Semitone", 2, 26);
-            else if(*selectedOsc == 0x03) cursorText("Sub Semitone", 2, 26);
+            if(*selectedOsc == 0x01) cursorText("Semitone", 2, 26);
+            else if(*selectedOsc == 0x02) cursorText("Semitone", 2, 26);
+            else if(*selectedOsc == 0x03) cursorText("Semitone", 2, 26);
         }
         else if(*displayCursor == 0x03) {
-            if(*selectedOsc == 0x01) cursorText("OSC1 Cent", 2, 36);
-            else if(*selectedOsc == 0x02) cursorText("OSC2 Cent", 2, 36);
-            else if(*selectedOsc == 0x03) cursorText("Sub Cent", 2, 36);
+            if(*selectedOsc == 0x01) cursorText("Cent", 2, 36);
+            else if(*selectedOsc == 0x02) cursorText("Cent", 2, 36);
+            else if(*selectedOsc == 0x03) cursorText("Cent", 2, 36);
         }
+        else if(*displayCursor == 0x04) cursorText("Envelope", 2, 46);
+        else if(*displayCursor == 0x05) cursorText("LFO", 2, 56);
     }
 
     /** @brief 上ボタンが押された場合 */
     void handleButtonUp(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x01) *displayCursor = 0x03;
+        if(*displayCursor == 0x01) *displayCursor = 0x05;
         else (*displayCursor)--;
     }
 
     /** @brief 下ボタンが押された場合 */
     void handleButtonDown(bool longPush = false) override {
         if(longPush) return;
-        if(*displayCursor == 0x03) *displayCursor = 0x01;
+        if(*displayCursor == 0x05) *displayCursor = 0x01;
         else (*displayCursor)++;
     }
 
@@ -246,12 +250,21 @@ public:
 
     /** @brief 決定ボタンが押された場合 */
     void handleButtonEnter(bool longPush = false) override {
+        if (longPush) return;
+        switch (*displayCursor) {
+            case 0x04:
+            //todo
+            break;
+            case 0x05:
+            //todo
+            break;
+        }
     }
 
     /** @brief キャンセルボタンが押された場合 */
     void handleButtonCancel(bool longPush = false) override {
         if (longPush) return;
-        *displayCursor = 0x08;
+        *displayCursor = 0x07;
         *displayStatus = DISPST_OSC;
     }
 };
