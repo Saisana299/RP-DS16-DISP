@@ -4,6 +4,9 @@
 RP2040を利用したWavetableシンセ「RP-DS16」のUI部  
 OLED制御、ボタン制御、TFカード制御、RP-DS16-CTRLとの通信
 
+<span style="font-size: 200%;">This project has been suspended.</span>  
+<span style="font-size: 200%;">Successor project : [Cranberry-Synth](https://github.com/Saisana299/Cranberry-Synth)</span>
+
 ## 概要
 - RP2040
     - オーバークロック - 200MHz
